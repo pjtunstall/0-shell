@@ -85,7 +85,19 @@ fn get_current_dir() -> io::Result<String> {
 }
 
 fn split(input: &str) -> Vec<String> {
-    input.split_whitespace().map(|s| s.to_string()).collect()
+    input
+        .split('"')
+        .enumerate()
+        .flat_map(|(i, part)| {
+            if i % 2 == 0 {
+                part.split_whitespace()
+                    .map(String::from)
+                    .collect::<Vec<_>>()
+            } else {
+                vec![part.to_string()]
+            }
+        })
+        .collect()
 }
 
 fn prompt() -> io::Result<String> {
