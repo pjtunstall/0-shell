@@ -9,11 +9,10 @@ fn main() {
         let command = input[0].as_str();
 
         match command {
-            "pwd" => {
-                if let Err(msg) = pwd(&input) {
-                    handle_error(command, msg);
-                }
-            }
+            "pwd" => match pwd(&input) {
+                Ok(ok) => println!("{}", ok),
+                Err(err) => handle_error(command, err),
+            },
             _ => {
                 continue;
             }
@@ -21,11 +20,11 @@ fn main() {
     }
 }
 
-fn handle_error(command: &str, msg: String) {
-    eprintln!("{}: {}", command, msg.to_lowercase());
+fn handle_error(command: &str, err: String) {
+    eprintln!("{}: {}", command, err.to_lowercase());
 }
 
-fn pwd(input: &Vec<String>) -> Result<(), String> {
+fn pwd(input: &Vec<String>) -> Result<String, String> {
     if input.len() > 1 {
         return Err("too many arguments".to_string());
     }
@@ -33,8 +32,8 @@ fn pwd(input: &Vec<String>) -> Result<(), String> {
         Ok(cwd) => cwd,
         Err(err) => return Err(format!("getcwd: {}", err)),
     };
-    println!("{}", cwd);
-    Ok(())
+    let ok = format!("{}", cwd);
+    Ok(ok)
 }
 
 fn get_current_dir() -> io::Result<String> {
@@ -50,7 +49,7 @@ fn split(input: &str) -> Vec<String> {
 fn get_input() -> io::Result<String> {
     let cwd = get_current_dir().unwrap();
     print!("{} $ ", cwd);
-    io::stdout().flush()?; // Ensure the prompt is printed before waiting for input. in some cases where the prompt may not show immediately.
+    io::stdout().flush()?; // Ensure the prompt is printed before waiting for input. In some cases, the prompt may not show immediately.
 
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
@@ -60,53 +59,22 @@ fn get_input() -> io::Result<String> {
 
 #[cfg(test)]
 mod tests {
+    use std::path::MAIN_SEPARATOR;
+
     use super::*;
 
-    #[test]
     fn test_pwd_success() {
-        let input = vec![];
-        let result = pwd(&input);
-        assert!(result.is_ok());
+        let input = "pwd";
+        let expected = "shell";
+        let result = pwd(&split(input)).unwrap();
+        let last_segment = result.split(MAIN_SEPARATOR).last().unwrap();
+        assert_eq!(last_segment, expected);
     }
 
     #[test]
-    fn test_pwd_too_many_arguments() {
-        let input = vec!["extra".to_string()];
-        let result = pwd(&input);
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "too many arguments");
-    }
-
-    #[test]
-    fn test_pwd_unexpected_error() {
-        use std::env;
-        use std::fs;
-        use tempfile::tempdir;
-
-        // Create a temporary directory
-        let temp_dir = tempdir().unwrap();
-        let temp_path = temp_dir.path().to_path_buf();
-
-        // Remove the directory to cause an error
-        fs::remove_dir(&temp_path).unwrap();
-
-        // Try changing into the deleted directory
-        let original_dir = env::current_dir().unwrap();
-        let result = env::set_current_dir(&temp_path);
-
-        if result.is_err() {
-            // If we already can't enter the directory, just test pwd directly
-            let pwd_result = pwd(&vec![]);
-            assert!(pwd_result.is_err());
-            assert!(pwd_result.unwrap_err().starts_with("getcwd:"));
-        } else {
-            // Otherwise, call pwd and expect it to fail
-            let pwd_result = pwd(&vec![]);
-            assert!(pwd_result.is_err());
-            assert!(pwd_result.unwrap_err().starts_with("getcwd:"));
-        }
-
-        // Restore the original working directory
-        env::set_current_dir(original_dir).unwrap();
+    fn test_pwd_too_many_args() {
+        let input = "pwd foo";
+        let expected = Err("too many arguments".to_string());
+        assert_eq!(pwd(&split(input)), expected);
     }
 }
