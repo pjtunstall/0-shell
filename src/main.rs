@@ -4,16 +4,35 @@ use std::{
     process,
 };
 
+struct TextStyle;
+
+impl Drop for TextStyle {
+    fn drop(&mut self) {
+        // Reset formatting to normal when the item is dropped
+        print!("\x1b[0m");
+    }
+}
+
+fn red_println(text: &str) {
+    println!("\x1b[31m{}\x1b[0m\x1b[1m", text);
+}
+
 fn main() {
+    print!("\x1b[1m");
+    let _bold_text = TextStyle;
+
     loop {
         let prompt = prompt().unwrap_or_else(|err| {
             panic!("Failed to generate prompt: {}", err);
         });
-        print!("{}", prompt);
+        print!("{}", &prompt);
         io::stdout().flush().expect("Failed to flush stdout"); // When you use functions like print!, println!, or other write operations to stdout, the output is typically buffered. This means that the data doesn't immediately go to the terminal or file but is stored temporarily in memory until it's flushed (or until the buffer is full). For example, if you use println!, it automatically appends a newline, which generally flushes the output, but in some cases (such as with print!), you need to explicitly flush the output to ensure it’s immediately written to the terminal.
 
         let input = get_input().unwrap();
         let input = split(&input);
+        if input.is_empty() {
+            continue;
+        }
 
         let command = input[0].as_str();
 
@@ -23,7 +42,7 @@ fn main() {
             "exit" => exit(&input),
             "pwd" => pwd(&input),
             _ => {
-                println!("{}: command not found", command);
+                handle_error(command, "command not found".to_string());
                 continue;
             }
         };
@@ -31,7 +50,7 @@ fn main() {
         match result {
             Ok(ok) => {
                 if !ok.is_empty() {
-                    println!("{}", ok);
+                    println!("{}", &ok);
                 }
             }
             Err(err) => handle_error(command, err),
@@ -54,7 +73,7 @@ fn exit(input: &Vec<String>) -> Result<String, String> {
 }
 
 fn handle_error(command: &str, err: String) {
-    eprintln!("{}: {}", command, err.to_lowercase());
+    red_println(&format!("{}: {}", command, err.to_lowercase()));
 }
 
 fn check_num_args(input: &Vec<String>, expected: usize) -> Result<String, String> {
@@ -94,7 +113,7 @@ fn split(input: &str) -> Vec<String> {
                     .map(String::from)
                     .collect::<Vec<_>>()
             } else {
-                vec![part.to_string()]
+                vec![part.to_string().replace(r"\r\n", "\n").replace(r"\n", "\n")]
             }
         })
         .collect()
