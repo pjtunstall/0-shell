@@ -1,5 +1,5 @@
 use std::{
-    env,
+    env, fs,
     io::{self, Write},
     process,
 };
@@ -40,6 +40,7 @@ fn main() {
             "cd" => cd(&input),
             "echo" => echo(&input),
             "exit" => exit(&input),
+            "mkdir" => mkdir(&input),
             "pwd" => pwd(&input),
             _ => {
                 handle_error(command, "command not found".to_string());
@@ -146,6 +147,18 @@ fn cd(input: &Vec<String>) -> Result<String, String> {
         Ok(_) => Ok(String::new()),
         Err(e) => Err(format!("{}: {}", path, e)),
     }
+}
+
+fn mkdir(input: &Vec<String>) -> Result<String, String> {
+    if let Err(err) = check_num_args(input, 2) {
+        return Err(err);
+    }
+
+    let path = input.get(1).ok_or_else(|| "missing argument".to_string())?;
+
+    fs::create_dir(path).map_err(|err| err.to_string())?;
+
+    Ok(String::new())
 }
 
 #[cfg(test)]
