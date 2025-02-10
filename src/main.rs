@@ -1,32 +1,74 @@
-#![allow(dead_code)]
-use std::env;
-use std::io::{self, Write};
+use std::{
+    env,
+    io::{self, Write},
+    process,
+};
 
 fn main() {
     loop {
+        let prompt = prompt().unwrap_or_else(|err| {
+            panic!("Failed to generate prompt: {}", err);
+        });
+        print!("{}", prompt);
+        io::stdout().flush().expect("Failed to flush stdout"); // When you use functions like print!, println!, or other write operations to stdout, the output is typically buffered. This means that the data doesn't immediately go to the terminal or file but is stored temporarily in memory until it's flushed (or until the buffer is full). For example, if you use println!, it automatically appends a newline, which generally flushes the output, but in some cases (such as with print!), you need to explicitly flush the output to ensure it’s immediately written to the terminal.
+
         let input = get_input().unwrap();
         let input = split(&input);
+
         let command = input[0].as_str();
 
-        match command {
-            "pwd" => match pwd(&input) {
-                Ok(ok) => println!("{}", ok),
-                Err(err) => handle_error(command, err),
-            },
+        let result = match command {
+            "cd" => cd(&input),
+            "echo" => echo(&input),
+            "exit" => exit(&input),
+            "pwd" => pwd(&input),
             _ => {
+                println!("{}: command not found", command);
                 continue;
             }
+        };
+
+        match result {
+            Ok(ok) => {
+                if !ok.is_empty() {
+                    println!("{}", ok);
+                }
+            }
+            Err(err) => handle_error(command, err),
         }
     }
+}
+
+fn echo(input: &Vec<String>) -> Result<String, String> {
+    if let Err(err) = check_num_args(input, 2) {
+        return Err(err);
+    }
+    Ok(input[1].clone())
+}
+
+fn exit(input: &Vec<String>) -> Result<String, String> {
+    if input.len() > 1 {
+        return Err("too many arguments".to_string());
+    }
+    process::exit(0);
 }
 
 fn handle_error(command: &str, err: String) {
     eprintln!("{}: {}", command, err.to_lowercase());
 }
 
-fn pwd(input: &Vec<String>) -> Result<String, String> {
-    if input.len() > 1 {
+fn check_num_args(input: &Vec<String>, expected: usize) -> Result<String, String> {
+    if input.len() > expected {
         return Err("too many arguments".to_string());
+    } else if input.len() < expected {
+        return Err("missing argument".to_string());
+    }
+    Ok(String::new())
+}
+
+fn pwd(input: &Vec<String>) -> Result<String, String> {
+    if let Err(err) = check_num_args(input, 1) {
+        return Err(err);
     }
     let cwd = match get_current_dir() {
         Ok(cwd) => cwd,
@@ -46,15 +88,33 @@ fn split(input: &str) -> Vec<String> {
     input.split_whitespace().map(|s| s.to_string()).collect()
 }
 
-fn get_input() -> io::Result<String> {
-    let cwd = get_current_dir().unwrap();
-    print!("{} $ ", cwd);
-    io::stdout().flush()?; // Ensure the prompt is printed before waiting for input. In some cases, the prompt may not show immediately.
+fn prompt() -> io::Result<String> {
+    let cwd = get_current_dir()?;
+    let prompt = format!("{} $ ", cwd);
+    Ok(prompt)
+}
 
+fn get_input() -> io::Result<String> {
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
 
     Ok(input.trim().to_string())
+}
+
+fn cd(input: &Vec<String>) -> Result<String, String> {
+    if let Err(err) = check_num_args(input, 2) {
+        return Err(err);
+    }
+
+    let path = match input.get(1) {
+        Some(path) => path,
+        None => return Err("missing argument".to_string()),
+    };
+
+    match env::set_current_dir(path) {
+        Ok(_) => Ok(String::new()),
+        Err(e) => Err(format!("{}: {}", path, e)),
+    }
 }
 
 #[cfg(test)]
@@ -63,6 +123,7 @@ mod tests {
 
     use super::*;
 
+    #[test]
     fn test_pwd_success() {
         let input = "pwd";
         let expected = "shell";
