@@ -6,10 +6,27 @@ use std::{
 
 struct TextStyle;
 
+impl TextStyle {
+    fn new() -> Self {
+        print!("\x1b[1m"); // Be bold
+
+        // // This works, but I haven't found a way to undo it
+        // print!("\x1b[7 q"); // Use a blinking block cursor
+
+        TextStyle
+    }
+}
+
 impl Drop for TextStyle {
     fn drop(&mut self) {
         // Reset formatting to normal when the item is dropped
-        print!("\x1b[0m");
+        print!("\x1b[0m"); // Undo text formatting; in particular, bold
+
+        // // None of the following work
+        // print!("\x1b[0 q"); // Reset to default
+        // print!("\x1b[2 q"); // Explicitly steady block
+        // print!("\x1b[1 q"); // Another way to request default
+        // print!("\x1b[?12l"); // Original cursor blink disable
     }
 }
 
@@ -18,8 +35,7 @@ fn red_println(text: &str) {
 }
 
 fn main() {
-    print!("\x1b[1m");
-    let _bold_text = TextStyle;
+    let _bold_text = TextStyle::new();
 
     loop {
         let prompt = prompt().unwrap_or_else(|err| {
@@ -33,8 +49,7 @@ fn main() {
             Ok(input) if input.is_empty() => continue, // Ignore empty input
             Ok(input) => input,
             Err(_) => {
-                println!("\nExiting 0-shell.");
-                break;
+                process::exit(0);
             }
         };
 
@@ -52,7 +67,7 @@ fn main() {
             "mkdir" => mkdir(&input),
             "pwd" => pwd(&input),
             _ => {
-                handle_error(command, "command not found".to_string());
+                red_println(&format!("0-shell: command not found: {}", command));
                 continue;
             }
         };
@@ -131,7 +146,7 @@ fn split(input: &str) -> Vec<String> {
 
 fn prompt() -> io::Result<String> {
     let cwd = get_current_dir()?;
-    let prompt = format!("{} $ ", cwd);
+    let prompt = format!("{} ▶ ", cwd);
     Ok(prompt)
 }
 
