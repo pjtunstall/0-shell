@@ -1,6 +1,6 @@
 use std::{
     env, fs,
-    io::{self, Write},
+    io::{self, BufRead, Write},
     process,
 };
 
@@ -28,7 +28,16 @@ fn main() {
         print!("{}", &prompt);
         io::stdout().flush().expect("Failed to flush stdout"); // When you use functions like print!, println!, or other write operations to stdout, the output is typically buffered. This means that the data doesn't immediately go to the terminal or file but is stored temporarily in memory until it's flushed (or until the buffer is full). For example, if you use println!, it automatically appends a newline, which generally flushes the output, but in some cases (such as with print!), you need to explicitly flush the output to ensure it’s immediately written to the terminal.
 
-        let input = get_input().unwrap();
+        // Handle Ctrl + D (EOF) and other input errors
+        let input = match get_input() {
+            Ok(input) if input.is_empty() => continue, // Ignore empty input
+            Ok(input) => input,
+            Err(_) => {
+                println!("\nExiting 0-shell.");
+                break;
+            }
+        };
+
         let input = split(&input);
         if input.is_empty() {
             continue;
@@ -128,7 +137,12 @@ fn prompt() -> io::Result<String> {
 
 fn get_input() -> io::Result<String> {
     let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
+    let bytes = io::stdin().lock().read_line(&mut input)?;
+
+    if bytes == 0 {
+        // EOF (Ctrl + D)
+        return Err(io::Error::new(io::ErrorKind::Other, "EOF reached"));
+    }
 
     Ok(input.trim().to_string())
 }
