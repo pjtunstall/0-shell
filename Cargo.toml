@@ -1,7 +1,11 @@
 [package]
-name = "shell"
+name = "zero-shell"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+name = "0-shell"
+path = "src/main.rs"
 
 [dependencies]
 tempfile = "3.16.0"
