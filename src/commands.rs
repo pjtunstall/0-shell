@@ -1,5 +1,6 @@
 pub mod cd;
 pub mod echo;
 pub mod exit;
+pub mod ls;
 pub mod mkdir;
 pub mod pwd;

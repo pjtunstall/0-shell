@@ -9,3 +9,4 @@ path = "src/main.rs"
 
 [dependencies]
 tempfile = "3.16.0"
+terminal_size = "0.4.1"

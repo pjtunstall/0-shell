@@ -1,7 +1,7 @@
 mod commands;
 mod helpers;
 
-use commands::{cd::cd, echo::echo, exit::exit, mkdir::mkdir, pwd::pwd};
+use commands::{cd::cd, echo::echo, exit::exit, ls::ls, mkdir::mkdir, pwd::pwd};
 
 use std::{
     io::{self, BufRead, Write},
@@ -61,6 +61,7 @@ fn main() {
             "exit" => exit(&input),
             "mkdir" => mkdir(&input),
             "pwd" => pwd(&input),
+            "ls" => ls(&input),
             _ => {
                 red_println(&format!("0-shell: command not found: {}", command));
                 continue;
