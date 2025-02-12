@@ -1,5 +1,9 @@
+mod commands;
+mod helpers;
+
+use commands::{cd::cd, echo::echo, exit::exit, mkdir::mkdir, pwd::pwd};
+
 use std::{
-    env, fs,
     io::{self, BufRead, Write},
     process,
 };
@@ -10,23 +14,14 @@ impl TextStyle {
     fn new() -> Self {
         print!("\x1b[1m"); // Be bold
 
-        // // This works, but I haven't found a way to undo it
-        // print!("\x1b[7 q"); // Use a blinking block cursor
-
         TextStyle
     }
 }
 
 impl Drop for TextStyle {
     fn drop(&mut self) {
-        // Reset formatting to normal when the item is dropped
-        print!("\x1b[0m"); // Undo text formatting; in particular, bold
-
-        // // None of the following work
-        // print!("\x1b[0 q"); // Reset to default
-        // print!("\x1b[2 q"); // Explicitly steady block
-        // print!("\x1b[1 q"); // Another way to request default
-        // print!("\x1b[?12l"); // Original cursor blink disable
+        // Reset formatting to normal when the item is dropped,
+        print!("\x1b[0m"); // i.e. when the program ends
     }
 }
 
@@ -53,7 +48,7 @@ fn main() {
             }
         };
 
-        let input = split(&input);
+        let input = helpers::split(&input);
         if input.is_empty() {
             continue;
         }
@@ -83,69 +78,12 @@ fn main() {
     }
 }
 
-fn echo(input: &Vec<String>) -> Result<String, String> {
-    if let Err(err) = check_num_args(input, 2) {
-        return Err(err);
-    }
-    Ok(input[1].clone())
-}
-
-fn exit(input: &Vec<String>) -> Result<String, String> {
-    if input.len() > 1 {
-        return Err("too many arguments".to_string());
-    }
-    process::exit(0);
-}
-
 fn handle_error(command: &str, err: String) {
     red_println(&format!("{}: {}", command, err.to_lowercase()));
 }
 
-fn check_num_args(input: &Vec<String>, expected: usize) -> Result<String, String> {
-    if input.len() > expected {
-        return Err("too many arguments".to_string());
-    } else if input.len() < expected {
-        return Err("missing argument".to_string());
-    }
-    Ok(String::new())
-}
-
-fn pwd(input: &Vec<String>) -> Result<String, String> {
-    if let Err(err) = check_num_args(input, 1) {
-        return Err(err);
-    }
-    let cwd = match get_current_dir() {
-        Ok(cwd) => cwd,
-        Err(err) => return Err(format!("getcwd: {}", err)),
-    };
-    let ok = format!("{}", cwd);
-    Ok(ok)
-}
-
-fn get_current_dir() -> io::Result<String> {
-    let cwd = env::current_dir()?;
-    let cwd = format!("{}", cwd.display());
-    Ok(cwd)
-}
-
-fn split(input: &str) -> Vec<String> {
-    input
-        .split('"')
-        .enumerate()
-        .flat_map(|(i, part)| {
-            if i % 2 == 0 {
-                part.split_whitespace()
-                    .map(String::from)
-                    .collect::<Vec<_>>()
-            } else {
-                vec![part.to_string().replace(r"\r\n", "\n").replace(r"\n", "\n")]
-            }
-        })
-        .collect()
-}
-
 fn prompt() -> io::Result<String> {
-    let cwd = get_current_dir()?;
+    let cwd = helpers::get_current_dir()?;
     let prompt = format!("{} ▶ ", cwd);
     Ok(prompt)
 }
@@ -160,55 +98,4 @@ fn get_input() -> io::Result<String> {
     }
 
     Ok(input.trim().to_string())
-}
-
-fn cd(input: &Vec<String>) -> Result<String, String> {
-    if let Err(err) = check_num_args(input, 2) {
-        return Err(err);
-    }
-
-    let path = match input.get(1) {
-        Some(path) => path,
-        None => return Err("missing argument".to_string()),
-    };
-
-    match env::set_current_dir(path) {
-        Ok(_) => Ok(String::new()),
-        Err(e) => Err(format!("{}: {}", path, e)),
-    }
-}
-
-fn mkdir(input: &Vec<String>) -> Result<String, String> {
-    if let Err(err) = check_num_args(input, 2) {
-        return Err(err);
-    }
-
-    let path = input.get(1).ok_or_else(|| "missing argument".to_string())?;
-
-    fs::create_dir(path).map_err(|err| err.to_string())?;
-
-    Ok(String::new())
-}
-
-#[cfg(test)]
-mod tests {
-    use std::path::MAIN_SEPARATOR;
-
-    use super::*;
-
-    #[test]
-    fn test_pwd_success() {
-        let input = "pwd";
-        let expected = "shell";
-        let result = pwd(&split(input)).unwrap();
-        let last_segment = result.split(MAIN_SEPARATOR).last().unwrap();
-        assert_eq!(last_segment, expected);
-    }
-
-    #[test]
-    fn test_pwd_too_many_args() {
-        let input = "pwd foo";
-        let expected = Err("too many arguments".to_string());
-        assert_eq!(pwd(&split(input)), expected);
-    }
 }

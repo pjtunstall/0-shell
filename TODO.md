@@ -1,0 +1,1 @@
+- Replace `check_num_args` with something that deals with optional number of arguments.
