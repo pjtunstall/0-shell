@@ -3,7 +3,7 @@ use terminal_size::{terminal_size, Width};
 
 pub fn ls(_input: &Vec<String>) -> Result<String, String> {
     let mut entries: Vec<String> = fs::read_dir(".")
-        .map_err(|_| "ls: cannot open directory '.': Permission denied".to_string())?
+        .map_err(|_| "ls: cannot open directory '.': permission denied".to_string())?
         .filter_map(|entry| {
             entry
                 .ok()
@@ -31,10 +31,12 @@ pub fn ls(_input: &Vec<String>) -> Result<String, String> {
             if let Some(entry) = entries.get(row + col * num_rows) {
                 output.push_str(&format!("{:<width$}", entry, width = col_width));
             } else {
-                output.push_str(&" ".repeat(col_width)); // Fill empty spots with spaces
+                output.push_str(&" ".repeat(col_width));
             }
         }
-        output.push('\n');
+        if row < num_rows - 1 {
+            output.push('\n');
+        }
     }
 
     Ok(output)
