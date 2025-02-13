@@ -34,9 +34,7 @@ pub fn ls(_input: &Vec<String>) -> Result<String, String> {
                 output.push_str(&" ".repeat(col_width));
             }
         }
-        if row < num_rows - 1 {
-            output.push('\n');
-        }
+        output.push('\n');
     }
 
     Ok(output)

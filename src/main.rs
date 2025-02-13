@@ -71,7 +71,7 @@ fn main() {
         match result {
             Ok(ok) => {
                 if !ok.is_empty() {
-                    println!("{}", &ok);
+                    print!("{}", &ok);
                 }
             }
             Err(err) => handle_error(command, err),

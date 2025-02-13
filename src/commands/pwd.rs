@@ -8,7 +8,7 @@ pub fn pwd(input: &Vec<String>) -> Result<String, String> {
         Ok(cwd) => cwd,
         Err(err) => return Err(format!("getcwd: {}", err)),
     };
-    let ok = format!("{}", cwd);
+    let ok = format!("{}\n", cwd);
     Ok(ok)
 }
 
