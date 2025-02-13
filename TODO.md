@@ -29,3 +29,6 @@
 ## Scope
 
 - Define the scope of the project. There are two main options: syscalls and basic. Do the basic one first: as practice at Rust + structuring + planning, and to get the course credits. That will define the interface and input handling, which would be necessary for the syscall version too. The syscall option can be added later or not at all. The syscall option would be more interesting and educational and impressive, but the end result in either case would be simply to recreate some of the functionality of already existing, reliable programs; they'd both just be learning exercises, with nothing unique to show for it at the end, unless you can think of a gimmick?
+- Consider the two optional extra projects, `0-shell-job-control` and `0-shell-scripting`.
+- There is a hint that the project should teach the difference between UNIX and POSIX.
+- 4 weeks are assigned to the main project and 2 weeks for each of the extras. All three projects are for 4 students.
