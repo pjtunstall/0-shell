@@ -1,9 +1,8 @@
 mod commands;
 mod helpers;
 
-use commands::{cd::cd, echo::echo, exit::exit, ls::ls, mkdir::mkdir, pwd::pwd};
-
 use std::{
+    collections::VecDeque,
     io::{self, Write},
     process,
 };
@@ -11,6 +10,8 @@ use std::{
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
+
+use commands::{cd::cd, echo::echo, exit::exit, ls::ls, mkdir::mkdir, pwd::pwd};
 
 struct TextStyle;
 
@@ -35,28 +36,20 @@ fn red_println(text: &str) {
 
 fn main() {
     let _bold_text = TextStyle::new();
+    let mut history = VecDeque::new();
 
     loop {
-        // let prompt = prompt().unwrap_or_else(|err| {
-        //     panic!("Failed to generate prompt: {}", err);
-        // });
-        // print!("{}", &prompt);
-        // io::stdout().flush().expect("Failed to flush stdout"); // When you use functions like print!, println!, or other write operations to stdout, the output is typically buffered. This means that the data doesn't immediately go to the terminal or file but is stored temporarily in memory until it's flushed (or until the buffer is full). For example, if you use println!, it automatically appends a newline, which generally flushes the output, but in some cases (such as with print!), you need to explicitly flush the output to ensure it’s immediately written to the terminal.
-
-        // Handle Ctrl + D (EOF) and other input errors
-        let input = match get_input() {
-            Ok(input) if input.is_empty() => continue, // Ignore empty input
+        let input = match get_input(&mut history) {
+            Ok(input) if input.is_empty() => continue,
             Ok(input) => input,
             Err(_) => {
                 process::exit(0);
             }
         };
 
-        let input = helpers::split(&input);
-        if input.is_empty() {
-            continue;
-        }
+        history.push_back(input.clone());
 
+        let input = helpers::split(&input);
         let command = input[0].as_str();
 
         let result = match command {
@@ -87,31 +80,13 @@ fn handle_error(command: &str, err: String) {
     red_println(&format!("{}: {}", command, err.to_lowercase()));
 }
 
-// fn prompt() -> io::Result<String> {
-//     let cwd = helpers::get_current_dir()?;
-//     let prompt = format!("{} ▶ ", cwd);
-//     Ok(prompt)
-// }
-
-// fn get_input() -> io::Result<String> {
-//     let mut input = String::new();
-//     let bytes = io::stdin().lock().read_line(&mut input)?;
-
-//     if bytes == 0 {
-//         // EOF (Ctrl + D)
-//         return Err(io::Error::new(io::ErrorKind::Other, "EOF reached"));
-//     }
-
-//     Ok(input.trim().to_string())
-// }
-
-fn get_input() -> io::Result<String> {
+fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
     let stdin = io::stdin();
     let mut stdout = io::stdout().into_raw_mode()?;
     let mut input = String::new();
     let mut cursor = 0;
 
-    let prompt = prompt()?; // Get working directory prompt
+    let prompt = prompt()?;
     write!(stdout, "\r{}{}", prompt, termion::cursor::Show).unwrap();
     stdout.flush().unwrap();
 
@@ -140,6 +115,27 @@ fn get_input() -> io::Result<String> {
                     cursor += 1;
                 }
             }
+            Key::Up => {
+                if !history.is_empty() {
+                    history.rotate_right(1);
+                    if let Some(item) = history.front() {
+                        input = item.clone();
+                        cursor = input.len();
+                    }
+                }
+            }
+            Key::Down => {
+                if !history.is_empty() {
+                    history.rotate_left(1);
+                    if let Some(item) = history.front() {
+                        input = item.clone();
+                        cursor = input.len();
+                    } else {
+                        input.clear();
+                        cursor = 0;
+                    }
+                }
+            }
             Key::Ctrl('c') | Key::Ctrl('d') => {
                 // Eventually change 'c' to handle internal processes without exiting 0-shell
                 write!(stdout, "\r\n").unwrap();
@@ -149,11 +145,9 @@ fn get_input() -> io::Result<String> {
             _ => {}
         }
 
-        // Clear input area
         write!(stdout, "\r{}{}", prompt, termion::clear::AfterCursor).unwrap();
         write!(stdout, "{}", input).unwrap();
 
-        // Move cursor **one space ahead** of the last typed character
         let move_left_by = input.len().saturating_sub(cursor);
         if move_left_by > 0 {
             write!(stdout, "{}", termion::cursor::Left(move_left_by as u16)).unwrap();

@@ -1,9 +1,3 @@
-// Todo:
-// - Check error handling matches echo.
-// - Check behavior in cases of many arguments.
-// - Debug dynamic commands https://runcloud.io/blog/echo-command-in-linux
-// - Write tests.
-
 use std::env;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
