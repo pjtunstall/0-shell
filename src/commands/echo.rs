@@ -37,14 +37,14 @@ pub fn echo(input: &Vec<String>) -> Result<String, String> {
 
         if arg.starts_with('"') && arg.ends_with('"') {
             let inside = &arg[1..arg.len() - 1];
-            output = process_backslashes(inside, 1);
+            output.push_str(&process_backslashes(inside, 1));
         } else {
-            output = process_backslashes(arg, 0);
+            output.push_str(&process_backslashes(arg, 0));
         }
-
-        let json_output = format!("\"{}\"", output);
-        output = from_str::<String>(&json_output).map_err(|e| e.to_string())?;
     }
+
+    let json_output = format!("\"{}\"", output);
+    output = from_str::<String>(&json_output).map_err(|e| e.to_string())?;
 
     parse_environment_variables(&mut output);
     output.push('\n');
@@ -64,12 +64,10 @@ fn process_backslashes(s: &str, plus: usize) -> String {
 
     while let Some(c) = chars.next() {
         if c == '\\' {
-            // Count consecutive backslashes
             backslash_count += 1;
         } else {
             if backslash_count > 0 {
-                // Apply the ceil(num_slashes / 2) rule
-                let keep_backslashes = (backslash_count + plus) / 2; // This is ceil(num_slashes / 2)
+                let keep_backslashes = (backslash_count + plus) / 2;
                 result.push_str(&"\\".repeat(keep_backslashes));
                 backslash_count = 0;
             }
@@ -79,7 +77,7 @@ fn process_backslashes(s: &str, plus: usize) -> String {
 
     // In case the string ends with backslashes
     if backslash_count > 0 {
-        let keep_backslashes = (backslash_count + 1) / 2; // This is ceil(num_slashes / 2)
+        let keep_backslashes = (backslash_count + 1) / 2;
         result.push_str(&"\\".repeat(keep_backslashes));
     }
 

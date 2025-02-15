@@ -21,7 +21,7 @@ mod tests {
     #[test]
     fn test_pwd_success() {
         let input = "pwd";
-        let expected = "0-shell";
+        let expected = "0-shell\n";
         let result = pwd(&crate::helpers::split(input)).unwrap();
         let last_segment = result.split(MAIN_SEPARATOR).last().unwrap();
         assert_eq!(last_segment, expected);

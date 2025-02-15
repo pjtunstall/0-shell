@@ -7,7 +7,7 @@ pub fn mkdir(input: &Vec<String>) -> Result<String, String> {
 
     let path = input.get(1).ok_or_else(|| "missing argument".to_string())?;
 
-    fs::create_dir(path).map_err(|err| err.to_string())?;
+    fs::create_dir(path).map_err(|err| err.to_string().to_lowercase())?;
 
     Ok(String::new())
 }
@@ -58,8 +58,9 @@ mod tests {
         let invalid_path = "/invalid/path/to/dir";
         let input = vec!["mkdir".to_string(), invalid_path.to_string()];
         let result = mkdir(&input);
+        let expected = "no such file or directory (os error 2)".to_string();
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "no such file or directory");
+        assert_eq!(result.unwrap_err(), expected);
     }
 }
