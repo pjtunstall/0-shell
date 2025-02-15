@@ -1,5 +1,6 @@
 # Todo
 
+[Fix](#fix)
 [General](#general)
 [Strategy](#strategy)
 [Command line](#command-line)
@@ -7,6 +8,10 @@
 [Documentation](#documentation)
 [Extras](#extras)
 [Scope](#scope)
+
+## Fix
+
+- `echo blah blah "blah blah"` should not ignore stuff before the quotes.
 
 ## General
 
