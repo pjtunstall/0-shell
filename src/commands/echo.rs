@@ -1,17 +1,34 @@
 // Todo:
-// - Write file and append to file.
+// - Check error handling matches echo.
+// - Check behavior in cases of many arguments.
 // - Debug dynamic commands https://runcloud.io/blog/echo-command-in-linux
 // - Write tests.
 
 use std::env;
+use std::fs::{File, OpenOptions};
+use std::io::{BufWriter, Write};
 
 pub fn echo(input: &Vec<String>) -> Result<String, String> {
     if input.len() < 2 {
         return Ok("\n".to_string());
     }
 
-    let mut output = input[1].clone();
+    let mut input: Vec<String> = input.clone();
 
+    let mut append = false;
+    let mut filename = String::new();
+
+    if let Some(pos) = input.iter().position(|arg| arg == ">" || arg == ">>") {
+        if input[pos] == ">>" {
+            append = true;
+        }
+        if pos + 1 < input.len() {
+            filename = input[pos + 1].clone();
+        }
+        input.drain(pos..);
+    }
+
+    let mut output = input[1..].join(" ");
     output = parse_special_characters(&output);
     parse_environment_variables(&mut output);
 
@@ -23,7 +40,27 @@ pub fn echo(input: &Vec<String>) -> Result<String, String> {
     }
 
     output.push('\n');
-    Ok(output)
+
+    if filename.is_empty() {
+        return Ok(output);
+    }
+
+    let file = if append {
+        OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(&filename)
+            .map_err(|e| e.to_string())?
+    } else {
+        File::create(&filename).map_err(|e| e.to_string())?
+    };
+
+    let mut writer = BufWriter::new(file);
+    writer
+        .write_all(output.as_bytes())
+        .map_err(|e| e.to_string())?;
+
+    Ok(String::new())
 }
 
 fn parse_special_characters(output: &str) -> String {
