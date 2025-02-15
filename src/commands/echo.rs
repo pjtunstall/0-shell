@@ -1,3 +1,8 @@
+// Todo:
+// - Write file and append to file.
+// - Debug dynamic commands https://runcloud.io/blog/echo-command-in-linux
+// - Write tests.
+
 use std::env;
 
 pub fn echo(input: &Vec<String>) -> Result<String, String> {
