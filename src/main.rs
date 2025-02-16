@@ -60,6 +60,11 @@ fn main() {
             }
         }
 
+        if splitput.is_empty() {
+            red_println(&format!("0-shell: parse error near `\\n'"));
+            continue;
+        }
+
         let command = splitput[0].as_str();
 
         let result = match command {

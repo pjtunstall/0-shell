@@ -11,6 +11,7 @@
 
 ## Fix
 
+- Handle single quotes in the same way as double quotes.
 - `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: too many arguments. What's the rule?
 
 ## Strategy
@@ -68,3 +69,7 @@
 - 4 weeks are assigned to the main project and 2 weeks for each of the extras. All three projects are for 4 students.
 - There is a hint that the project should teach the difference between Unix and Posix. Consider whether it should adhere to Posix.
 - "You must program a mini Unix shell, try to focus on something simple like BusyBox." What, if anything, is special about BusyBox that should warrent this mention?
+
+## Explore
+
+- Look into peek and peekable.

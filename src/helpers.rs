@@ -32,7 +32,7 @@ pub fn split(input: &str) -> Result<Vec<String>, String> {
 
         Ok(result)
     } else {
-        Ok(split_part(input))
+        split_part(input)
     }
 }
 
@@ -73,7 +73,7 @@ fn split_at_first_divider(input: &str) -> Option<(String, String, String)> {
     None
 }
 
-fn split_part(input: &str) -> Vec<String> {
+fn split_part(input: &str) -> Result<Vec<String>, String> {
     let mut result = Vec::new();
     let mut current_word = String::new();
     let mut inside_quotes = false;
@@ -92,8 +92,7 @@ fn split_part(input: &str) -> Vec<String> {
             }
         } else {
             if c == '>' {
-                println!("parse error near `\\n'");
-                return Vec::new();
+                return Err("parse error near `\\n'".to_string());
             }
             if c == '"' {
                 // Opening quote, start capturing the word inside quotes
@@ -121,5 +120,5 @@ fn split_part(input: &str) -> Vec<String> {
         result.push(current_word);
     }
 
-    result
+    Ok(result)
 }
