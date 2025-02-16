@@ -13,38 +13,38 @@
 
 ...
 
-## Echo
-
-- Check error handling matches echo.
-- Look up what happens if there are multiple file names.
-- Debug dynamic commands https://runcloud.io/blog/echo-command-in-linux
-
-## General
-
-- Think of the order you can create the commands in so that you can use them provisionally to test each other.
-- Note parallels between commands (the better to structure code and tests, order creation of tests, reuse code and tests, memorize).
-- When you have a new plan, pick a simple one to explore fully, e.g. `echo`.
-- Check consistency of error messages, e.g. whether "os error" numerical codes are included.
-
-## Tests
-
-- Add tests for echo redirection.
-- Test each command module independently, prioritizing the public functions.
-- Cross test commands in integration tests.
-
 ## Strategy
 
 - v1, using the Rust standard library.
   - DONE: Start work all in one file.
   - DONE: Prototype one or two of the simpler basic commands to see what issues will need to be solved and note ideas for how best to do the project.
   - DONE: Restructure into modules.
-  - Prototype one of the simpler commands with options and variable number and type of arguments (files versus folders).
+  - DONE: Prototype one of the simpler commands with options and variable number and type of arguments (files versus folders). (echo)
+  - Try a simple example of option handling.
+  - Try a simple example testing against actual shell command.
   - Look up Posix specifications.
-  - Finish all commands default option.
-  - Unit tests for each command.
+  - Finish all commands default option, trying to lead with tests.
   - Required option flags.
   - Test all options.
+  - Unit tests for each command.
   - Integration tests.
+
+## Echo
+
+- Look up what happens if there are multiple file names.
+- Debug dynamic commands https://runcloud.io/blog/echo-command-in-linux
+
+## General
+
+- Note parallels between commands (the better to structure code and tests, order creation of tests, reuse code and tests, memorize).
+- Check consistency of error messages, e.g. whether "os error" numerical codes are included. Maybe start to explore this when I've got tests in place to compare my commands directly against the standard shell commands.
+
+## Tests
+
+- Test each command module independently, prioritizing the public functions.
+- I was forgetting the obvious: besides the pure Rust tests, try testing against actual shell commands using `std::process::Command;`. Try this on the next command I work on.
+- Cross test commands in integration tests.
+- Think of the order you can create the commands in so that you can use them provisionally to test each other. That goes in integration tests. Not such a priority now that I have a clearer unit-testing strategy.
 
 ## Command line
 

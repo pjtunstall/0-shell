@@ -1,6 +1,8 @@
-use std::env;
-use std::fs::{File, OpenOptions};
-use std::io::{BufWriter, Write};
+use std::{
+    env,
+    fs::{File, OpenOptions},
+    io::{BufWriter, Write},
+};
 
 use serde_json::de::from_str;
 
