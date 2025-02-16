@@ -7,26 +7,30 @@
 
 ## What is this?
 
-A simple shell written in Rust. `0-shell` is one of the 01-Edu projects. According to [the brief](https://github.com/01-edu/public/tree/master/subjects/0-shell), it should implement at least the following ten commands:
+A simple shell written in Rust. `0-shell` is one of the 01-Edu projects. According to [the brief](https://github.com/01-edu/public/tree/master/subjects/0-shell), it should implement at least the following eleven commands, five built-in and six external--see below regarding this distinction:
+
+Built-in:
 
 - echo
+- exit
 - cd
-- ls, including the flags -l, -a and -F
 - pwd
+- `Ctrl + D`
+
+External:
+
+- ls, including the flags -l, -a and -F
 - cat
 - cp
 - rm, including the flag -r
 - mv
 - mkdir
-- exit
 
-It should handle program interrupt with `Ctrl + D`. We're also told that these commands "need to be implemented from scratch, without calling any external binaries."
-
-Somewhat unclear to me is the following paragraph:
+We're told that these commands "need to be implemented from scratch, without calling any external binaries." Related, but somewhat unclear to me is the following paragraph:
 
 > Through the 0-shell you will get to the core of the Unix system and explore an important part of this system’s API which is the process creation and synchronization. Executing a command inside a shell implies creating a new process, which execution and final state will be monitored by its parents processes. This set of functions will be the key to success for your project.
 
-It's my understanding that a normal shell would itself handle `cd`, `exit`, `pwd`, `echo`, and `Ctr + D` (built-in commands), but call external binaries for `ls`, `cat`, `cp`, `rm`, `mv` (external commands). I'm guessing this paragraph is a relic of the task as it was originally conceived, before commit 9e308f2: "fix(0shell): remove mandatory use of low-level system calls and make it bonus". An alternative possibility is that the authors intended to make a distinction between internal and external binaries, and have us spawn a new process for any of the commands that I've labeled external; but this seems less likely.
+It's my understanding that a normal shell would itself handle `cd`, `exit`, `pwd`, `echo`, and `Ctr + D` (built-in commands), but call external binaries for `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir` (external commands). I'm guessing this paragraph is a relic of the task as it was originally conceived, before commit 9e308f2: "fix(0shell): remove mandatory use of low-level system calls and make it bonus". An alternative possibility is that the authors intended to make a distinction between internal and external binaries, and have us spawn a new process for any of the commands that I've labeled external; but this seems less likely.
 
 ## Regarding the name
 
