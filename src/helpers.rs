@@ -37,33 +37,32 @@ pub fn split(input: &str) -> Result<Vec<String>, String> {
 }
 
 fn split_at_first_divider(input: &str) -> Option<(String, String, String)> {
-    let mut in_quotes = false;
-    let mut quote_char = '\0';
-
+    let mut quote_char: Option<char> = None;
     let mut chars = input.char_indices().peekable();
+
     while let Some((i, c)) = chars.next() {
         match c {
             '"' | '\'' => {
-                if in_quotes && c == quote_char {
-                    in_quotes = false; // Closing quote
-                } else if !in_quotes {
-                    in_quotes = true;
-                    quote_char = c; // Track which quote type
+                if let Some(q) = quote_char {
+                    if q == c {
+                        quote_char = None; // Closing matching quote
+                    }
+                } else {
+                    quote_char = Some(c); // Opening new quote
                 }
             }
-            '>' if !in_quotes => {
-                // Check if it's ">>"
+            '>' if quote_char.is_none() => {
                 if let Some((_, '>')) = chars.peek() {
                     return Some((
                         input[..i].to_string(),
                         ">>".to_string(),
-                        input[i + 2..].to_string(),
+                        input.get(i + 2..).unwrap_or("").to_string(),
                     ));
                 } else {
                     return Some((
                         input[..i].to_string(),
                         ">".to_string(),
-                        input[i + 1..].to_string(),
+                        input.get(i + 1..).unwrap_or("").to_string(),
                     ));
                 }
             }
@@ -80,7 +79,7 @@ fn split_part(input: &str) -> Result<Vec<String>, String> {
 
     for c in input.chars() {
         if inside_quotes {
-            if c == '"' {
+            if c == '"' || c == '\'' {
                 // Closing quote, add the word to the result and reset
                 inside_quotes = false;
                 current_word.push(c); // Add the closing quote
@@ -94,7 +93,7 @@ fn split_part(input: &str) -> Result<Vec<String>, String> {
             if c == '>' {
                 return Err("parse error near `\\n'".to_string());
             }
-            if c == '"' {
+            if c == '"' || c == '\'' {
                 // Opening quote, start capturing the word inside quotes
                 if !current_word.is_empty() {
                     result.push(current_word);

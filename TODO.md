@@ -11,7 +11,6 @@
 
 ## Fix
 
-- Handle single quotes in the same way as double quotes.
 - `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: too many arguments. What's the rule?
 
 ## Strategy

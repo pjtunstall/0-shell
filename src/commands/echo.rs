@@ -29,7 +29,9 @@ pub fn echo(input: &Vec<String>) -> Result<String, String> {
             output.push(' ');
         }
 
-        if arg.starts_with('"') && arg.ends_with('"') {
+        if (arg.starts_with('"') && arg.ends_with('"'))
+            || (arg.starts_with('\'') && arg.ends_with('\''))
+        {
             let inside = &arg[1..arg.len() - 1];
             output.push_str(&process_backslashes(inside, 1));
         } else {
@@ -187,17 +189,32 @@ mod tests {
     }
 
     #[test]
-    fn test_redirection_in_quotes() {
+    fn test_redirection_in_double_quotes() {
         assert_eq!(
-            echo(&vec!["echo".to_string(), "\"a>b\"".to_string()]),
-            Ok("a>b\n".to_string()),
-            "Expected to leave `>' unchanged in quotes"
+            echo(&vec!["echo".to_string(), "\">\"".to_string()]),
+            Ok(">\n".to_string()),
+            "Expected to escape `>' in double quotes, and give no error when final"
         );
 
         assert_eq!(
-            echo(&vec!["echo".to_string(), "\"a>>b\"".to_string()]),
-            Ok("a>>b\n".to_string()),
-            "Expected to leave `>' unchanged in quotes"
+            echo(&vec!["echo".to_string(), "\">>\"".to_string()]),
+            Ok(">>\n".to_string()),
+            "Expected to leave `>>' unchanged in double quotes, and give no error when final"
+        );
+    }
+
+    #[test]
+    fn test_redirection_in_single_quotes() {
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "\'>\'".to_string()]),
+            Ok(">\n".to_string()),
+            "Expected to leave `>' unchanged in single quotes, and give no error when final"
+        );
+
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "\'>>\'".to_string()]),
+            Ok(">>\n".to_string()),
+            "Expected to leave `>>' unchanged in single quotes, and give no error when final"
         );
     }
 
