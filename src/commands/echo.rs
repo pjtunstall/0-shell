@@ -193,6 +193,12 @@ mod tests {
             Ok("a>b\n".to_string()),
             "Expected to leave `>' unchanged in quotes"
         );
+
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "\"a>>b\"".to_string()]),
+            Ok("a>>b\n".to_string()),
+            "Expected to leave `>' unchanged in quotes"
+        );
     }
 
     #[test]
