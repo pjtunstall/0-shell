@@ -9,6 +9,8 @@ pub fn echo(input: &Vec<String>) -> Result<String, String> {
         return Ok("\n".to_string());
     }
 
+    println!("{:?}", input);
+
     let mut input = input.clone();
 
     let mut append = false;
@@ -79,42 +81,15 @@ fn process_backslashes(s: &str, plus: usize) -> String {
 }
 
 fn parse_environment_variables(output: &mut String) {
-    *output = output.replace(
-        "$USER",
-        &env::var("USER").unwrap_or_else(|_| "unknown".to_string()),
-    );
-    *output = output.replace(
-        "$HOSTNAME",
-        &env::var("HOSTNAME").unwrap_or_else(|_| "unknown".to_string()),
-    );
-    *output = output.replace(
-        "$PID",
-        &env::var("PID").unwrap_or_else(|_| "unknown".to_string()),
-    );
-    *output = output.replace(
-        "$PATH",
-        &env::var("PATH").unwrap_or_else(|_| "unknown".to_string()),
-    );
-    *output = output.replace(
-        "$SHELL",
-        &env::var("SHELL").unwrap_or_else(|_| "unknown".to_string()),
-    );
-    *output = output.replace(
-        "$UMASK",
-        &env::var("UMASK").unwrap_or_else(|_| "unknown".to_string()),
-    );
-    *output = output.replace(
-        "$HOME",
-        &env::var("HOME").unwrap_or_else(|_| "unknown".to_string()),
-    );
-    *output = output.replace(
-        "$LANG",
-        &env::var("LANG").unwrap_or_else(|_| "unknown".to_string()),
-    );
-    *output = output.replace(
-        "$TERM",
-        &env::var("TERM").unwrap_or_else(|_| "unknown".to_string()),
-    );
+    *output = output.replace("$USER", &env::var("USER").unwrap_or_default());
+    *output = output.replace("$HOSTNAME", &env::var("HOSTNAME").unwrap_or_default());
+    *output = output.replace("$PID", &env::var("PID").unwrap_or_default());
+    *output = output.replace("$PATH", &env::var("PATH").unwrap_or_default());
+    *output = output.replace("$SHELL", &env::var("SHELL").unwrap_or_default());
+    *output = output.replace("$UMASK", &env::var("UMASK").unwrap_or_default());
+    *output = output.replace("$HOME", &env::var("HOME").unwrap_or_default());
+    *output = output.replace("$LANG", &env::var("LANG").unwrap_or_default());
+    *output = output.replace("$TERM", &env::var("TERM").unwrap_or_default());
 }
 
 fn handle_redirection(output: &str, filename: &str, append: bool) -> Result<String, String> {
@@ -141,10 +116,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_echo() {
+    fn test_basic_echo() {
         assert_eq!(
             echo(&vec!["echo".to_string(), "hello".to_string()]),
-            Ok("hello\n".to_string())
+            Ok("hello\n".to_string()),
+            "Expected to echo one word"
         );
         assert_eq!(
             echo(&vec![
@@ -152,7 +128,8 @@ mod tests {
                 "hello".to_string(),
                 "world".to_string()
             ]),
-            Ok("hello world\n".to_string())
+            Ok("hello world\n".to_string()),
+            "Expected to echo two words"
         );
         assert_eq!(
             echo(&vec![
@@ -161,7 +138,69 @@ mod tests {
                 "world".to_string(),
                 "hello".to_string()
             ]),
-            Ok("hello world hello\n".to_string())
+            Ok("hello world hello\n".to_string()),
+            "Expected to echo three words"
         );
+    }
+
+    #[test]
+    fn test_special_characters() {
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "a\\na".to_string()]),
+            Ok("ana\n".to_string()),
+            "Expected to convert `\\n` to `n`"
+        );
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "a\\\\na".to_string()]),
+            Ok("a\na\n".to_string()),
+            "Expected to convert `\\\\n` to `\\n`"
+        );
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "a\\\\\\na".to_string()]),
+            Ok("a\na\n".to_string()),
+            "Expected to convert `\\\\\\n` to `\\n`"
+        );
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "a\\\\\\\\na".to_string()]),
+            Ok("a\\na\n".to_string()),
+            "Expected to convert `\\\\\\\\n` to `\\\\n`"
+        );
+
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "\"a\\na\"".to_string()]),
+            Ok("a\na\n".to_string()),
+            "Expected to leave `\\n` unchanged in quotes"
+        );
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "\"a\\\\na\"".to_string()]),
+            Ok("a\na\n".to_string()),
+            "Expected to leave `\\\\n` unchanged in quotes"
+        );
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "\"a\\\\\\na\"".to_string()]),
+            Ok("a\\na\n".to_string()),
+            "Expected to convert `\\\\\\n` in quotes to `\\n`"
+        );
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "\"a\\\\\\\\na\"".to_string()]),
+            Ok("a\\na\n".to_string()),
+            "Expected to convert `\\\\\\\\n` in quotes to `\\n`"
+        );
+    }
+
+    #[test]
+    fn test_missing_env_var() {
+        let prev_user = env::var("USER").ok();
+        env::remove_var("USER");
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "$USER".to_string()]),
+            Ok("\n".to_string()),
+            "Expected empty substitution when USER is unset"
+        );
+        if let Some(value) = prev_user {
+            env::set_var("USER", value);
+        } else {
+            env::remove_var("USER");
+        }
     }
 }
