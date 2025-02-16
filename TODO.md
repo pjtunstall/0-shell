@@ -11,7 +11,7 @@
 
 ## Fix
 
-...
+- In parsing, split at `>` or `>>` and return error if there's more than one redirection operator or if there isn't a file to redirect to. Add tests for this. Then remove the check I'm currently doing for this in `echo` alone.
 
 ## Strategy
 
@@ -28,11 +28,6 @@
   - Test all options.
   - Unit tests for each command.
   - Integration tests.
-
-## Echo
-
-- Look up what happens if there are multiple file names.
-- Debug dynamic commands https://runcloud.io/blog/echo-command-in-linux
 
 ## General
 

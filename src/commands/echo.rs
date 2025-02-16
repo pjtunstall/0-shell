@@ -21,6 +21,8 @@ pub fn echo(input: &Vec<String>) -> Result<String, String> {
         }
         if pos + 1 < input.len() {
             filename = input[pos + 1].clone();
+        } else {
+            return Err("parse error near `\\n'".to_string());
         }
         input.drain(pos..);
     }
@@ -120,65 +122,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_redirection() {
-        let mut expected;
-        let mut output;
-        let mut contents;
-
-        let file1 = Uuid::new_v4().to_string();
-        expected = "hello\n";
-        output = echo(&vec![
-            "echo".to_string(),
-            "hello".to_string(),
-            ">".to_string(),
-            file1.clone(),
-        ]);
-        assert!(output.is_ok());
-        contents = fs::read_to_string(&file1).expect("Failed to read file");
-        assert_eq!(contents, expected, "Expected to write to non-existing file");
-
-        let file2 = Uuid::new_v4().to_string();
-        expected = "hello\n";
-        output = echo(&vec![
-            "echo".to_string(),
-            "hello".to_string(),
-            ">>".to_string(),
-            file2.clone(),
-        ]);
-        assert!(output.is_ok());
-        contents = fs::read_to_string(&file2).expect("Failed to read file");
-        assert_eq!(
-            contents, expected,
-            "Expected to append to non-existing file"
-        );
-
-        expected = "world\n";
-        output = echo(&vec![
-            "echo".to_string(),
-            "world".to_string(),
-            ">".to_string(),
-            file1.clone(),
-        ]);
-        assert!(output.is_ok());
-        contents = fs::read_to_string(&file1).expect("Failed to read file");
-        assert_eq!(contents, expected, "Expected to overwrite existing file");
-
-        expected = "hello\nworld\n";
-        output = echo(&vec![
-            "echo".to_string(),
-            "world".to_string(),
-            ">>".to_string(),
-            file2.clone(),
-        ]);
-        assert!(output.is_ok());
-        contents = fs::read_to_string(&file2).expect("Failed to read file");
-        assert_eq!(contents, expected, "Expected to append to existing file");
-
-        fs::remove_file(file1).unwrap();
-        fs::remove_file(file2).unwrap();
-    }
-
-    #[test]
     fn test_basic_echo() {
         assert_eq!(
             echo(&vec!["echo".to_string(), "hello".to_string()]),
@@ -211,43 +154,43 @@ mod tests {
         assert_eq!(
             echo(&vec!["echo".to_string(), "a\\na".to_string()]),
             Ok("ana\n".to_string()),
-            "Expected to convert `\\n` to `n`"
+            "Expected to convert `\\n' to `n'"
         );
         assert_eq!(
             echo(&vec!["echo".to_string(), "a\\\\na".to_string()]),
             Ok("a\na\n".to_string()),
-            "Expected to convert `\\\\n` to `\\n`"
+            "Expected to convert `\\\\n' to `\\n'"
         );
         assert_eq!(
             echo(&vec!["echo".to_string(), "a\\\\\\na".to_string()]),
             Ok("a\na\n".to_string()),
-            "Expected to convert `\\\\\\n` to `\\n`"
+            "Expected to convert `\\\\\\n' to `\\n'"
         );
         assert_eq!(
             echo(&vec!["echo".to_string(), "a\\\\\\\\na".to_string()]),
             Ok("a\\na\n".to_string()),
-            "Expected to convert `\\\\\\\\n` to `\\\\n`"
+            "Expected to convert `\\\\\\\\n' to `\\\\n'"
         );
 
         assert_eq!(
             echo(&vec!["echo".to_string(), "\"a\\na\"".to_string()]),
             Ok("a\na\n".to_string()),
-            "Expected to leave `\\n` unchanged in quotes"
+            "Expected to leave `\\n' unchanged in quotes"
         );
         assert_eq!(
             echo(&vec!["echo".to_string(), "\"a\\\\na\"".to_string()]),
             Ok("a\na\n".to_string()),
-            "Expected to leave `\\\\n` unchanged in quotes"
+            "Expected to leave `\\\\n' unchanged in quotes"
         );
         assert_eq!(
             echo(&vec!["echo".to_string(), "\"a\\\\\\na\"".to_string()]),
             Ok("a\\na\n".to_string()),
-            "Expected to convert `\\\\\\n` in quotes to `\\n`"
+            "Expected to convert `\\\\\\n' in quotes to `\\n'"
         );
         assert_eq!(
             echo(&vec!["echo".to_string(), "\"a\\\\\\\\na\"".to_string()]),
             Ok("a\\na\n".to_string()),
-            "Expected to convert `\\\\\\\\n` in quotes to `\\n`"
+            "Expected to convert `\\\\\\\\n' in quotes to `\\n'"
         );
     }
 
@@ -283,5 +226,107 @@ mod tests {
         } else {
             env::remove_var("LANG");
         }
+    }
+
+    #[test]
+    fn test_write_to_file() {
+        let file = Uuid::new_v4().to_string();
+        let mut expected = "hello\n";
+        let mut output = echo(&vec![
+            "echo".to_string(),
+            "hello".to_string(),
+            ">".to_string(),
+            file.clone(),
+        ]);
+        assert!(output.unwrap().is_empty());
+        let mut contents = fs::read_to_string(&file).expect("Failed to read file");
+        assert_eq!(contents, expected, "Expected to write to nonexistent file");
+
+        expected = "world\n";
+        output = echo(&vec![
+            "echo".to_string(),
+            "world".to_string(),
+            ">".to_string(),
+            file.clone(),
+        ]);
+        assert!(output.unwrap().is_empty());
+        contents = fs::read_to_string(&file).expect("Failed to read file");
+        assert_eq!(contents, expected, "Expected to overwrite existing file");
+
+        fs::remove_file(file).ok();
+    }
+
+    #[test]
+    fn test_append_to_file() {
+        let file = Uuid::new_v4().to_string();
+        let mut expected = "hello\n";
+        let mut output = echo(&vec![
+            "echo".to_string(),
+            "hello".to_string(),
+            ">>".to_string(),
+            file.clone(),
+        ]);
+        assert!(output.is_ok());
+        let mut contents = fs::read_to_string(&file).expect("Failed to read file");
+        assert_eq!(contents, expected, "Expected to append to nonexistent file");
+
+        expected = "hello\nworld\n";
+        output = echo(&vec![
+            "echo".to_string(),
+            "world".to_string(),
+            ">>".to_string(),
+            file.clone(),
+        ]);
+        assert!(output.unwrap().is_empty());
+        contents = fs::read_to_string(&file).expect("Failed to read file");
+        assert_eq!(contents, expected, "Expected to append to existing file");
+
+        fs::remove_file(file).ok();
+    }
+
+    #[test]
+    fn test_ignore_write_to_multiple_files() {
+        let file1 = Uuid::new_v4().to_string();
+        let file2 = Uuid::new_v4().to_string();
+        let expected = "hello\n";
+        let output = echo(&vec![
+            "echo".to_string(),
+            "hello".to_string(),
+            ">".to_string(),
+            file1.clone(),
+            file2.clone(),
+        ]);
+        assert!(output.unwrap().is_empty());
+        let contents = fs::read_to_string(&file1).expect("Failed to read file");
+        assert_eq!(
+            contents, expected,
+            "Expected to write to only one file when two names are given"
+        );
+
+        fs::remove_file(file1).ok();
+        fs::remove_file(file2).ok();
+    }
+
+    #[test]
+    fn test_ignore_append_to_multiple_files() {
+        let file1 = Uuid::new_v4().to_string();
+        let file2 = Uuid::new_v4().to_string();
+        let expected = "hello\n";
+        let output = echo(&vec![
+            "echo".to_string(),
+            "hello".to_string(),
+            ">>".to_string(),
+            file1.clone(),
+            file2.clone(),
+        ]);
+        assert!(output.unwrap().is_empty());
+        let contents = fs::read_to_string(&file1).expect("Failed to read file");
+        assert_eq!(
+            contents, expected,
+            "Expected to write to only one file when two names are given"
+        );
+
+        fs::remove_file(file1).ok();
+        fs::remove_file(file2).ok();
     }
 }
