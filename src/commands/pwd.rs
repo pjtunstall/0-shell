@@ -22,7 +22,7 @@ mod tests {
     fn test_pwd_success() {
         let input = "pwd";
         let expected = "0-shell\n";
-        let result = pwd(&crate::helpers::split(input)).unwrap();
+        let result = pwd(&crate::helpers::split(input).unwrap()).unwrap();
         let last_segment = result.split(MAIN_SEPARATOR).last().unwrap();
         assert_eq!(last_segment, expected);
     }
@@ -31,6 +31,6 @@ mod tests {
     fn test_pwd_too_many_args() {
         let input = "pwd foo";
         let expected = Err("too many arguments".to_string());
-        assert_eq!(pwd(&crate::helpers::split(input)), expected);
+        assert_eq!(pwd(&crate::helpers::split(input).unwrap()), expected);
     }
 }

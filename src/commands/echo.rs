@@ -1,8 +1,4 @@
-use std::{
-    env,
-    fs::{File, OpenOptions},
-    io::{BufWriter, Write},
-};
+use std::{env, fs::OpenOptions, io::Write};
 
 use serde_json::de::from_str;
 
@@ -22,7 +18,7 @@ pub fn echo(input: &Vec<String>) -> Result<String, String> {
         if pos + 1 < input.len() {
             filename = input[pos + 1].clone();
         } else {
-            return Err("parse error near `\\n'".to_string());
+            return Err("parse error near `\\n'".to_string()); // This should never happen now, thanks to `split`
         }
         input.drain(pos..);
     }
@@ -95,19 +91,15 @@ fn parse_environment_variables(output: &mut String) {
 }
 
 fn handle_redirection(output: &str, filename: &str, append: bool) -> Result<String, String> {
-    let file = if append {
-        OpenOptions::new()
-            .append(true)
-            .create(true)
-            .open(&filename)
-            .map_err(|e| e.to_string())?
-    } else {
-        File::create(&filename).map_err(|e| e.to_string())?
-    };
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(append)
+        .truncate(!append)
+        .open(filename)
+        .map_err(|e| e.to_string())?;
 
-    let mut writer = BufWriter::new(file);
-    writer
-        .write_all(output.as_bytes())
+    file.write_all(output.as_bytes())
         .map_err(|e| e.to_string())?;
 
     Ok(String::new())
@@ -191,6 +183,15 @@ mod tests {
             echo(&vec!["echo".to_string(), "\"a\\\\\\\\na\"".to_string()]),
             Ok("a\\na\n".to_string()),
             "Expected to convert `\\\\\\\\n' in quotes to `\\n'"
+        );
+    }
+
+    #[test]
+    fn test_redirection_in_quotes() {
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "\"a>b\"".to_string()]),
+            Ok("a>b\n".to_string()),
+            "Expected to leave `>' unchanged in quotes"
         );
     }
 

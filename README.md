@@ -4,10 +4,11 @@
 
 - [What is this?](#what-is-this?)
 - [Regarding the name](#regarding-the-name)
+- [Deviations](#deviations)
 
 ## What is this?
 
-A simple shell written in Rust. `0-shell` is one of the 01-Edu projects. According to [the brief](https://github.com/01-edu/public/tree/master/subjects/0-shell), it should implement at least the following eleven commands, five built-in and six external--see below regarding this distinction:
+A simple shell written in Rust. `0-shell` is one of the 01-Edu projects. According to [the brief](https://github.com/01-edu/public/tree/master/subjects/0-shell), it should implement at least the following ten commands, four built-in and six external--see below regarding this distinction:
 
 Built-in:
 
@@ -15,7 +16,6 @@ Built-in:
 - exit
 - cd
 - pwd
-- `Ctrl + D`
 
 External:
 
@@ -26,11 +26,11 @@ External:
 - mv
 - mkdir
 
-We're told that these commands "need to be implemented from scratch, without calling any external binaries." Related, but somewhat unclear to me is the following paragraph:
+Also, `Ctrl + D` to exit the shell. We're told that these commands "need to be implemented from scratch, without calling any external binaries." Related, but somewhat unclear to me is the following paragraph:
 
 > Through the 0-shell you will get to the core of the Unix system and explore an important part of this system’s API which is the process creation and synchronization. Executing a command inside a shell implies creating a new process, which execution and final state will be monitored by its parents processes. This set of functions will be the key to success for your project.
 
-It's my understanding that a normal shell would itself handle `cd`, `exit`, `pwd`, `echo`, and `Ctr + D` (built-in commands), but call external binaries for `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir` (external commands). I'm guessing this paragraph is a relic of the task as it was originally conceived, before commit 9e308f2: "fix(0shell): remove mandatory use of low-level system calls and make it bonus". An alternative possibility is that the authors intended to make a distinction between internal and external binaries, and have us spawn a new process for any of the commands that I've labeled external; but this seems less likely.
+A normal shell would itself handle `cd`, `exit`, `pwd`, `echo` (built-in commands), but call external binaries for `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir` (external commands). (To check this for a given shell, you can enter `type <command>`.) I'm guessing this paragraph is a relic of the task as it was originally conceived, before commit 9e308f2: "fix(0shell): remove mandatory use of low-level system calls and make it bonus". An alternative possibility is that the authors intended to make a distinction between internal and external binaries, and have us spawn a new process for any of the commands that I've labeled external.
 
 ## Regarding the name
 
@@ -38,4 +38,4 @@ Rust's build tool, Cargo, doesn't allow a package name to begin with a numeral, 
 
 ## Deviations
 
-The 01Edu instructions say, "This interpreter must display at least a simple `$`" and "The `$` will be shown again only once the command has been completely executed." etc. To make my shell more distinct, I chose to take `$` in a generic sense; my "simple `$`" looks like this: `▶`.
+The 01Edu instructions say, "This interpreter must display at least a simple `$`" and "The `$` will be shown again only once the command has been completely executed." etc. To make my shell more distinctive, I chose to take `$` in a generic sense; my "simple `$`" looks like this: `▶`.

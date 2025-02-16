@@ -49,16 +49,27 @@ fn main() {
 
         history.push_back(input.clone());
 
-        let input = helpers::split(&input);
-        let command = input[0].as_str();
+        let splitput: Vec<String>;
+        match helpers::split(&input) {
+            Ok(res) => {
+                splitput = res;
+            }
+            Err(err) => {
+                red_println(&format!("0-shell: {}", &err));
+                continue;
+            }
+        }
+
+        let command = splitput[0].as_str();
 
         let result = match command {
-            "cd" => cd(&input),
-            "echo" => echo(&input),
-            "exit" => exit(&input),
-            "mkdir" => mkdir(&input),
-            "pwd" => pwd(&input),
-            "ls" => ls(&input),
+            "cat" => commands::cat::cat(&splitput),
+            "cd" => cd(&splitput),
+            "echo" => echo(&splitput),
+            "exit" => exit(&splitput),
+            "mkdir" => mkdir(&splitput),
+            "pwd" => pwd(&splitput),
+            "ls" => ls(&splitput),
             _ => {
                 red_println(&format!("0-shell: command not found: {}", command));
                 continue;

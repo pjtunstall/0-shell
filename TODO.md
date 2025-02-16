@@ -11,7 +11,7 @@
 
 ## Fix
 
-- In parsing, split at `>` or `>>` and return error if there's more than one redirection operator or if there isn't a file to redirect to. Add tests for this. Then remove the check I'm currently doing for this in `echo` alone.
+- `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: too many arguments. What's the rule?
 
 ## Strategy
 
@@ -50,7 +50,7 @@
 - Think how to parse input with optional number of arguments and flags, and where items might refer to files or folders. How much can this be done in a general parsing function, and how much of it will be specific to each command?
 - Replace `check_num_args` with something that deals with optional number of arguments.
 - Pair single or double quotes and parse them out.
-- Parse glob: `*`.
+- Consider how to handle flags that can appear in different positions or combinations. Check the rules.
 
 ## Documentation
 
