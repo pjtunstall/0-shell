@@ -18,7 +18,6 @@
 - Check error handling matches echo.
 - Look up what happens if there are multiple file names.
 - Debug dynamic commands https://runcloud.io/blog/echo-command-in-linux
-- Write more tests, especially for redirection and special characters.
 
 ## General
 
@@ -26,6 +25,12 @@
 - Note parallels between commands (the better to structure code and tests, order creation of tests, reuse code and tests, memorize).
 - When you have a new plan, pick a simple one to explore fully, e.g. `echo`.
 - Check consistency of error messages, e.g. whether "os error" numerical codes are included.
+
+## Tests
+
+- Add tests for echo redirection.
+- Test each command module independently, prioritizing the public functions.
+- Cross test commands in integration tests.
 
 ## Strategy
 
@@ -35,9 +40,11 @@
   - DONE: Restructure into modules.
   - Prototype one of the simpler commands with options and variable number and type of arguments (files versus folders).
   - Look up Posix specifications.
-  - Rewrite all commands with all the options I choose to implement in this first iteration.
-  - Write tests for all basic commands. I could use commands to test other commands, but the usefulness of that would change if I changed the internals of how the commands work so that command A starts relying on command B, or stops doing so. There's a danger that it would give a false sense of security because of this. But maybe such dangers go with the territory of testing and are not a reason not to test.
-  - Proceed one by one through the commands.
+  - Finish all commands default option.
+  - Unit tests for each command.
+  - Required option flags.
+  - Test all options.
+  - Integration tests.
 
 ## Command line
 

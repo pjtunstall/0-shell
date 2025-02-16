@@ -9,8 +9,6 @@ pub fn echo(input: &Vec<String>) -> Result<String, String> {
         return Ok("\n".to_string());
     }
 
-    println!("{:?}", input);
-
     let mut input = input.clone();
 
     let mut append = false;
@@ -113,7 +111,70 @@ fn handle_redirection(output: &str, filename: &str, append: bool) -> Result<Stri
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
+    use uuid::Uuid;
+
     use super::*;
+
+    #[test]
+    fn test_redirection() {
+        let mut expected;
+        let mut output;
+        let mut contents;
+
+        let file1 = Uuid::new_v4().to_string();
+        expected = "hello\n";
+        output = echo(&vec![
+            "echo".to_string(),
+            "hello".to_string(),
+            ">".to_string(),
+            file1.clone(),
+        ]);
+        assert!(output.is_ok());
+        contents = fs::read_to_string(&file1).expect("Failed to read file");
+        assert_eq!(contents, expected, "Expected to write to non-existing file");
+
+        let file2 = Uuid::new_v4().to_string();
+        expected = "hello\n";
+        output = echo(&vec![
+            "echo".to_string(),
+            "hello".to_string(),
+            ">>".to_string(),
+            file2.clone(),
+        ]);
+        assert!(output.is_ok());
+        contents = fs::read_to_string(&file2).expect("Failed to read file");
+        assert_eq!(
+            contents, expected,
+            "Expected to append to non-existing file"
+        );
+
+        expected = "world\n";
+        output = echo(&vec![
+            "echo".to_string(),
+            "world".to_string(),
+            ">".to_string(),
+            file1.clone(),
+        ]);
+        assert!(output.is_ok());
+        contents = fs::read_to_string(&file1).expect("Failed to read file");
+        assert_eq!(contents, expected, "Expected to overwrite existing file");
+
+        expected = "hello\nworld\n";
+        output = echo(&vec![
+            "echo".to_string(),
+            "world".to_string(),
+            ">>".to_string(),
+            file2.clone(),
+        ]);
+        assert!(output.is_ok());
+        contents = fs::read_to_string(&file2).expect("Failed to read file");
+        assert_eq!(contents, expected, "Expected to append to existing file");
+
+        fs::remove_file(file1).unwrap();
+        fs::remove_file(file2).unwrap();
+    }
 
     #[test]
     fn test_basic_echo() {
@@ -189,18 +250,36 @@ mod tests {
     }
 
     #[test]
-    fn test_missing_env_var() {
+    fn test_env_var_set() {
         let prev_user = env::var("USER").ok();
-        env::remove_var("USER");
+        env::set_var("USER", "testuser");
+
         assert_eq!(
             echo(&vec!["echo".to_string(), "$USER".to_string()]),
-            Ok("\n".to_string()),
-            "Expected empty substitution when USER is unset"
+            Ok("testuser\n".to_string()),
+            "Expected USER to be replaced with 'testuser'"
         );
+
         if let Some(value) = prev_user {
             env::set_var("USER", value);
         } else {
             env::remove_var("USER");
+        }
+    }
+
+    #[test]
+    fn test_env_var_unset() {
+        let prev_lang = env::var("LANG").ok();
+        env::remove_var("LANG");
+        assert_eq!(
+            echo(&vec!["echo".to_string(), "$LANG".to_string()]),
+            Ok("\n".to_string()),
+            "Expected empty substitution when LANG is unset"
+        );
+        if let Some(value) = prev_lang {
+            env::set_var("LANG", value);
+        } else {
+            env::remove_var("LANG");
         }
     }
 }
