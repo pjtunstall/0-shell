@@ -1,6 +1,9 @@
 mod commands;
 mod helpers;
 
+#[cfg(test)]
+mod test_helpers;
+
 use std::{
     collections::VecDeque,
     io::{self, Write},
@@ -11,7 +14,7 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
-use commands::{cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, pwd::pwd};
+use commands::{cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, mv::mv, pwd::pwd};
 
 struct TextStyle;
 
@@ -74,6 +77,7 @@ fn main() {
             "echo" => echo(&splitput),
             "exit" => exit(&splitput),
             "mkdir" => mkdir(&splitput),
+            "mv" => mv(&splitput),
             "pwd" => pwd(&splitput),
             "ls" => ls(&splitput),
             _ => {
