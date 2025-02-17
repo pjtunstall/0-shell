@@ -11,7 +11,7 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
-use commands::{cd::cd, echo::echo, exit::exit, ls::ls, mkdir::mkdir, pwd::pwd};
+use commands::{cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, pwd::pwd};
 
 struct TextStyle;
 
@@ -70,6 +70,7 @@ fn main() {
         let result = match command {
             "cat" => commands::cat::cat(&splitput),
             "cd" => cd(&splitput),
+            "cp" => cp(&splitput),
             "echo" => echo(&splitput),
             "exit" => exit(&splitput),
             "mkdir" => mkdir(&splitput),

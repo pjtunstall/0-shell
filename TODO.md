@@ -1,5 +1,6 @@
 # Todo
 
+[Next](#next)
 [Fix](#fix)
 [General](#general)
 [Strategy](#strategy)
@@ -9,9 +10,49 @@
 [Extras](#extras)
 [Scope](#scope)
 
+## Next
+
+- Complete the unit tests for `cp`.
+
 ## Fix
 
 - `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: too many arguments. What's the rule?
+- Handle cases like the following. Zsh:
+
+```zsh
+% cd file copy
+cd: string not in pwd: file
+```
+
+Or this one.
+
+```zsh
+(base) petertunstall@Peters-Air-2 0-shell % cd destination blah
+cd: string not in pwd: destination
+(base) petertunstall@Peters-Air-2 0-shell % cd destination
+(base) petertunstall@Peters-Air-2 destination %
+```
+
+Or this.
+
+```zsh
+(base) petertunstall@Peters-Air-2 0-shell % cd file filius destination
+cd: too many arguments
+```
+
+- And another misleading one with `mkdir`:
+
+```zsh
+(base) petertunstall@Peters-Air-2 0-shell % mkdir dest
+mkdir: dest: File exists
+```
+
+We can do better. And look at the inconsistent punctuation:
+
+```zsh
+(base) petertunstall@Peters-Air-2 0-shell % cp dest source
+cp: dest is a directory (not copied).
+```
 
 ## Strategy
 
