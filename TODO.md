@@ -13,6 +13,10 @@
 ## Next
 
 - Complete the unit tests for `cp`.
+- Add unhappy tests for `mv`.
+- Should Rust expected messages have quote code in matching backticks or single quotes or an opening backtick and a closing single quote?
+- `rm` basic.
+- Options.
 
 ## Fix
 
@@ -62,7 +66,7 @@ cp: dest is a directory (not copied).
   - DONE: Restructure into modules.
   - DONE: Prototype one of the simpler commands with options and variable number and type of arguments (files versus folders). (echo)
   - Try a simple example of option handling.
-  - Try a simple example testing against actual shell command.
+  - Try a simple example testing against actual shell command. The ones that create or delete files don't lend themselves to that so much, but the text ones do: `cat` and `echo`, `pwd`, `ls`; and I could do one where I create a dir and `cd` into it and check `pwd` both with pure Rust and by calling the actual shell command.
   - Look up Posix specifications.
   - Finish all commands default option, trying to lead with tests.
   - Required option flags.
