@@ -12,11 +12,15 @@
 
 ## Next
 
+- `mv`: handle new name already exists as a file.
 - Complete the unit tests for `cp`.
 - Add unhappy tests for `mv`.
 - `rm` basic, testing first.
 - Options.
 - Should Rust expected messages have quote code in matching backticks or single quotes or an opening backtick and a closing single quote?
+- Do I really need that `is_directory` function?
+- Different sort of error messages for test errors like test file creation as opposed to actual issues with the code being tested?
+- Make TempStore more flexible to allow all the different cases where I create file and folders, or add similar structs to take care of different cases, or make a trait. Investigate why files aren't always cleaned up on panic.
 
 ## Fix
 
