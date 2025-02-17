@@ -33,6 +33,8 @@ pub fn mv(input: &Vec<String>) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
     use super::*;
     use crate::test_helpers::TempStore;
 
@@ -41,12 +43,12 @@ mod tests {
         let temp_store = TempStore::new();
         let source = &temp_store.source;
         let target = &temp_store.target;
-        let input = vec!["cp".into(), source.clone(), target.clone()];
 
         let content = "Hello, cruel world!";
         fs::write(&source, content).expect("Failed to create test source file");
         fs::create_dir(target).expect("Failed to create target directory");
 
+        let input = vec!["mv".into(), source.clone(), target.clone()];
         let result = mv(&input);
         assert!(result.is_ok(), "`mv' failed: {:?}", result.err());
         let path_to_moved = &format!("{}/{}", target, source);
@@ -63,11 +65,40 @@ mod tests {
         let temp_store = TempStore::new();
         let source = &temp_store.source;
         let target = &temp_store.target;
-        let input = vec!["cp".into(), source.clone(), target.clone()];
 
         let content = "Hello, cruel world!";
         fs::write(&source, content).expect("Failed to create test source file");
 
+        let input = vec!["mv".into(), source.clone(), target.clone()];
+        let result = mv(&input);
+        assert!(result.is_ok(), "`mv' failed: {:?}", result.err());
+
+        assert!(Path::new(target).exists(), "Renamed file should exist");
+        assert!(
+            !Path::new(source).exists(),
+            "File should not exist still under old name"
+        );
+
+        let moved_content = fs::read_to_string(target).expect("Failed to read moved file");
+        assert_eq!(moved_content, content, "File contents do not match");
+    }
+
+    #[test]
+    fn test_mov_to_dir_and_rename() {
+        let mut temp_store = TempStore::new();
+        let source = &temp_store.source;
+        let target_dir = Uuid::new_v4().to_string();
+        let new_name = Uuid::new_v4().to_string();
+        temp_store.target = format!("{}/{}", target_dir.clone(), new_name);
+        let target = &temp_store.target;
+
+        let content = "Hello, cruel world!";
+        fs::write(&source, content)
+            .expect(format!("Failed to create test source file {}", source).as_str());
+        fs::create_dir(target_dir.clone())
+            .expect(format!("Failed to create target directory {}", target_dir).as_str());
+
+        let input = vec!["mv".into(), source.clone(), target.clone()];
         let result = mv(&input);
         assert!(result.is_ok(), "`mv' failed: {:?}", result.err());
 
