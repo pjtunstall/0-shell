@@ -2,11 +2,11 @@ use std::{fs, path::Path};
 
 use crate::helpers;
 
-pub fn cp(input: &Vec<String>) -> Result<String, String> {
-    let usage = "usage: source_file target_file\n\tsource_file ... target_directory";
+const USAGE: &str = "USAGE: source_file target_file\n\tsource_file ... target_directory";
 
+pub fn cp(input: &Vec<String>) -> Result<String, String> {
     if input.len() < 3 {
-        return Err(format!("not enough arguments\n{}", usage).to_string());
+        return Err(format!("not enough arguments\n{}", USAGE).to_string());
     }
 
     let sources = &input[1..input.len() - 1];
@@ -18,7 +18,7 @@ pub fn cp(input: &Vec<String>) -> Result<String, String> {
         if !helpers::is_directory(destination) {
             return Err(format!(
                 "target must be an existing directory when copying multiple sources\n{}",
-                usage
+                USAGE
             )
             .to_string());
         }

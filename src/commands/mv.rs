@@ -1,10 +1,10 @@
 use std::{fs, path::Path};
 
-pub fn mv(input: &Vec<String>) -> Result<String, String> {
-    let usage = "usage: source_file target_directory\n\tsource_file target_directory/new_name\n\tsource_file new_name";
+const USAGE: &str = "USAGE: source_file target_directory\n\tsource_file target_directory/new_name\n\tsource_file new_name";
 
+pub fn mv(input: &Vec<String>) -> Result<String, String> {
     if input.len() < 3 {
-        return Err(format!("not enough arguments\n{}", usage).to_string());
+        return Err(format!("not enough arguments\n{}", USAGE).to_string());
     }
 
     let target = &input[2];

@@ -14,9 +14,9 @@
 
 - Complete the unit tests for `cp`.
 - Add unhappy tests for `mv`.
-- Should Rust expected messages have quote code in matching backticks or single quotes or an opening backtick and a closing single quote?
-- `rm` basic.
+- `rm` basic, testing first.
 - Options.
+- Should Rust expected messages have quote code in matching backticks or single quotes or an opening backtick and a closing single quote?
 
 ## Fix
 
@@ -73,6 +73,10 @@ cp: dest is a directory (not copied).
   - Test all options.
   - Unit tests for each command.
   - Integration tests.
+  - See if there's a way to avoid some of those clones in the tests etc., e.g. `mv`.
+  - Refactor for coinsistency of names and ways of doing things.
+  - Refactor, splitting up some functions.
+  - Use loop to insert the right number of backslashes in echo special character test.
 
 ## General
 
