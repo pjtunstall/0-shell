@@ -111,4 +111,15 @@ mod tests {
         let moved_content = fs::read_to_string(target).expect("Failed to read moved file");
         assert_eq!(moved_content, content, "File contents do not match");
     }
+
+    #[test]
+    fn test_not_enough_arguments() {
+        let file = Uuid::new_v4().to_string();
+        let input = vec!["mv".to_string(), file];
+
+        let result = mv(&input);
+        assert!(!result.is_ok(), "Result should not be ok");
+        let expected = Err(format!("not enough arguments\n{}", USAGE).to_string());
+        assert_eq!(result, expected, "Result should show correct error message");
+    }
 }
