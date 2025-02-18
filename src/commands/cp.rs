@@ -70,8 +70,5 @@ mod tests {
         assert!(Path::new(target).exists(), "File not created");
         let copied_content = fs::read_to_string(&target).expect("Failed to read target file");
         assert_eq!(copied_content, content, "File contents do not match");
-
-        fs::remove_file(source).ok();
-        fs::remove_file(target).ok();
     }
 }
