@@ -14,7 +14,9 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
-use commands::{cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, mv::mv, pwd::pwd};
+use commands::{
+    cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, mv::mv, pwd::pwd, rm::rm,
+};
 
 struct TextStyle;
 
@@ -76,10 +78,11 @@ fn main() {
             "cp" => cp(&splitput),
             "echo" => echo(&splitput),
             "exit" => exit(&splitput),
+            "ls" => ls(&splitput),
             "mkdir" => mkdir(&splitput),
             "mv" => mv(&splitput),
             "pwd" => pwd(&splitput),
-            "ls" => ls(&splitput),
+            "rm" => rm(&splitput),
             _ => {
                 red_println(&format!("0-shell: command not found: {}", command));
                 continue;

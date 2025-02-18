@@ -7,3 +7,4 @@ pub mod ls;
 pub mod mkdir;
 pub mod mv;
 pub mod pwd;
+pub mod rm;
