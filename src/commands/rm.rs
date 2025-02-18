@@ -4,7 +4,7 @@ pub fn rm(input: &Vec<String>) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `rm` should not be empty");
     debug_assert!(
         input[0] == "rm",
-        "Input for `{}' should not be passed to `rm`",
+        "Input for `{}` should not be passed to `rm`",
         input[0]
     );
 

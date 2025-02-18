@@ -12,13 +12,14 @@
 
 ## Next
 
+- Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think.
 - Complete the unit tests for `cp`.
 - `rm` basic, testing first.
 - Options.
-- Should Rust expected messages have quote code in matching backticks or single quotes or an opening backtick and a closing single quote?
 - Do I really need that `is_directory` function?
 - Is there a convention (or could I create one) to distinguish between error messages for test errors like test file creation as opposed to actual issues with the code being tested?
 - Distinguish happy tests from sad tests?
+- Check what Path::new() is for: does it help validate the string as a path name?
 
 ## Fix
 

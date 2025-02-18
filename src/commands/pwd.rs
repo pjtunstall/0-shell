@@ -4,7 +4,7 @@ pub fn pwd(input: &Vec<String>) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `pwd` should not be empty");
     debug_assert!(
         input[0] == "pwd",
-        "Input for `{}' should not be passed to `pwd`",
+        "Input for `{}` should not be passed to `pwd`",
         input[0]
     );
 

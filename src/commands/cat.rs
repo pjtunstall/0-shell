@@ -4,7 +4,7 @@ pub fn cat(input: &Vec<String>) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `cat` should not be empty");
     debug_assert!(
         input[0] == "cat",
-        "Input for `{}' should not be passed to `cat`",
+        "Input for `{}` should not be passed to `cat`",
         input[0]
     );
 
@@ -27,11 +27,11 @@ mod tests {
     #[test]
     fn test_cat() {
         let file = Uuid::new_v4().to_string();
-        fs::write(&file, "Hello, world!\n").unwrap();
+        fs::write(&file, "Howdie, world!\n").unwrap();
 
         let result = cat(&vec!["cat".to_string(), file.clone()]);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "Hello, world!\n".to_string());
+        assert_eq!(result.unwrap(), "Howdie, world!\n".to_string());
 
         fs::remove_file(file).unwrap();
     }

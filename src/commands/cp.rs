@@ -8,7 +8,7 @@ pub fn cp(input: &Vec<String>) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `cp` should not be empty");
     debug_assert!(
         input[0] == "cp",
-        "Input for `{}' should not be passed to `cp`",
+        "Input for `{}` should not be passed to `cp`",
         input[0]
     );
 
@@ -66,7 +66,7 @@ mod tests {
         fs::write(&source, content).expect("Failed to create test source file");
 
         let result = cp(&input);
-        assert!(result.is_ok(), "`cp' failed: {:?}", result.err());
+        assert!(result.is_ok(), "`cp` failed: {:?}", result.err());
         assert!(Path::new(target).exists(), "File not created");
         let copied_content = fs::read_to_string(&target).expect("Failed to read target file");
         assert_eq!(copied_content, content, "File contents do not match");

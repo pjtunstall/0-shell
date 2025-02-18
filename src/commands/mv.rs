@@ -6,7 +6,7 @@ pub fn mv(input: &Vec<String>) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `mv` should not be empty");
     debug_assert!(
         input[0] == "mv",
-        "Input for `{}' should not be passed to `mv`",
+        "Input for `{}` should not be passed to `mv`",
         input[0]
     );
 
@@ -59,7 +59,7 @@ mod tests {
         let input = vec!["mv".to_string(), source.to_string(), target.to_string()];
         let result = mv(&input);
 
-        assert!(result.is_ok(), "`mv' failed: {:?}", result.err());
+        assert!(result.is_ok(), "`mv` failed: {:?}", result.err());
         let path_to_moved = &format!("{}/{}", target, source);
         assert!(
             Path::new(path_to_moved).exists(),
@@ -86,7 +86,7 @@ mod tests {
         let input = vec!["mv".to_string(), source.to_string(), target.to_string()];
         let result = mv(&input);
 
-        assert!(result.is_ok(), "`mv' failed: {:?}", result.err());
+        assert!(result.is_ok(), "`mv` failed: {:?}", result.err());
         assert!(Path::new(target).exists(), "Renamed file should exist");
         assert!(
             !Path::new(source).exists(),
@@ -183,7 +183,7 @@ mod tests {
         let result = mv(&input);
         assert!(
             !result.is_ok(),
-            "`mv' should fail when source is a directory",
+            "`mv` should fail when source is a directory",
         );
         let expected = Err(format!("{} is a directory (not moved)", source).to_string());
         assert_eq!(result, expected, "Result should show correct error message");

@@ -6,7 +6,7 @@ pub fn echo(input: &Vec<String>) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `echo` should not be empty");
     debug_assert!(
         input[0] == "echo",
-        "Input for `{}' should not be passed to `echo`",
+        "Input for `{}` should not be passed to `echo`",
         input[0]
     );
 
@@ -155,43 +155,43 @@ mod tests {
         assert_eq!(
             echo(&vec!["echo".to_string(), "a\\na".to_string()]),
             Ok("ana\n".to_string()),
-            "Expected to convert `\\n' to `n'"
+            "Expected to convert `\\n` to `n`"
         );
         assert_eq!(
             echo(&vec!["echo".to_string(), "a\\\\na".to_string()]),
             Ok("a\na\n".to_string()),
-            "Expected to convert `\\\\n' to `\\n'"
+            "Expected to convert `\\\\n` to `\\n`"
         );
         assert_eq!(
             echo(&vec!["echo".to_string(), "a\\\\\\na".to_string()]),
             Ok("a\na\n".to_string()),
-            "Expected to convert `\\\\\\n' to `\\n'"
+            "Expected to convert `\\\\\\n` to `\\n`"
         );
         assert_eq!(
             echo(&vec!["echo".to_string(), "a\\\\\\\\na".to_string()]),
             Ok("a\\na\n".to_string()),
-            "Expected to convert `\\\\\\\\n' to `\\\\n'"
+            "Expected to convert `\\\\\\\\n` to `\\\\n`"
         );
 
         assert_eq!(
             echo(&vec!["echo".to_string(), "\"a\\na\"".to_string()]),
             Ok("a\na\n".to_string()),
-            "Expected to leave `\\n' unchanged in quotes"
+            "Expected to leave `\\n` unchanged in quotes"
         );
         assert_eq!(
             echo(&vec!["echo".to_string(), "\"a\\\\na\"".to_string()]),
             Ok("a\na\n".to_string()),
-            "Expected to leave `\\\\n' unchanged in quotes"
+            "Expected to leave `\\\\n` unchanged in quotes"
         );
         assert_eq!(
             echo(&vec!["echo".to_string(), "\"a\\\\\\na\"".to_string()]),
             Ok("a\\na\n".to_string()),
-            "Expected to convert `\\\\\\n' in quotes to `\\n'"
+            "Expected to convert `\\\\\\n` in quotes to `\\n`"
         );
         assert_eq!(
             echo(&vec!["echo".to_string(), "\"a\\\\\\\\na\"".to_string()]),
             Ok("a\\na\n".to_string()),
-            "Expected to convert `\\\\\\\\n' in quotes to `\\n'"
+            "Expected to convert `\\\\\\\\n` in quotes to `\\n`"
         );
     }
 
@@ -200,13 +200,13 @@ mod tests {
         assert_eq!(
             echo(&vec!["echo".to_string(), "\">\"".to_string()]),
             Ok(">\n".to_string()),
-            "Expected to escape `>' in double quotes, and give no error when final"
+            "Expected to escape `>` in double quotes, and give no error when final"
         );
 
         assert_eq!(
             echo(&vec!["echo".to_string(), "\">>\"".to_string()]),
             Ok(">>\n".to_string()),
-            "Expected to leave `>>' unchanged in double quotes, and give no error when final"
+            "Expected to leave `>>` unchanged in double quotes, and give no error when final"
         );
     }
 
@@ -215,13 +215,13 @@ mod tests {
         assert_eq!(
             echo(&vec!["echo".to_string(), "\'>\'".to_string()]),
             Ok(">\n".to_string()),
-            "Expected to leave `>' unchanged in single quotes, and give no error when final"
+            "Expected to leave `>` unchanged in single quotes, and give no error when final"
         );
 
         assert_eq!(
             echo(&vec!["echo".to_string(), "\'>>\'".to_string()]),
             Ok(">>\n".to_string()),
-            "Expected to leave `>>' unchanged in single quotes, and give no error when final"
+            "Expected to leave `>>` unchanged in single quotes, and give no error when final"
         );
     }
 
@@ -233,7 +233,7 @@ mod tests {
         assert_eq!(
             echo(&vec!["echo".to_string(), "$USER".to_string()]),
             Ok("testuser\n".to_string()),
-            "Expected USER to be replaced with 'testuser'"
+            "Expected `USER` to be replaced with `testuser`"
         );
 
         if let Some(value) = prev_user {
