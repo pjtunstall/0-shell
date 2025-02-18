@@ -13,9 +13,9 @@
 ## Next
 
 - Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think.
-- `rm` basic, multiple arguments.
 - Options.
 - Check what Path::new() is for: does it help validate the string as a path name?
+- Handle file and directory names that begin with a dash. Should I escape dashes during the initial parse? See what Zsh does. How does `echo` treat dashes? A dash on its own is ignored by echo, but an initial dash followed by other characters is printed.
 
 ## Fix
 
