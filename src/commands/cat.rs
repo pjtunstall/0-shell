@@ -1,6 +1,13 @@
 use std::fs;
 
 pub fn cat(input: &Vec<String>) -> Result<String, String> {
+    debug_assert!(!input.is_empty(), "Input for `cat` should not be empty");
+    debug_assert!(
+        input[0] == "cat",
+        "Input for `{}' should not be passed to `cat`",
+        input[0]
+    );
+
     let filename = match input.get(1) {
         Some(filename) => filename,
         None => return Err("missing argument".to_string()),

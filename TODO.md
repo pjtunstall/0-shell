@@ -83,7 +83,7 @@ cp: dest is a directory (not copied).
 ## General
 
 - Note parallels between commands (the better to structure code and tests, order creation of tests, reuse code and tests, memorize).
-- Check consistency of error messages, e.g. whether "os error" numerical codes are included. Maybe start to explore this when I've got tests in place to compare my commands directly against the standard shell commands.
+- Check error messages are consistently formatted, e.g. whether "os error" numerical codes are included. Maybe start to explore this when I've got tests in place to compare my commands directly against the standard shell commands. Include arguments where appropriate; see `rm`.
 - Look at whether there are places I can avoid copying, e.g. use refs instead of Strings either in the code or the tests.
 
 ## Tests

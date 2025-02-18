@@ -5,6 +5,13 @@ use crate::helpers;
 const USAGE: &str = "USAGE: source_file target_file\n\tsource_file ... target_directory";
 
 pub fn cp(input: &Vec<String>) -> Result<String, String> {
+    debug_assert!(!input.is_empty(), "Input for `cp` should not be empty");
+    debug_assert!(
+        input[0] == "cp",
+        "Input for `{}' should not be passed to `cp`",
+        input[0]
+    );
+
     if input.len() < 3 {
         return Err(format!("not enough arguments\n{}", USAGE).to_string());
     }

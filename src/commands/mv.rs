@@ -3,6 +3,13 @@ use std::{fs, path::Path};
 const USAGE: &str = "USAGE: source_file target_directory\n\tsource_file target_directory/new_name\n\tsource_file new_name";
 
 pub fn mv(input: &Vec<String>) -> Result<String, String> {
+    debug_assert!(!input.is_empty(), "Input for `mv` should not be empty");
+    debug_assert!(
+        input[0] == "mv",
+        "Input for `{}' should not be passed to `mv`",
+        input[0]
+    );
+
     if input.len() < 3 {
         return Err(format!("not enough arguments\n{}", USAGE).to_string());
     }

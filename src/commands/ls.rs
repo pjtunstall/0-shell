@@ -1,7 +1,14 @@
 use std::fs;
 use terminal_size::{terminal_size, Width};
 
-pub fn ls(_input: &Vec<String>) -> Result<String, String> {
+pub fn ls(input: &Vec<String>) -> Result<String, String> {
+    debug_assert!(!input.is_empty(), "Input for `ls` should not be empty");
+    debug_assert!(
+        input[0] == "ls",
+        "Input for `{}' should not be passed to `ls`",
+        input[0]
+    );
+
     let mut entries: Vec<String> = fs::read_dir(".")
         .map_err(|_| "ls: cannot open directory '.': permission denied".to_string())?
         .filter_map(|entry| {

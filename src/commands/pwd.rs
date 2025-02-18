@@ -1,6 +1,13 @@
 use crate::helpers;
 
 pub fn pwd(input: &Vec<String>) -> Result<String, String> {
+    debug_assert!(!input.is_empty(), "Input for `pwd` should not be empty");
+    debug_assert!(
+        input[0] == "pwd",
+        "Input for `{}' should not be passed to `pwd`",
+        input[0]
+    );
+
     if let Err(err) = helpers::check_num_args(input, 1) {
         return Err(err);
     }

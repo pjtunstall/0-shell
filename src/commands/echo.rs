@@ -3,6 +3,13 @@ use std::{env, fs::OpenOptions, io::Write};
 use serde_json::de::from_str;
 
 pub fn echo(input: &Vec<String>) -> Result<String, String> {
+    debug_assert!(!input.is_empty(), "Input for `echo` should not be empty");
+    debug_assert!(
+        input[0] == "echo",
+        "Input for `{}' should not be passed to `echo`",
+        input[0]
+    );
+
     if input.len() < 2 {
         return Ok("\n".to_string());
     }
