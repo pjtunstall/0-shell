@@ -12,11 +12,12 @@
 
 ## Next
 
-- `rm -r`
 - `ls -l`, `ls -a`, `ls -F`
 - Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think.
 - Check what Path::new() is for: does it help validate the string as a path name?
 - Handle file and directory names that begin with a dash. Should I escape dashes during the initial parse? See what Zsh does. How does `echo` treat dashes? A dash on its own is ignored by echo, but an initial dash followed by other characters is printed.
+- Check vetting of argument numbers and types in each command function. See if I can write a general function to check conditions on number of arguments, e.g. less than, greater than, or equal to.
+- Try to extact the meat of `rm` into a function that will handle `rm` or `rm -r`.
 
 ## Fix
 
@@ -68,7 +69,7 @@ cp: dest is a directory (not copied).
   - Try a simple example of option handling.
   - Try a simple example testing against actual shell command. The ones that create or delete files don't lend themselves to that so much, but the text ones do: `cat` and `echo`, `pwd`, `ls`; and I could do one where I create a dir and `cd` into it and check `pwd` both with pure Rust and by calling the actual shell command. Would those count as integration or unit tests? Unit, I suppose.
   - Look up Posix specifications.
-  - Finish all commands default option, trying to lead with tests.
+  - DONE: Finish all commands default option, trying to lead with tests.
   - Required option flags.
   - Test all options.
   - Unit tests for each command.

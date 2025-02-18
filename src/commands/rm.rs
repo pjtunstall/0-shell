@@ -19,48 +19,42 @@ pub fn rm(input: &Vec<String>) -> Result<String, String> {
             return Err(format!("not enough arguments\n{}", USAGE).to_string());
         }
 
-        let mut errors: Vec<Result<(), String>> = Vec::new();
-        let mut i: u32 = 0;
-        for arg in input[2..].iter() {
-            let path = Path::new(&arg);
+        return process_args(&input[2..], true);
+    } else {
+        return process_args(&input[1..], false);
+    }
+}
 
-            let cmd = if i == 0 { "" } else { "rm: " };
-            i += 1;
+fn process_args(args: &[String], recursive: bool) -> Result<String, String> {
+    let mut errors: Vec<Result<(), String>> = Vec::new();
+    let mut i: u32 = 0;
+    for arg in args.iter() {
+        let path = Path::new(&arg);
 
+        if recursive {
             if path.is_dir() {
                 _ = fs::remove_dir_all(path).map_err(|err| {
+                    let cmd = if i == 0 { "" } else { "rm: " };
+                    i += 1;
                     errors.push(Err(format!("{}{}: {}", cmd, arg, err)));
                 });
             } else {
                 _ = fs::remove_file(path).map_err(|err| {
+                    let cmd = if i == 0 { "" } else { "rm: " };
+                    i += 1;
                     errors.push(Err(format!("{}{}: {}", cmd, arg, err)));
                 });
             }
-        }
-
-        if !errors.is_empty() {
-            let error_messages = errors
-                .into_iter()
-                .filter_map(|e| e.err())
-                .collect::<Vec<String>>()
-                .join("\n");
-            return Err(error_messages);
-        }
-
-        return Ok(String::new());
-    }
-
-    let mut errors: Vec<Result<(), String>> = Vec::new();
-    let mut i: u32 = 0;
-    for arg in input[1..].iter() {
-        let path = Path::new(&arg);
-
-        if path.is_dir() {
-            let cmd = if i == 0 { "" } else { "rm: " };
-            i += 1;
-            errors.push(Err(format!("{}{}: is a directory", cmd, arg)));
-        } else if let Err(err) = fs::remove_file(path) {
-            errors.push(Err(format!("{}: {}", arg, err)));
+        } else {
+            if path.is_dir() {
+                let cmd = if i == 0 { "" } else { "rm: " };
+                i += 1;
+                errors.push(Err(format!("{}{}: is a directory", cmd, arg)));
+            } else if let Err(err) = fs::remove_file(path) {
+                let cmd = if i == 0 { "" } else { "rm: " };
+                i += 1;
+                errors.push(Err(format!("{}{}: {}", cmd, arg, err)));
+            }
         }
     }
 
@@ -73,7 +67,7 @@ pub fn rm(input: &Vec<String>) -> Result<String, String> {
         return Err(error_messages);
     }
 
-    Ok(String::new())
+    return Ok(String::new());
 }
 
 #[cfg(test)]
