@@ -1,10 +1,4 @@
-use std::{env, fs, io};
-
-pub fn is_directory(path: &str) -> bool {
-    fs::metadata(path)
-        .map(|meta| meta.is_dir())
-        .unwrap_or(false)
-}
+use std::{env, io};
 
 pub fn check_num_args(input: &Vec<String>, expected: usize) -> Result<String, String> {
     if input.len() > expected {

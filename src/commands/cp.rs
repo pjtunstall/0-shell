@@ -1,7 +1,5 @@
 use std::{fs, path::Path};
 
-use crate::helpers;
-
 const USAGE: &str = "USAGE: source_file target_file\n\tsource_file ... target_directory";
 
 pub fn cp(input: &Vec<String>) -> Result<String, String> {
@@ -22,7 +20,7 @@ pub fn cp(input: &Vec<String>) -> Result<String, String> {
     let dest_path = Path::new(destination);
 
     if sources.len() > 1 {
-        if !helpers::is_directory(destination) {
+        if !dest_path.is_dir() {
             return Err(format!(
                 "target must be an existing directory when copying multiple sources\n{}",
                 USAGE

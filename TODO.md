@@ -13,12 +13,8 @@
 ## Next
 
 - Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think.
-- Complete the unit tests for `cp`.
-- `rm` basic, testing first.
+- `rm` basic, multiple arguments.
 - Options.
-- Do I really need that `is_directory` function?
-- Is there a convention (or could I create one) to distinguish between error messages for test errors like test file creation as opposed to actual issues with the code being tested?
-- Distinguish happy tests from sad tests?
 - Check what Path::new() is for: does it help validate the string as a path name?
 
 ## Fix
@@ -69,7 +65,7 @@ cp: dest is a directory (not copied).
   - DONE: Restructure into modules.
   - DONE: Prototype one of the simpler commands with options and variable number and type of arguments (files versus folders). (echo)
   - Try a simple example of option handling.
-  - Try a simple example testing against actual shell command. The ones that create or delete files don't lend themselves to that so much, but the text ones do: `cat` and `echo`, `pwd`, `ls`; and I could do one where I create a dir and `cd` into it and check `pwd` both with pure Rust and by calling the actual shell command.
+  - Try a simple example testing against actual shell command. The ones that create or delete files don't lend themselves to that so much, but the text ones do: `cat` and `echo`, `pwd`, `ls`; and I could do one where I create a dir and `cd` into it and check `pwd` both with pure Rust and by calling the actual shell command. Would those count as integration or unit tests? Unit, I suppose.
   - Look up Posix specifications.
   - Finish all commands default option, trying to lead with tests.
   - Required option flags.
