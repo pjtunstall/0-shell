@@ -12,12 +12,14 @@
 
 ## Next
 
-- `ls -l`, `ls -a`, `ls -F`
-- Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think.
-- Check what Path::new() is for: does it help validate the string as a path name?
+- RESEARCH: Check what `Path::new()` is for: does it help validate the string as a path name?
+- Change `TempStore` to a Vec<String>, so that it can have any number of items and so that they're not labeled `source` and `target`, as it's now used more generally in contexts where those names aren't relevant. Use `PathBuf` or `Path` instead of `String`?
+- MAIN OUTSTANDING FEATURE: `ls -l`, `ls -a`, `ls -F`
+- RESEARCH: Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think.
 - Handle file and directory names that begin with a dash. Should I escape dashes during the initial parse? See what Zsh does. How does `echo` treat dashes? A dash on its own is ignored by echo, but an initial dash followed by other characters is printed.
-- Check vetting of argument numbers and types in each command function. See if I can write a general function to check conditions on number of arguments, e.g. less than, greater than, or equal to.
-- Try to extact the meat of `rm` into a function that will handle `rm` or `rm -r`.
+- Check vetting of argument numbers and types in each command function. See if I can write a general function to check conditions on number of arguments (better that `check_num_args`), e.g. less than, greater than, or equal to.
+- Write `USAGE` messages for all command and look at what what triggers them.
+- REFACTOR: Restructure `main` and `helpers`. Maybe add a `style` module.
 
 ## Fix
 

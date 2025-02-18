@@ -132,7 +132,7 @@ fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                 }
             }
             Key::Left => {
-                cursor = cursor.saturating_sub(1); // Prevents underflow
+                cursor = cursor.saturating_sub(1);
             }
             Key::Right => {
                 if cursor < input.len() {
