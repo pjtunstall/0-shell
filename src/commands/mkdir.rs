@@ -21,13 +21,19 @@ pub fn mkdir(input: &Vec<String>) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        fs,
+        path::{Path, MAIN_SEPARATOR},
+    };
+
+    use uuid::Uuid;
+
     use super::mkdir;
-    use std::fs;
-    use std::path::Path;
+    use crate::test_helpers::TempStore;
 
     #[test]
     fn test_mkdir_success() {
-        let test_dir = "test_dir";
+        let test_dir = &Uuid::new_v4().to_string();
 
         if Path::new(test_dir).exists() {
             fs::remove_dir(test_dir).unwrap();
@@ -62,7 +68,16 @@ mod tests {
 
     #[test]
     fn test_mkdir_invalid_path() {
-        let invalid_path = "/invalid/path/to/dir";
+        let temp_store = TempStore::new();
+        let dir = &temp_store.target;
+        let prefix = &temp_store.source;
+        let invalid_path = format!(
+            "{}{}{}",
+            prefix.to_string(),
+            MAIN_SEPARATOR,
+            dir.to_string()
+        );
+
         let input = vec!["mkdir".to_string(), invalid_path.to_string()];
         let result = mkdir(&input);
         let expected = "no such file or directory (os error 2)".to_string();

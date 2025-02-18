@@ -72,6 +72,8 @@ fn process_args(args: &[String], recursive: bool) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
+    use std::path::MAIN_SEPARATOR;
+
     use super::*;
     use crate::test_helpers::TempStore;
 
@@ -173,13 +175,23 @@ mod tests {
         let dir1 = &dir_store.target;
 
         fs::create_dir(dir1.to_string()).expect("Failed to create test directory");
-        fs::create_dir(format!("{}/{}", dir1, dir2).to_string())
+        fs::create_dir(format!("{}{}{}", dir1, MAIN_SEPARATOR, dir2).to_string())
             .expect("Failed to create test directory");
 
-        fs::write(format!("{}/{}", dir1, file1).to_string(), "")
-            .expect("Failed to create test file");
-        fs::write(format!("{}/{}/{}", dir1, dir2, file2).to_string(), "")
-            .expect("Failed to create test file");
+        fs::write(
+            format!("{}{}{}", dir1, MAIN_SEPARATOR, file1).to_string(),
+            "",
+        )
+        .expect("Failed to create test file");
+        fs::write(
+            format!(
+                "{}{}{}{}{}",
+                dir1, MAIN_SEPARATOR, dir2, MAIN_SEPARATOR, file2
+            )
+            .to_string(),
+            "",
+        )
+        .expect("Failed to create test file");
 
         let input = vec!["rm".to_string(), "-r".to_string(), dir1.to_string()];
         let result = rm(&input);

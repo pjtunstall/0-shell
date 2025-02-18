@@ -40,6 +40,8 @@ pub fn mv(input: &Vec<String>) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
+    use std::path::MAIN_SEPARATOR;
+
     use uuid::Uuid;
 
     use super::*;
@@ -60,7 +62,7 @@ mod tests {
         let result = mv(&input);
 
         assert!(result.is_ok(), "`mv` failed: {:?}", result.err());
-        let path_to_moved = &format!("{}/{}", target, source);
+        let path_to_moved = &format!("{}{}{}", target, MAIN_SEPARATOR, source);
         assert!(
             Path::new(path_to_moved).exists(),
             "File should be in target directory"
@@ -142,7 +144,7 @@ mod tests {
             .expect(format!("Failed to create target directory {}", target).as_str());
 
         let new_name = Uuid::new_v4().to_string();
-        let path = &format!("{}/{}", target, new_name);
+        let path = &format!("{}{}{}", target, MAIN_SEPARATOR, new_name);
 
         let input = vec!["mv".to_string(), source.to_string(), path.to_string()];
         let result = mv(&input);
