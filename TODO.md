@@ -12,15 +12,13 @@
 
 ## Next
 
-- `mv`: handle new name already exists as a file.
 - Complete the unit tests for `cp`.
-- Add unhappy tests for `mv`.
 - `rm` basic, testing first.
 - Options.
 - Should Rust expected messages have quote code in matching backticks or single quotes or an opening backtick and a closing single quote?
 - Do I really need that `is_directory` function?
-- Different sort of error messages for test errors like test file creation as opposed to actual issues with the code being tested?
-- Make TempStore more flexible to allow all the different cases where I create file and folders, or add similar structs to take care of different cases, or make a trait. Investigate why files aren't always cleaned up on panic.
+- Is there a convention (or could I create one) to distinguish between error messages for test errors like test file creation as opposed to actual issues with the code being tested?
+- Distinguish happy tests from sad tests?
 
 ## Fix
 
@@ -86,6 +84,7 @@ cp: dest is a directory (not copied).
 
 - Note parallels between commands (the better to structure code and tests, order creation of tests, reuse code and tests, memorize).
 - Check consistency of error messages, e.g. whether "os error" numerical codes are included. Maybe start to explore this when I've got tests in place to compare my commands directly against the standard shell commands.
+- Look at whether there are places I can avoid copying, e.g. use refs instead of Strings either in the code or the tests.
 
 ## Tests
 
