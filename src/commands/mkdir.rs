@@ -21,10 +21,7 @@ pub fn mkdir(input: &Vec<String>) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        fs,
-        path::{Path, MAIN_SEPARATOR},
-    };
+    use std::{fs, path::Path};
 
     use uuid::Uuid;
 
@@ -69,16 +66,14 @@ mod tests {
     #[test]
     fn test_mkdir_invalid_path() {
         let temp_store = TempStore::new();
-        let dir = &temp_store.target;
-        let prefix = &temp_store.source;
-        let invalid_path = format!(
-            "{}{}{}",
-            prefix.to_string(),
-            MAIN_SEPARATOR,
-            dir.to_string()
-        );
+        let dir = Path::new(&temp_store.target);
+        let prefix = Path::new(&temp_store.source);
+        let invalid_path = prefix.join(dir);
 
-        let input = vec!["mkdir".to_string(), invalid_path.to_string()];
+        let input = vec![
+            "mkdir".to_string(),
+            invalid_path.to_str().unwrap().to_string(),
+        ];
         let result = mkdir(&input);
         let expected = "no such file or directory (os error 2)".to_string();
 

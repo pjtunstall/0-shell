@@ -105,15 +105,25 @@ mod tests {
     #[test]
     fn test_mv_as_rename_when_new_name_already_exists() {
         let temp_store = TempStore::new();
-        let source = &temp_store.source;
+        let source = Path::new(&temp_store.source);
 
         let source_contents = "hello";
         fs::write(&source, source_contents).expect("Failed to create test source file");
 
-        let target = &temp_store.target;
+        let target = Path::new(&temp_store.target);
         fs::write(&target, "world").expect("Failed to create test source file");
 
-        let input = vec!["mv".to_string(), source.to_string(), target.to_string()];
+        let input = vec![
+            "mv".to_string(),
+            source
+                .to_str()
+                .expect("Unable to convert path to string")
+                .to_string(),
+            target
+                .to_str()
+                .expect("Unable to convert path to string")
+                .to_string(),
+        ];
         let result = mv(&input);
 
         assert!(result.is_ok(), "`mv' failed: {:?}", result.err());
@@ -139,18 +149,25 @@ mod tests {
         fs::write(&source, source_contents)
             .expect(format!("Failed to create test source file {}", source).as_str());
 
-        let target = &temp_store.target;
-        fs::create_dir(target.to_string())
-            .expect(format!("Failed to create target directory {}", target).as_str());
+        let target = Path::new(&temp_store.target);
+        fs::create_dir(target)
+            .expect(format!("Failed to create target directory {}", target.display()).as_str());
 
-        let new_name = Uuid::new_v4().to_string();
-        let path = &format!("{}{}{}", target, MAIN_SEPARATOR, new_name);
+        let binding = Uuid::new_v4().to_string();
+        let new_name = Path::new(&binding);
+        let path = target.join(new_name);
 
-        let input = vec!["mv".to_string(), source.to_string(), path.to_string()];
+        let input = vec![
+            "mv".to_string(),
+            source.to_string(),
+            path.to_str()
+                .expect("Unable to convert path to string")
+                .to_string(),
+        ];
         let result = mv(&input);
 
         assert!(result.is_ok(), "`mv' failed: {:?}", result.err());
-        assert!(Path::new(path).exists(), "Renamed file should exist");
+        assert!(path.exists(), "Renamed file should exist");
         assert!(
             !Path::new(source).exists(),
             "File should no longer exist under old name"
