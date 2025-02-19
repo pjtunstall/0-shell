@@ -14,10 +14,10 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
         input[0]
     );
 
-    let mut path_name = ".";
     let mut flags: u8 = 0;
+    let mut first_pathname_index: usize = 0;
 
-    for arg in input[1..].iter() {
+    for (i, arg) in input[1..].iter().enumerate() {
         if arg.starts_with('-') {
             if arg.contains('a') {
                 flags |= 1;
@@ -32,19 +32,33 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
                 return Err(format!("unrecognized option `{}'\n{}", arg, USAGE).to_string());
             }
         } else {
-            path_name = arg;
+            first_pathname_index = i + 1;
+            debug_assert!(first_pathname_index < input.len());
             break;
         }
     }
 
-    let path = Path::new(path_name);
+    let result;
+
+    if first_pathname_index == 0 {
+        result = process_path(flags, Path::new("."));
+    } else {
+        result = process_path(flags, Path::new(&input[first_pathname_index]));
+    }
+
+    result
+}
+
+fn process_path(flags: u8, path: &Path) -> Result<String, String> {
     if !path.exists() {
-        return Err(
-            format!("cannot access `{}': no such file or directory", path_name).to_string(),
-        );
+        return Err(format!(
+            "cannot access `{}': no such file or directory",
+            path.display()
+        )
+        .to_string());
     }
     if !path.is_dir() {
-        return Err(format!("`{}' is not a directory", path_name).to_string());
+        return Err(format!("`{}' is not a directory", path.display()).to_string());
     }
 
     let mut entries: VecDeque<String> = fs::read_dir(path)
