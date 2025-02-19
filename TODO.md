@@ -1,14 +1,14 @@
 # Todo
 
-[Next](#next)
-[Fix](#fix)
-[General](#general)
-[Strategy](#strategy)
-[Command line](#command-line)
-[Parsing](#parsing)
-[Documentation](#documentation)
-[Extras](#extras)
-[Scope](#scope)
+- [Next](#next)
+- [Fix](#fix)
+- [General](#general)
+- [Strategy](#strategy)
+- [Command line](#command-line)
+- [Parsing](#parsing)
+- [Documentation](#documentation)
+- [Extras](#extras)
+- [Scope](#scope)
 
 ## Next
 
