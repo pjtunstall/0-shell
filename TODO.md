@@ -12,7 +12,7 @@
 
 ## Next
 
-- Change `TempStore` to a Vec<String>, so that it can have any number of items, and so that they're not labeled `source` and `target`, as it's now used more generally in contexts where those names aren't relevant. Use `PathBuf` instead of `String` in `TempStore`. Tidy the tests to be consistent with this change.
+- Change `TempStore` to a Vec<String>, so that it can have any number of items, and so that they're not labeled `source` and `target`, as it's now used more generally in contexts where those names aren't relevant. Use `PathBuf` instead of `String` in `TempStore`. Tidy the tests to be consistent with this change and use `Path` more; in particular, get rid of the last remaining `{}{}{}` in `mv.rs`.
 - MAIN OUTSTANDING FEATURE: `ls -l`, `ls -a`, `ls -F`
 - RESEARCH: Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think.
 - Handle file and directory names that begin with a dash. Should I escape dashes during the initial parse? See what Zsh does. How does `echo` treat dashes? A dash on its own is ignored by echo, but an initial dash followed by other characters is printed.
@@ -85,6 +85,7 @@ cp: dest is a directory (not copied).
 - Note parallels between commands (the better to structure code and tests, order creation of tests, reuse code and tests, memorize).
 - Check error messages are consistently formatted, e.g. whether "os error" numerical codes are included. Maybe start to explore this when I've got tests in place to compare my commands directly against the standard shell commands. Include arguments where appropriate; see `rm`.
 - Look at whether there are places I can avoid copying, e.g. use refs instead of Strings either in the code or the tests.
+- Test what happens when `ls` encounters `permission denied` errors, if that even happens.
 
 ## Tests
 

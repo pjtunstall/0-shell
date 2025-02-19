@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-const USAGE: &str = "USAGE: source_file target_directory\n\tsource_file target_directory/new_name\n\tsource_file new_name";
+const USAGE: &str = "USAGE: mv source_file target_directory\n\tmv source_file target_directory/new_name\n\tmv source_file new_name";
 
 pub fn mv(input: &Vec<String>) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `mv` should not be empty");
@@ -21,7 +21,7 @@ pub fn mv(input: &Vec<String>) -> Result<String, String> {
     let target_path = Path::new(target);
 
     if source_path.is_dir() {
-        return Err(format!("{} is a directory (not moved)", source).to_string());
+        return Err(format!("`{}' is a directory (not moved)", source).to_string());
     }
 
     if target_path.is_dir() {

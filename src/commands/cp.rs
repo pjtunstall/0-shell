@@ -33,7 +33,7 @@ pub fn cp(input: &Vec<String>) -> Result<String, String> {
         let src_path = Path::new(source);
 
         if src_path.is_dir() {
-            return Err(format!("{} is a directory (not copied)", source).to_string());
+            return Err(format!("`{}' is a directory (not copied)", source).to_string());
         }
 
         let dest_file = if dest_path.is_dir() {

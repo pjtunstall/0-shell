@@ -1,5 +1,10 @@
-use std::fs;
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+use std::{collections::VecDeque, fs, path::Path};
+
 use terminal_size::{terminal_size, Width};
+
+const USAGE: &str = "Usage: ls [-a] [-l] [-F] [DIRECTORY]...";
 
 pub fn ls(input: &Vec<String>) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `ls` should not be empty");
@@ -9,20 +14,66 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
         input[0]
     );
 
-    let mut entries: Vec<String> = fs::read_dir(".")
-        .map_err(|_| "ls: cannot open directory '.': permission denied".to_string())?
+    let mut path_name = ".";
+    let mut flags: u8 = 0;
+
+    for arg in input[1..].iter() {
+        if arg.starts_with('-') {
+            if arg.contains('a') {
+                flags |= 1;
+            }
+            if arg.contains('l') {
+                flags |= 2;
+            }
+            if arg.contains('F') {
+                flags |= 4;
+            }
+            if arg.chars().skip(1).any(|c| !['a', 'l', 'F'].contains(&c)) {
+                return Err(format!("unrecognized option `{}'\n{}", arg, USAGE).to_string());
+            }
+        } else {
+            path_name = arg;
+            break;
+        }
+    }
+
+    let path = Path::new(path_name);
+    if !path.exists() {
+        return Err(
+            format!("cannot access `{}': no such file or directory", path_name).to_string(),
+        );
+    }
+    if !path.is_dir() {
+        return Err(format!("`{}' is not a directory", path_name).to_string());
+    }
+
+    let mut entries: VecDeque<String> = fs::read_dir(path)
+        .map_err(|_| {
+            format!(
+                "ls: cannot open directory `{}': permission denied",
+                path.display()
+            )
+        })?
         .filter_map(|entry| {
-            entry
-                .ok()
-                .map(|e| e.file_name().to_string_lossy().to_string())
+            entry.ok().map(|e| {
+                let name = e.file_name().to_string_lossy().to_string();
+                let suffix = classify(&e.path());
+                format!("{}{}", name, suffix)
+            })
         })
-        .filter(|name| !name.starts_with('.'))
+        .filter(|name| flags & 1 == 1 || !name.starts_with('.'))
         .collect();
+
+    if flags & 1 == 1 {
+        entries.push_front(".".to_string());
+        entries.push_front("..".to_string());
+    }
 
     if entries.is_empty() {
         return Ok(String::new());
     }
 
+    let mut entries: Vec<_> = entries.into();
     entries.sort();
 
     let term_width = get_terminal_width();
@@ -45,6 +96,37 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
     }
 
     Ok(output)
+}
+
+fn classify(path: &Path) -> String {
+    if path.is_dir() {
+        "/".to_string()
+    } else if path.is_symlink() {
+        "@".to_string()
+    } else {
+        #[cfg(unix)]
+        {
+            if path
+                .metadata()
+                .map(|m| m.permissions().mode() & 0o111 != 0)
+                .unwrap_or(false)
+            {
+                "*".to_string()
+            } else {
+                "".to_string()
+            }
+        }
+        #[cfg(windows)]
+        {
+            if let Some(ext) = path.extension() {
+                let ext = ext.to_string_lossy().to_lowercase();
+                if ["exe", "bat", "cmd", "com"].contains(&ext.as_str()) {
+                    return "*".to_string();
+                }
+            }
+            "".to_string()
+        }
+    }
 }
 
 fn get_terminal_width() -> usize {
