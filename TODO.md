@@ -13,7 +13,7 @@
 ## Next
 
 - Break up `ls` function, then implement for multiple dirs.
-- `ls -F`.
+- `ls -l`.
 - Handle file and directory names that begin with a dash. Should I escape dashes during the initial parse? See what Zsh does. How does `echo` treat dashes? A dash on its own is ignored by echo, but an initial dash followed by other characters is printed.
 - Change `TempStore` to a Vec<String>, so that it can have any number of items, and so that they're not labeled `source` and `target`, as it's now used more generally in contexts where those names aren't relevant. Use `PathBuf` instead of `String` in `TempStore`. Tidy the tests to be consistent with this change and use `Path` more; in particular, get rid of the last remaining `{}{}{}` in `mv.rs`.
 - Tests for `ls`.

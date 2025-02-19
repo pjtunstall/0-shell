@@ -204,7 +204,7 @@ mod tests {
             !result.is_ok(),
             "`mv` should fail when source is a directory",
         );
-        let expected = Err(format!("{} is a directory (not moved)", source).to_string());
+        let expected = Err(format!("`{}' is a directory (not moved)", source).to_string());
         assert_eq!(result, expected, "Result should show correct error message");
     }
 }
