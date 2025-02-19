@@ -90,6 +90,10 @@ fn process_path(flags: u8, path: &Path) -> Result<String, String> {
     let mut entries: Vec<_> = entries.into();
     entries.sort();
 
+    format_list(entries)
+}
+
+fn format_list(entries: Vec<String>) -> Result<String, String> {
     let term_width = get_terminal_width();
     let max_len = entries.iter().map(|s| s.len()).max().unwrap_or(0);
     let col_width = max_len + 6;
