@@ -75,9 +75,7 @@ mod tests {
             invalid_path.to_str().unwrap().to_string(),
         ];
         let result = mkdir(&input);
-        let expected = "no such file or directory (os error 2)".to_string();
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), expected);
     }
 }

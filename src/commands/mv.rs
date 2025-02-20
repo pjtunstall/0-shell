@@ -24,7 +24,8 @@ pub fn mv(input: &Vec<String>) -> Result<String, String> {
         let dest_file = target_path.join(
             source_path
                 .file_name()
-                .expect("failed to join source name to target"), // e.g. `mv . new1`; handle better.
+                .ok_or_else(|| "failed to join source name to target".to_string())? // Convert None to Err(String)
+                .to_owned(), // Convert &OsStr to OsString (needed for join)
         );
         fs::rename(source_path, dest_file).map_err(|err| err.to_string())?
     } else {
@@ -185,5 +186,23 @@ mod tests {
         assert!(!result.is_ok(), "Result should not be ok");
         let expected = Err(format!("not enough arguments\n{}", USAGE).to_string());
         assert_eq!(result, expected, "Result should show correct error message");
+    }
+
+    #[test]
+    fn test_error_on_cycle() {
+        let temp_store = TempStore::new();
+        let source = &temp_store.source;
+        let target = &temp_store.target;
+
+        fs::create_dir(source).expect("Failed to create source directory");
+        fs::create_dir(target).expect("Failed to create target directory");
+
+        let input = vec![String::from("mv"), target.clone(), target.clone()];
+        let output = mv(&input);
+
+        assert!(
+            !output.is_ok(),
+            "Moving a directory into one of its own subdirectories should be an error"
+        );
     }
 }

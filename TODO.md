@@ -12,7 +12,7 @@
 
 ## Next
 
-- Add more `mv` error handling: cycles, attempt to move current, special folders like home or root, . or .. ?
+- Remove any potentially OS-specific error tests: e.g. ones that require a particular OS-generates error message or code.
 - `ls`: multiple directory arguments.
 - `ls -l`: Understand all that formatting and refactor if some is superfluous.
 - Make `ls` fully cross-platform.
@@ -89,7 +89,7 @@ cp: dest is a directory (not copied).
 ## General
 
 - Note parallels between commands (the better to structure code and tests, order creation of tests, reuse code and tests, memorize).
-- Check error messages are consistently formatted, e.g. whether "os error" numerical codes are included. Maybe start to explore this when I've got tests in place to compare my commands directly against the standard shell commands. Include arguments where appropriate; see `rm`.
+- Check error messages are consistently formatted. Maybe start to explore this when I've got tests in place to compare my commands directly against the standard shell commands. Include arguments where appropriate; see `rm`.
 - Look at whether there are places I can avoid copying, e.g. use refs instead of Strings either in the code or the tests.
 - Test what happens when `ls` encounters `permission denied` errors, if that even happens.
 
