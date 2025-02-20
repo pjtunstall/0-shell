@@ -12,9 +12,8 @@
 
 ## Next
 
-- Remove any potentially OS-specific error tests: e.g. ones that require a particular OS-generates error message or code.
-- `ls`: multiple directory arguments.
-- `ls -l`: Understand all that formatting and refactor if some is superfluous.
+- `ls`: handle multiple directory arguments.
+- `ls -l`: look carefully at all that formatting and refactor if some is superfluous.
 - Make `ls` fully cross-platform.
 - Add tests for `ls`.
 - Add redirection for `ls`.
@@ -58,40 +57,37 @@ cd: too many arguments
 mkdir: dest: File exists
 ```
 
-We can do better. And look at the inconsistent punctuation:
+We can do better. And look at the inconsistent punctuation, sometimes capitalizing the first word after the colon, sometimes not:
 
 ```zsh
 (base) petertunstall@Peters-Air-2 0-shell % cp dest source
 cp: dest is a directory (not copied).
 ```
 
-## Strategy
-
-- v1, using the Rust standard library.
-  - DONE: Start work all in one file.
-  - DONE: Prototype one or two of the simpler basic commands to see what issues will need to be solved and note ideas for how best to do the project.
-  - DONE: Restructure into modules.
-  - DONE: Prototype one of the simpler commands with options and variable number and type of arguments (files versus folders). (echo)
-  - Try a simple example of option handling.
-  - Try a simple example testing against actual shell command. The ones that create or delete files don't lend themselves to that so much, but the text ones do: `cat` and `echo`, `pwd`, `ls`; and I could do one where I create a dir and `cd` into it and check `pwd` both with pure Rust and by calling the actual shell command. Would those count as integration or unit tests? Unit, I suppose.
-  - Look up Posix specifications.
-  - DONE: Finish all commands default option, trying to lead with tests.
-  - Required option flags.
-  - Test all options.
-  - Unit tests for each command.
-  - Integration tests.
-  - See if there's a way to avoid some of those clones in the tests etc., e.g. `mv`.
-  - Refactor for coinsistency of names and ways of doing things.
-  - Refactor, splitting up some functions.
-  - Use loop to insert the right number of backslashes in echo special character test.
-  - `ls`: do I need to allow for some files to be successfully listed and others listed as failures? Return to this question.
-
 ## General
 
-- Note parallels between commands (the better to structure code and tests, order creation of tests, reuse code and tests, memorize).
+- DONE: Start work all in one file.
+- DONE: Prototype one or two of the simpler basic commands to see what issues will need to be solved and note ideas for how best to do the project.
+- DONE: Restructure into modules.
+- DONE: Prototype one of the simpler commands with options and variable number and type of arguments (files versus folders). (echo)
+- DONE: Try a simple example of option handling.
+- Try a simple example testing against actual shell command. The ones that create or delete files don't lend themselves to that so much, but the text ones do: `cat` and `echo`, `pwd`, `ls`; and I could do one where I create a dir and `cd` into it and check `pwd` both with pure Rust and by calling the actual shell command. Would those count as integration or unit tests? Unit, I suppose.
+- Look up Posix specifications.
+- DONE: Finish all commands default option, trying to lead with tests.
+- DONE: Required option flags.
+- Test all options.
+- Unit tests for each command.
+- Integration tests.
+- See if there's a way to avoid some of those clones in the tests etc., e.g. `mv`.
+- Refactor for coinsistency of names and ways of doing things.
+- Refactor, splitting up some functions.
+- Use loop to insert the right number of backslashes in echo special character test.
+- `ls`: do I need to allow for some files to be successfully listed and others listed as failures? Return to this question.
 - Check error messages are consistently formatted. Maybe start to explore this when I've got tests in place to compare my commands directly against the standard shell commands. Include arguments where appropriate; see `rm`.
+- Remove any remaining OS-specific error tests: e.g. ones that require a particular OS-generates error message.
 - Look at whether there are places I can avoid copying, e.g. use refs instead of Strings either in the code or the tests.
 - Test what happens when `ls` encounters `permission denied` errors, if that even happens.
+- Note parallels between commands (the better to structure code and tests, order creation of tests, reuse code and tests, memorize).
 
 ## Tests
 
