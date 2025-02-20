@@ -191,18 +191,17 @@ fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
         })
         .collect();
 
-    // Add . and .. if the -a flag is set (flags & 1 == 1)
     if flags & 1 == 1 {
-        // Add current directory entry
-        let current_dir_entry = format_entry_from_path(path, ".", flags);
-        if let Some(entry) = current_dir_entry {
-            entries.push_front(entry);
+        if let Ok(absolute_path) = fs::canonicalize(path) {
+            let parent_path = absolute_path.parent().unwrap_or(Path::new("/"));
+            let parent_dir_entry = format_entry_from_path(parent_path, "..", flags);
+            if let Some(entry) = parent_dir_entry {
+                entries.push_front(entry);
+            }
         }
 
-        // IMPORTANT: Always add parent directory entry, even for root
-        let parent_path = path.parent().unwrap_or(Path::new("/"));
-        let parent_dir_entry = format_entry_from_path(parent_path, "..", flags);
-        if let Some(entry) = parent_dir_entry {
+        let current_dir_entry = format_entry_from_path(path, ".", flags);
+        if let Some(entry) = current_dir_entry {
             entries.push_front(entry);
         }
     }
@@ -211,8 +210,7 @@ fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
         return Ok(String::new());
     }
 
-    let mut entries: Vec<_> = entries.into_iter().collect();
-    entries.sort();
+    let entries: Vec<_> = entries.into_iter().collect();
 
     long_format_list(entries)
 }
@@ -301,7 +299,7 @@ fn long_format_list(entries: Vec<String>) -> Result<String, String> {
         return Ok(String::new());
     }
 
-    let parsed_entries: Vec<Vec<String>> = entries
+    let mut parsed_entries: Vec<Vec<String>> = entries
         .iter()
         .map(|entry| entry.split_whitespace().map(String::from).collect())
         .collect();
@@ -320,6 +318,17 @@ fn long_format_list(entries: Vec<String>) -> Result<String, String> {
             }
         }
     }
+
+    parsed_entries.sort_by_key(|row| {
+        let name = row.last().cloned().unwrap_or_default();
+        if name == "./" {
+            "\x00".to_string()
+        } else if name == "../" {
+            "\x01".to_string()
+        } else {
+            name
+        }
+    });
 
     let formatted_entries: Vec<String> = parsed_entries
         .iter()
