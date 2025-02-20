@@ -12,7 +12,7 @@
 
 ## Next
 
-- Add more `mv` error handling.
+- Add more `mv` error handling: cycles, attempt to move current, special folders like home or root, . or .. ?
 - `ls`: multiple directory arguments.
 - `ls -l`: Understand all that formatting and refactor if some is superfluous.
 - Make `ls` fully cross-platform.

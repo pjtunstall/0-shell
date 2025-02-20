@@ -3,6 +3,7 @@
 ## Table of Contents
 
 - [What is this?](#what-is-this?)
+- [Audit: echo something](#audit-echo-something)
 - [Regarding the name](#regarding-the-name)
 - [Deviations](#deviations)
 
@@ -31,6 +32,18 @@ Also, `Ctrl + D` to exit the shell. We're told that these commands "need to be i
 > Through the 0-shell you will get to the core of the Unix system and explore an important part of this system’s API which is the process creation and synchronization. Executing a command inside a shell implies creating a new process, which execution and final state will be monitored by its parents processes. This set of functions will be the key to success for your project.
 
 A normal shell would itself handle `cd`, `exit`, `pwd`, `echo` (built-in commands), but call external binaries for `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir` (external commands). (To check this for a given shell, you can enter `type <command>`.) I'm guessing this paragraph is a relic of the task as it was originally conceived, before commit 9e308f2: "fix(0shell): remove mandatory use of low-level system calls and make it bonus". An alternative possibility is that the authors intended to make a distinction between internal and external binaries, and have us spawn a new process for any of the commands that I've labeled external.
+
+## Audit: echo something
+
+One of the audit instructions is:
+
+**Try to run the command "echo "something!"". Do the same in your computer terminal.**
+
+It then asks, "Can you confirm that the displayed message of the project is exactly the same as the computer terminal?" I've made the following assumptions, besides the obvious one that "your compouter terminal" is not also running my program!
+
+- The outer quotes are to be omitted (as in the instruction for the next item).
+- In PowerShell, the text inside those outer quotes is to be entered unchanged.
+- If necessary (e.g. in Bash or Zsh), the `!` is to be escaped with a preceding `\`. (Otherwise, Bash and Zsh will repeatedly display `dquote>` till you close the inner quotes. Since there is no requirement to implement special behavior for `!` or guidance on which shell to use as a standard, I'm guessing this is an oversight.)
 
 ## Regarding the name
 
