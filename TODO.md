@@ -114,7 +114,6 @@ cp: dest is a directory (not copied).
 ## Extras
 
 - Add redirection for `ls`.
-- `touch`.
 
 ## Scope
 

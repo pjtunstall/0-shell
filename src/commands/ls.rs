@@ -211,8 +211,9 @@ fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
     }
 
     let entries: Vec<_> = entries.into_iter().collect();
+    let total = get_total_blocks_in_directory(path);
 
-    long_format_list(entries)
+    long_format_list(entries, total)
 }
 
 fn format_entry_from_direntry(e: DirEntry, flags: u8) -> Option<String> {
@@ -294,7 +295,7 @@ fn format_entry_from_path(path: &Path, name: &str, flags: u8) -> Option<String> 
     ))
 }
 
-fn long_format_list(entries: Vec<String>) -> Result<String, String> {
+fn long_format_list(entries: Vec<String>, total: u64) -> Result<String, String> {
     if entries.is_empty() {
         return Ok(String::new());
     }
@@ -369,7 +370,8 @@ fn long_format_list(entries: Vec<String>) -> Result<String, String> {
         })
         .collect();
 
-    let mut result = formatted_entries.join("\n");
+    let total = format!("total: {}\n", total.to_string());
+    let mut result = total + &formatted_entries.join("\n");
     result.push('\n');
 
     Ok(result)
@@ -422,6 +424,22 @@ fn has_extended_attributes(path: &Path) -> bool {
 fn get_hard_links(path: &Path) -> Result<u64, String> {
     let metadata = fs::metadata(path).map_err(|e| e.to_string())?;
     Ok(metadata.nlink())
+}
+
+fn get_total_blocks_in_directory(path: &Path) -> u64 {
+    let mut total_blocks = 0;
+
+    if path.is_dir() {
+        if let Ok(entries) = fs::read_dir(path) {
+            for entry in entries.filter_map(Result::ok) {
+                let metadata = entry.metadata().unwrap();
+                let blocks = metadata.blocks(); // Returns the number of 512-byte blocks
+                total_blocks += blocks;
+            }
+        }
+    }
+
+    total_blocks
 }
 
 #[cfg(test)]
