@@ -20,15 +20,11 @@ pub fn mv(input: &Vec<String>) -> Result<String, String> {
     let source_path = Path::new(source);
     let target_path = Path::new(target);
 
-    if source_path.is_dir() {
-        return Err(format!("`{}' is a directory (not moved)", source).to_string());
-    }
-
     if target_path.is_dir() {
         let dest_file = target_path.join(
             source_path
                 .file_name()
-                .expect("failed to join source name to target"),
+                .expect("failed to join source name to target"), // e.g. `mv . new1`; handle better.
         );
         fs::rename(source_path, dest_file).map_err(|err| err.to_string())?
     } else {
@@ -188,23 +184,6 @@ mod tests {
         let result = mv(&input);
         assert!(!result.is_ok(), "Result should not be ok");
         let expected = Err(format!("not enough arguments\n{}", USAGE).to_string());
-        assert_eq!(result, expected, "Result should show correct error message");
-    }
-
-    #[test]
-    fn test_error_when_source_path_is_directory() {
-        let temp_store = TempStore::new();
-        let source = &temp_store.source;
-        let target = &temp_store.target;
-        fs::create_dir(source.to_string())
-            .expect(format!("Failed to create source directory: {}", source).as_str());
-        let input = vec!["mv".to_string(), source.to_string(), target.to_string()];
-        let result = mv(&input);
-        assert!(
-            !result.is_ok(),
-            "`mv` should fail when source is a directory",
-        );
-        let expected = Err(format!("`{}' is a directory (not moved)", source).to_string());
         assert_eq!(result, expected, "Result should show correct error message");
     }
 }

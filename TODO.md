@@ -12,6 +12,7 @@
 
 ## Next
 
+- Add more `mv` error handling.
 - `ls`: multiple directory arguments.
 - `ls -l`: Understand all that formatting and refactor if some is superfluous.
 - Make `ls` fully cross-platform.
