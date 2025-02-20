@@ -103,7 +103,7 @@ fn main() {
 }
 
 fn handle_error(command: &str, err: String) {
-    red_println(&format!("{}: {}", command, err.to_lowercase()));
+    red_println(&format!("{}: {}", command, err));
 }
 
 fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {

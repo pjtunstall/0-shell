@@ -43,14 +43,8 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
         }
     }
 
-    let path = if first_pathname_index == 0 {
-        Path::new(".")
-    } else {
-        Path::new(&input[first_pathname_index])
-    };
-
-    if input.len() < 3 {
-        check_dir(path)?;
+    if first_pathname_index == 0 {
+        let path = Path::new(".");
         if flags & 2 != 0 {
             return get_long_list(flags, path);
         } else {
@@ -58,28 +52,61 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
         }
     }
 
-    // For multiple paths, print the directory name before listing contents
-    let multiple_paths = input.len() - first_pathname_index > 1;
-    let mut results = String::new();
+    let mut non_dir_paths = Vec::new();
+    let mut dir_paths = Vec::new();
 
+    // Separate directories from regular files
     for arg in &input[first_pathname_index..] {
         let path = Path::new(arg);
-        check_dir(path)?;
-
-        if multiple_paths {
-            if !results.is_empty() {
-                results.push_str("\n");
+        if path.is_dir() {
+            dir_paths.push(arg);
+        } else {
+            match check_dir(path) {
+                Ok(_) => non_dir_paths.push(arg.to_string()),
+                Err(e) => return Err(e),
             }
-            results.push_str(&format!("{}:\n", arg));
+        }
+    }
+
+    let mut results = String::new();
+
+    // Process non-directory files first if any exist
+    if !non_dir_paths.is_empty() {
+        if flags & 2 != 0 {
+            for file in &non_dir_paths {
+                let file_path = Path::new(file);
+                let file_listing = get_long_list(flags, file_path)?;
+                results.push_str(&file_listing);
+            }
+        } else {
+            let formatted_files = short_format_list(non_dir_paths.clone())?;
+            results.push_str(&formatted_files);
+        }
+    }
+
+    // Process directories
+    let multiple_dirs = dir_paths.len() > 1 || (!non_dir_paths.is_empty() && !dir_paths.is_empty());
+
+    for (i, dir) in dir_paths.iter().enumerate() {
+        let path = Path::new(dir);
+
+        // Add spacing between sections
+        if i > 0 || !non_dir_paths.is_empty() {
+            results.push_str("\n");
         }
 
-        let list = if flags & 2 != 0 {
+        // Print directory header if multiple directories or if we had non-dir files
+        if multiple_dirs {
+            results.push_str(&format!("{}:\n", dir));
+        }
+
+        let dir_listing = if flags & 2 != 0 {
             get_long_list(flags, path)?
         } else {
             get_short_list(flags, path)?
         };
 
-        results.push_str(&list);
+        results.push_str(&dir_listing);
     }
 
     Ok(results)
@@ -93,34 +120,35 @@ fn check_dir(path: &Path) -> Result<String, String> {
         )
         .to_string());
     }
-    if !path.is_dir() {
-        return Err(format!("`{}' is not a directory", path.display()).to_string());
-    }
 
     Ok(String::new())
 }
 
 fn get_short_list(flags: u8, path: &Path) -> Result<String, String> {
-    let mut entries: VecDeque<String> = fs::read_dir(path)
-        .map_err(|_| {
-            format!(
-                "ls: cannot open directory `{}': permission denied",
-                path.display()
-            )
-        })?
-        .filter_map(|entry| {
-            entry.ok().map(|e| {
-                let name = e.file_name().to_string_lossy().to_string();
-                let suffix = if flags & 4 != 0 {
-                    classify(&e.path())
-                } else {
-                    String::new()
-                };
-                format!("{}{}", name, suffix)
-            })
-        })
-        .filter(|name| flags & 1 == 1 || !name.starts_with('.'))
-        .collect();
+    let mut entries: VecDeque<String> = {
+        let read_result = fs::read_dir(path);
+        match read_result {
+            Ok(dir) => dir
+                .filter_map(|entry| match entry {
+                    Ok(e) => {
+                        let name = e.file_name().to_string_lossy().to_string();
+                        let suffix = if flags & 4 != 0 {
+                            classify(&e.path())
+                        } else {
+                            String::new()
+                        };
+                        Some(format!("{}{}", name, suffix))
+                    }
+                    Err(e) => Some(format!("Error reading entry: {}", e.to_string())),
+                })
+                .filter(|name| flags & 1 == 1 || !name.starts_with('.'))
+                .collect::<VecDeque<String>>(),
+            Err(e) => {
+                let error_message = format!("Error reading directory: {}", e.to_string());
+                VecDeque::from(vec![error_message])
+            }
+        }
+    };
 
     if flags & 1 == 1 {
         entries.push_front("..".to_string());
@@ -208,7 +236,7 @@ fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
     let mut entries: VecDeque<String> = fs::read_dir(path)
         .map_err(|_| {
             format!(
-                "ls: cannot open directory `{}': permission denied",
+                "cannot open directory `{}': permission denied",
                 path.display()
             )
         })?
