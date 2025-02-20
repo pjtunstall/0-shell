@@ -1,5 +1,7 @@
 use std::env;
 
+use home;
+
 pub fn cd(input: &Vec<String>) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `cd` should not be empty");
     debug_assert!(
@@ -7,13 +9,22 @@ pub fn cd(input: &Vec<String>) -> Result<String, String> {
         "Input for `{}` should not be passed to `cd`",
         input[0]
     );
-    if let Err(err) = crate::helpers::check_num_args(input, 2) {
-        return Err(err);
+
+    if input.len() > 2 {
+        return Err("too many arguments".to_string());
     }
 
-    let path = match input.get(1) {
+    let path: &String = match input.get(1) {
         Some(path) => path,
-        None => return Err("missing argument".to_string()),
+        None => {
+            if let Some(home_path) = home::home_dir() {
+                env::set_current_dir(&home_path)
+                    .map_err(|e| format!("failed to change directory: {}", e))?;
+                return Ok(String::new());
+            } else {
+                return Err("could not determine home directory".to_string());
+            }
+        }
     };
 
     match env::set_current_dir(path) {
