@@ -38,4 +38,4 @@ Rust's build tool, Cargo, doesn't allow a package name to begin with a numeral, 
 
 ## Deviations
 
-The 01Edu instructions say, "This interpreter must display at least a simple `$`" and "The `$` will be shown again only once the command has been completely executed." etc. To make my shell more distinctive, I chose to take `$` in a generic sense; my "simple `$`" looks like this: `▶`.
+The 01Edu instructions say, "This interpreter must display at least a simple `$`". To make my shell more distinctive, I chose to take `$` in a generic sense. I claim my "simple `$`" looks like this: `▶`. Or, to put it another way, yes, my program displays "at least a simple `$`"--indeed, it something does better than that: it displays a `▶`.

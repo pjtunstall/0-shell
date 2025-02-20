@@ -81,6 +81,7 @@ cp: dest is a directory (not copied).
   - Refactor for coinsistency of names and ways of doing things.
   - Refactor, splitting up some functions.
   - Use loop to insert the right number of backslashes in echo special character test.
+  - `ls`: do I need to allow for some files to be successfully listed and others listed as failures? Return to this question.
 
 ## General
 

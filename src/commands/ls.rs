@@ -71,7 +71,11 @@ fn process_path(flags: u8, path: &Path) -> Result<String, String> {
         .filter_map(|entry| {
             entry.ok().map(|e| {
                 let name = e.file_name().to_string_lossy().to_string();
-                let suffix = classify(&e.path());
+                let suffix = if flags & 4 != 0 {
+                    classify(&e.path())
+                } else {
+                    String::new()
+                };
                 format!("{}{}", name, suffix)
             })
         })
@@ -86,7 +90,6 @@ fn process_path(flags: u8, path: &Path) -> Result<String, String> {
     if entries.is_empty() {
         return Ok(String::new());
     }
-
     let mut entries: Vec<_> = entries.into();
     entries.sort();
 
@@ -118,33 +121,39 @@ fn format_list(entries: Vec<String>) -> Result<String, String> {
 
 fn classify(path: &Path) -> String {
     if path.is_dir() {
-        "/".to_string()
+        return "/".to_string();
     } else if path.is_symlink() {
-        "@".to_string()
-    } else {
-        #[cfg(unix)]
-        {
-            if path
-                .metadata()
-                .map(|m| m.permissions().mode() & 0o111 != 0)
-                .unwrap_or(false)
-            {
-                "*".to_string()
-            } else {
-                "".to_string()
+        return "@".to_string();
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::FileTypeExt;
+
+        if let Ok(metadata) = path.metadata() {
+            let file_type = metadata.file_type();
+
+            if metadata.permissions().mode() & 0o111 != 0 {
+                return "*".to_string();
+            } else if file_type.is_fifo() {
+                return "|".to_string();
+            } else if file_type.is_socket() {
+                return "=".to_string();
             }
-        }
-        #[cfg(windows)]
-        {
-            if let Some(ext) = path.extension() {
-                let ext = ext.to_string_lossy().to_lowercase();
-                if ["exe", "bat", "cmd", "com"].contains(&ext.as_str()) {
-                    return "*".to_string();
-                }
-            }
-            "".to_string()
         }
     }
+
+    #[cfg(windows)]
+    {
+        if let Some(ext) = path.extension() {
+            let ext = ext.to_string_lossy().to_lowercase();
+            if ["exe", "bat", "cmd", "com"].contains(&ext.as_str()) {
+                return "*".to_string();
+            }
+        }
+    }
+
+    "".to_string()
 }
 
 fn get_terminal_width() -> usize {
