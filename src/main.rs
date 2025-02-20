@@ -16,6 +16,7 @@ use termion::raw::IntoRawMode;
 
 use commands::{
     cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, mv::mv, pwd::pwd, rm::rm,
+    touch::touch,
 };
 
 struct TextStyle;
@@ -83,6 +84,7 @@ fn main() {
             "mv" => mv(&splitput),
             "pwd" => pwd(&splitput),
             "rm" => rm(&splitput),
+            "touch" => touch(&splitput),
             _ => {
                 red_println(&format!("0-shell: command not found: {}", command));
                 continue;

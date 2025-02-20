@@ -3,7 +3,6 @@
 - [Next](#next)
 - [Fix](#fix)
 - [General](#general)
-- [Strategy](#strategy)
 - [Command line](#command-line)
 - [Parsing](#parsing)
 - [Documentation](#documentation)
@@ -15,8 +14,6 @@
 - `ls`: handle multiple directory arguments.
 - `ls -l`: look carefully at all that formatting and refactor if some is superfluous.
 - Make `ls` fully cross-platform.
-- Add tests for `ls`.
-- Add redirection for `ls`.
 - Handle file and directory names that begin with a dash. (Via absolute path?) Should I escape dashes during the initial parse? See what Zsh does. How does `echo` treat dashes? A dash on its own is ignored by echo, but an initial dash followed by other characters is printed.
 - RESEARCH: Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think.
 - Change `TempStore` to a `Vec<String>`, so that it can have any number of items, and so that they're not labeled `source` and `target`, as it's now used more generally in contexts where those names aren't relevant. Use `PathBuf` instead of `String` in `TempStore`. Tidy the tests to be consistent with this change and use `Path` more; in particular, get rid of the last remaining `{}{}{}` in `mv.rs`.
@@ -91,6 +88,7 @@ cp: dest is a directory (not copied).
 
 ## Tests
 
+- Add tests for `ls`.
 - Test each command module independently, prioritizing the public functions.
 - I was forgetting the obvious: besides the pure Rust tests, try testing against actual shell commands using `std::process::Command;`. Try this on the next command I work on.
 - Cross test commands in integration tests.
@@ -115,6 +113,7 @@ cp: dest is a directory (not copied).
 
 ## Extras
 
+- Add redirection for `ls`.
 - `touch`.
 
 ## Scope
