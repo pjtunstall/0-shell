@@ -48,13 +48,41 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
     } else {
         Path::new(&input[first_pathname_index])
     };
-    check_dir(path)?;
 
-    if flags & 2 != 0 {
-        get_long_list(flags, path)
-    } else {
-        get_short_list(flags, path)
+    if input.len() < 3 {
+        check_dir(path)?;
+        if flags & 2 != 0 {
+            return get_long_list(flags, path);
+        } else {
+            return get_short_list(flags, path);
+        }
     }
+
+    // For multiple paths, print the directory name before listing contents
+    let multiple_paths = input.len() - first_pathname_index > 1;
+    let mut results = String::new();
+
+    for arg in &input[first_pathname_index..] {
+        let path = Path::new(arg);
+        check_dir(path)?;
+
+        if multiple_paths {
+            if !results.is_empty() {
+                results.push_str("\n");
+            }
+            results.push_str(&format!("{}:\n", arg));
+        }
+
+        let list = if flags & 2 != 0 {
+            get_long_list(flags, path)?
+        } else {
+            get_short_list(flags, path)?
+        };
+
+        results.push_str(&list);
+    }
+
+    Ok(results)
 }
 
 fn check_dir(path: &Path) -> Result<String, String> {

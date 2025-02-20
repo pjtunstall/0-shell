@@ -11,7 +11,6 @@
 
 ## Next
 
-- `ls`: handle multiple directory arguments.
 - `ls -l`: look carefully at all that formatting and refactor if some is superfluous.
 - Make `ls` fully cross-platform.
 - Handle file and directory names that begin with a dash. (Via absolute path?) Should I escape dashes during the initial parse? See what Zsh does. How does `echo` treat dashes? A dash on its own is ignored by echo, but an initial dash followed by other characters is printed.
