@@ -52,18 +52,18 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
         }
     }
 
-    let mut non_dir_paths = Vec::new();
-    let mut dir_paths = Vec::new();
+    let mut files = Vec::new();
+    let mut dirs = Vec::new();
     let mut non_paths = Vec::new();
 
     // Separate directories from regular files
     for arg in &input[first_pathname_index..] {
         let path = Path::new(arg);
         if path.is_dir() {
-            dir_paths.push(arg);
+            dirs.push(arg);
         } else {
             match path.exists() {
-                true => non_dir_paths.push(arg.to_string()),
+                true => files.push(arg.to_string()),
                 false => non_paths.push(
                     format!(
                         "\x1b[31m{}: No such file or directory found\x1b[0m\x1b[1m\n",
@@ -76,7 +76,7 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
     }
 
     non_paths.sort();
-    non_dir_paths.sort();
+    files.sort();
 
     let mut results = String::new();
 
@@ -84,25 +84,25 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
         results.push_str(&item);
     }
 
-    if !non_dir_paths.is_empty() {
+    if !files.is_empty() {
         if flags & 2 != 0 {
-            for file in &non_dir_paths {
+            for file in &files {
                 let file_path = Path::new(file);
                 let file_listing = get_long_list(flags, file_path)?;
                 results.push_str(&file_listing);
             }
         } else {
-            let formatted_files = short_format_list(non_dir_paths.clone())?;
+            let formatted_files = short_format_list(files.clone())?;
             results.push_str(&formatted_files);
         }
     }
 
     // Process directories
-    for (i, dir) in dir_paths.iter().enumerate() {
+    for (i, dir) in dirs.iter().enumerate() {
         let path = Path::new(dir);
 
         // Add spacing between sections
-        if i > 0 || !non_dir_paths.is_empty() {
+        if i > 0 || !files.is_empty() {
             results.push_str("\n");
         }
 
@@ -232,16 +232,32 @@ fn get_terminal_width() -> usize {
 }
 
 fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
-    let mut entries: VecDeque<String> = match fs::read_dir(path) {
-        Ok(ok) => ok
-            .filter_map(|entry| format_entry_from_direntry(entry.ok()?, flags))
-            .filter(|entry_str| {
-                let name = entry_str.split_whitespace().last().unwrap_or(&"");
-                flags & 1 == 1 || !name.starts_with('.')
-            })
-            .collect(),
-        Err(_) => {
-            return Ok(String::new());
+    let metadata = match fs::metadata(path) {
+        Ok(meta) => meta,
+        Err(_) => return Ok(String::new()),
+    };
+
+    let mut entries: VecDeque<String> = if metadata.is_dir() {
+        match fs::read_dir(path) {
+            Ok(ok) => ok
+                .filter_map(|entry| format_entry_from_direntry(entry.ok()?, flags))
+                .filter(|entry_str| {
+                    let name = entry_str.split_whitespace().last().unwrap_or(&"");
+                    flags & 1 == 1 || !name.starts_with('.')
+                })
+                .collect(),
+            Err(_) => return Ok(String::new()),
+        }
+    } else {
+        let file_name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .map(|s| s.to_string()) // Convert to owned String
+            .unwrap_or_else(|| path.to_string_lossy().into_owned()); // Convert Cow<str> to String
+
+        match format_entry_from_path(path, &file_name, flags) {
+            Some(entry_str) => VecDeque::from([entry_str]),
+            None => return Ok(String::new()),
         }
     };
 
