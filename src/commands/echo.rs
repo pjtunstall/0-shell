@@ -36,7 +36,7 @@ pub fn echo(input: &Vec<String>) -> Result<String, String> {
             output.push(' ');
         }
 
-        if (arg.starts_with('"') && arg.ends_with('"'))
+        if arg.len() > 1 && (arg.starts_with('"') && arg.ends_with('"'))
             || (arg.starts_with('\'') && arg.ends_with('\''))
         {
             let inside = &arg[1..arg.len() - 1];
