@@ -64,19 +64,26 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
         } else {
             match path.exists() {
                 true => non_dir_paths.push(arg.to_string()),
-                false => non_paths
-                    .push(format!("{}: No such file or directory found\n", arg).to_string()),
+                false => non_paths.push(
+                    format!(
+                        "\x1b[31m{}: No such file or directory found\x1b[0m\x1b[1m\n",
+                        arg
+                    )
+                    .to_string(),
+                ),
             }
         }
     }
 
+    non_paths.sort();
+    non_dir_paths.sort();
+
     let mut results = String::new();
 
-    for item in non_paths {
+    for item in &non_paths {
         results.push_str(&item);
     }
 
-    // Process non-directory files first if any exist
     if !non_dir_paths.is_empty() {
         if flags & 2 != 0 {
             for file in &non_dir_paths {
@@ -91,8 +98,6 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
     }
 
     // Process directories
-    let multiple_dirs = dir_paths.len() > 1 || (!non_dir_paths.is_empty() && !dir_paths.is_empty());
-
     for (i, dir) in dir_paths.iter().enumerate() {
         let path = Path::new(dir);
 
@@ -102,7 +107,7 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
         }
 
         // Print directory header if multiple directories or if we had non-dir files
-        if multiple_dirs {
+        if input.len() > 2 {
             results.push_str(&format!("{}:\n", dir));
         }
 
