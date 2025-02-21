@@ -54,6 +54,7 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
 
     let mut non_dir_paths = Vec::new();
     let mut dir_paths = Vec::new();
+    let mut non_paths = Vec::new();
 
     // Separate directories from regular files
     for arg in &input[first_pathname_index..] {
@@ -61,14 +62,19 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
         if path.is_dir() {
             dir_paths.push(arg);
         } else {
-            match check_dir(path) {
-                Ok(_) => non_dir_paths.push(arg.to_string()),
-                Err(e) => return Err(e),
+            match path.exists() {
+                true => non_dir_paths.push(arg.to_string()),
+                false => non_paths
+                    .push(format!("{}: No such file or directory found\n", arg).to_string()),
             }
         }
     }
 
     let mut results = String::new();
+
+    for item in non_paths {
+        results.push_str(&item);
+    }
 
     // Process non-directory files first if any exist
     if !non_dir_paths.is_empty() {
@@ -110,18 +116,6 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
     }
 
     Ok(results)
-}
-
-fn check_dir(path: &Path) -> Result<String, String> {
-    if !path.exists() {
-        return Err(format!(
-            "cannot access `{}': no such file or directory",
-            path.display()
-        )
-        .to_string());
-    }
-
-    Ok(String::new())
 }
 
 fn get_short_list(flags: u8, path: &Path) -> Result<String, String> {
@@ -233,19 +227,18 @@ fn get_terminal_width() -> usize {
 }
 
 fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
-    let mut entries: VecDeque<String> = fs::read_dir(path)
-        .map_err(|_| {
-            format!(
-                "cannot open directory `{}': permission denied",
-                path.display()
-            )
-        })?
-        .filter_map(|entry| format_entry_from_direntry(entry.ok()?, flags))
-        .filter(|entry_str| {
-            let name = entry_str.split_whitespace().last().unwrap_or(&"");
-            flags & 1 == 1 || !name.starts_with('.')
-        })
-        .collect();
+    let mut entries: VecDeque<String> = match fs::read_dir(path) {
+        Ok(ok) => ok
+            .filter_map(|entry| format_entry_from_direntry(entry.ok()?, flags))
+            .filter(|entry_str| {
+                let name = entry_str.split_whitespace().last().unwrap_or(&"");
+                flags & 1 == 1 || !name.starts_with('.')
+            })
+            .collect(),
+        Err(_) => {
+            return Ok(String::new());
+        }
+    };
 
     if flags & 1 == 1 {
         if let Ok(absolute_path) = fs::canonicalize(path) {
