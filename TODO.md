@@ -11,21 +11,22 @@
 
 ## Next
 
-- Let `get_long_list` deal with file name args too, as does `get_short_list` now.
-- Stop both of the from aborting on encountering an unknown name.
+- Review error messages for consistent capitalization.
 - `ls -l`: look carefully at all that formatting and refactor if some is superfluous.
 - Make `ls` fully cross-platform.
 - Handle file and directory names that begin with a dash. (Via absolute path?) Should I escape dashes during the initial parse? See what Zsh does. How does `echo` treat dashes? A dash on its own is ignored by echo, but an initial dash followed by other characters is printed.
 - RESEARCH: Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think.
 - Change `TempStore` to a `Vec<String>`, so that it can have any number of items, and so that they're not labeled `source` and `target`, as it's now used more generally in contexts where those names aren't relevant. Use `PathBuf` instead of `String` in `TempStore`. Tidy the tests to be consistent with this change and use `Path` more; in particular, get rid of the last remaining `{}{}{}` in `mv.rs`.
+- Unit tests for `ls`.
+- Integration tests, starting with the audit questions.
 - Check vetting of argument numbers and types in each command function. See if I can write a general function to check conditions on number of arguments (better that `check_num_args`), e.g. less than, greater than, or equal to.
 - Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
 - REFACTOR: Restructure `main` and `helpers`. Maybe add a `style` module.
 
-## Fix
+## Fix?
 
-- `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: too many arguments. What's the rule?
-- Handle cases like the following. Zsh:
+- `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: too many arguments. What's the rule? Maybe I want to do it my way.
+- Decide how to capitalize in cases like the following. Zsh:
 
 ```zsh
 % cd file copy
