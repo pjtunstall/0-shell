@@ -75,7 +75,7 @@ You might not find this necessary, but in case running the tests with the (by de
 cargo test -- --test-threads=1
 ```
 
-The success test for `pwd` expects the current directory to be `0-shell`, but the `cd` test temporarily changes the current directory.
+The success test for `pwd` expects the current directory to be `0-shell`, but the `cd` test temporarily changes the current directory. The integration test in `integration.rs` also changes the current directory briefly. In my experience, this hasn't been a problem, but, as far as I can see, there is a logical possibility that these tests could clash if they happen to be run in parallel and the current directory is changed at the same time.
 
 ## Further
 
