@@ -11,7 +11,6 @@
 
 ## Next
 
-- REFACTOR: Restructure `main` and `helpers`.
 - REFACTOR: `ls` into submodules.
 - Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
 
@@ -38,7 +37,7 @@
 
 ## Command line
 
-- Ctr + C for interrupting internal processes.
+- Ctr + C for interrupting internal processes. And implement some internal process that might take significant time so that Ctr + C can be seen in action.
 
 ## Parsing
 
@@ -51,10 +50,8 @@
 
 - Investigate mdBook for Rust documentation.
 - Write a manual of usage in a standardized form, accessible from the command line.
-- Mini usage messages for each command, for when its arguments can't be parsed.
 
 ## Scope
 
 - Consider the two optional extra projects, `0-shell-job-control` and `0-shell-scripting`. (For what it's worth, 4 weeks are assigned to the main project and 2 weeks for each of the extras. All three projects are for 4 students.)
 - There is a hint that the project should teach the difference between Unix and Posix. Consider whether it should adhere to Posix. Look up Posix specifications.
-- "You must program a mini Unix shell, try to focus on something simple like BusyBox." What, if anything, is special about BusyBox that should warrent this mention?
