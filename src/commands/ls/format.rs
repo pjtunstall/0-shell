@@ -44,61 +44,6 @@ impl FileInfo {
     }
 }
 
-pub fn format_entry<T: AsRef<Path>>(
-    path: T,
-    name: Option<String>,
-    metadata: Metadata,
-    flags: u8,
-) -> Option<String> {
-    let path = path.as_ref();
-    let name = name.unwrap_or_else(|| {
-        path.file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default()
-    });
-
-    let file_type = if metadata.is_dir() { "d" } else { "-" };
-    let (permissions, hard_links, user_name, group_name) =
-        system::get_platform_specific_info(&metadata);
-
-    let suffix = if flags & 4 != 0 {
-        system::classify(path)
-    } else {
-        String::new()
-    };
-
-    let info = FileInfo {
-        file_type: file_type.to_string(),
-        permissions,
-        hard_links,
-        user_name,
-        group_name,
-        size: metadata.len(),
-        timestamp: format_time(metadata.modified().unwrap_or(UNIX_EPOCH)),
-        name,
-        suffix,
-        extended_attr: system::get_extended_attributes(path),
-        symlink: system::get_symlink_info(&metadata),
-    };
-
-    Some(info.format())
-}
-
-fn format_entry_from_direntry(e: DirEntry, flags: u8) -> Option<String> {
-    let metadata = e.metadata().ok()?;
-    format_entry(
-        e.path(),
-        Some(e.file_name().to_string_lossy().into_owned()),
-        metadata,
-        flags,
-    )
-}
-
-fn format_entry_from_path(path: &Path, name: &str, flags: u8) -> Option<String> {
-    let metadata = fs::metadata(path).ok()?;
-    format_entry(path, Some(name.to_string()), metadata, flags)
-}
-
 pub fn get_short_list(flags: u8, path: &Path) -> Result<String, String> {
     let mut entries: VecDeque<String> = match fs::read_dir(path) {
         Ok(dir) => dir
@@ -302,6 +247,61 @@ fn long_format_list(entries: Vec<String>, total: u64) -> Result<String, String> 
     result.push('\n');
 
     Ok(result)
+}
+
+fn format_entry<T: AsRef<Path>>(
+    path: T,
+    name: Option<String>,
+    metadata: Metadata,
+    flags: u8,
+) -> Option<String> {
+    let path = path.as_ref();
+    let name = name.unwrap_or_else(|| {
+        path.file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default()
+    });
+
+    let file_type = if metadata.is_dir() { "d" } else { "-" };
+    let (permissions, hard_links, user_name, group_name) =
+        system::get_platform_specific_info(&metadata);
+
+    let suffix = if flags & 4 != 0 {
+        system::classify(path)
+    } else {
+        String::new()
+    };
+
+    let info = FileInfo {
+        file_type: file_type.to_string(),
+        permissions,
+        hard_links,
+        user_name,
+        group_name,
+        size: metadata.len(),
+        timestamp: format_time(metadata.modified().unwrap_or(UNIX_EPOCH)),
+        name,
+        suffix,
+        extended_attr: system::get_extended_attributes(path),
+        symlink: system::get_symlink_info(&metadata),
+    };
+
+    Some(info.format())
+}
+
+fn format_entry_from_direntry(e: DirEntry, flags: u8) -> Option<String> {
+    let metadata = e.metadata().ok()?;
+    format_entry(
+        e.path(),
+        Some(e.file_name().to_string_lossy().into_owned()),
+        metadata,
+        flags,
+    )
+}
+
+fn format_entry_from_path(path: &Path, name: &str, flags: u8) -> Option<String> {
+    let metadata = fs::metadata(path).ok()?;
+    format_entry(path, Some(name.to_string()), metadata, flags)
 }
 
 fn format_time(modified: SystemTime) -> String {

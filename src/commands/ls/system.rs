@@ -31,22 +31,6 @@ pub fn get_platform_specific_info(metadata: &Metadata) -> (String, u64, String, 
     }
 }
 
-fn mode_to_string(mode: u32) -> String {
-    let user = (mode >> 6) & 0b111;
-    let group = (mode >> 3) & 0b111;
-    let other = mode & 0b111;
-
-    let mut perms_str = String::new();
-
-    for &bits in &[user, group, other] {
-        perms_str.push(if bits & 0b100 != 0 { 'r' } else { '-' });
-        perms_str.push(if bits & 0b010 != 0 { 'w' } else { '-' });
-        perms_str.push(if bits & 0b001 != 0 { 'x' } else { '-' });
-    }
-
-    perms_str
-}
-
 pub fn get_extended_attributes(path: &Path) -> String {
     #[cfg(unix)]
     {
@@ -134,13 +118,6 @@ pub fn classify(path: &Path) -> String {
     "".to_string()
 }
 
-pub fn has_extended_attributes(path: &Path) -> bool {
-    match xattr::list(path) {
-        Ok(attrs) => attrs.count() > 0,
-        Err(_) => false,
-    }
-}
-
 pub fn get_total_blocks_in_directory(path: &Path) -> u64 {
     let mut total_blocks = 0;
 
@@ -155,6 +132,29 @@ pub fn get_total_blocks_in_directory(path: &Path) -> u64 {
     }
 
     total_blocks
+}
+
+fn mode_to_string(mode: u32) -> String {
+    let user = (mode >> 6) & 0b111;
+    let group = (mode >> 3) & 0b111;
+    let other = mode & 0b111;
+
+    let mut perms_str = String::new();
+
+    for &bits in &[user, group, other] {
+        perms_str.push(if bits & 0b100 != 0 { 'r' } else { '-' });
+        perms_str.push(if bits & 0b010 != 0 { 'w' } else { '-' });
+        perms_str.push(if bits & 0b001 != 0 { 'x' } else { '-' });
+    }
+
+    perms_str
+}
+
+fn has_extended_attributes(path: &Path) -> bool {
+    match xattr::list(path) {
+        Ok(attrs) => attrs.count() > 0,
+        Err(_) => false,
+    }
 }
 
 fn get_user_and_group(uid: u32, gid: u32) -> (String, String) {
