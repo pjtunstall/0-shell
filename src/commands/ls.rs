@@ -19,6 +19,12 @@ use xattr;
 
 const USAGE: &str = "Usage: ls [-a] [-l] [-F] [DIRECTORY]...";
 
+struct PathClassification {
+    directories: Vec<String>,
+    files: Vec<String>,
+    non_existent: Vec<String>,
+}
+
 struct FileInfo {
     file_type: String,
     permissions: String,
@@ -52,6 +58,56 @@ impl FileInfo {
     }
 }
 
+#[derive(Debug)]
+struct LsFlags {
+    show_hidden: bool, // -a
+    long_format: bool, // -l
+    classify: bool,    // -F
+    first_pathname_index: usize,
+}
+
+impl LsFlags {
+    fn parse(args: &[String]) -> Result<Self, String> {
+        let mut flags = LsFlags {
+            show_hidden: false,
+            long_format: false,
+            classify: false,
+            first_pathname_index: 0,
+        };
+
+        for (i, arg) in args.iter().enumerate() {
+            if !arg.starts_with('-') {
+                flags.first_pathname_index = i;
+                break;
+            }
+
+            if arg.chars().skip(1).any(|c| !['a', 'l', 'F'].contains(&c)) {
+                return Err(format!("unrecognized option `{}'\n{}", arg, USAGE));
+            }
+
+            flags.show_hidden |= arg.contains('a');
+            flags.long_format |= arg.contains('l');
+            flags.classify |= arg.contains('F');
+        }
+
+        Ok(flags)
+    }
+
+    fn as_u8(&self) -> u8 {
+        let mut result = 0;
+        if self.show_hidden {
+            result |= 1;
+        }
+        if self.long_format {
+            result |= 2;
+        }
+        if self.classify {
+            result |= 4;
+        }
+        result
+    }
+}
+
 pub fn ls(input: &Vec<String>) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `ls` should not be empty");
     debug_assert!(
@@ -60,85 +116,92 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
         input[0]
     );
 
-    let mut flags: u8 = 0;
-    let mut first_pathname_index: usize = 0;
+    let flags = LsFlags::parse(&input[1..])?;
 
-    for (i, arg) in input[1..].iter().enumerate() {
-        if arg.starts_with('-') {
-            if arg.contains('a') {
-                flags |= 1;
-            }
-            if arg.contains('l') {
-                flags |= 2;
-            }
-            if arg.contains('F') {
-                flags |= 4;
-            }
-            if arg.chars().skip(1).any(|c| !['a', 'l', 'F'].contains(&c)) {
-                return Err(format!("unrecognized option `{}'\n{}", arg, USAGE).to_string());
-            }
-        } else {
-            first_pathname_index = i + 1;
-            debug_assert!(first_pathname_index < input.len());
-            break;
-        }
+    if flags.first_pathname_index == 0 {
+        return list_current_directory(&flags);
     }
 
-    if first_pathname_index == 0 {
-        let path = Path::new(".");
-        if flags & 2 != 0 {
-            return get_long_list(flags, path);
-        } else {
-            return get_short_list(flags, path);
-        }
-    }
+    let paths = &input[(flags.first_pathname_index + 1)..];
+    let PathClassification {
+        directories,
+        mut files,
+        mut non_existent,
+    } = classify_paths(paths);
 
-    let mut files = Vec::new();
-    let mut dirs = Vec::new();
-    let mut non_paths = Vec::new();
-
-    // Separate directories from regular files
-    for arg in &input[first_pathname_index..] {
-        let path = Path::new(arg);
-        if path.is_dir() {
-            dirs.push(arg);
-        } else {
-            match path.exists() {
-                true => files.push(arg.to_string()),
-                false => non_paths.push(
-                    format!(
-                        "\x1b[31m{}: No such file or directory found\x1b[0m\x1b[1m\n", // red
-                        arg
-                    )
-                    .to_string(),
-                ),
-            }
-        }
-    }
-
-    non_paths.sort();
+    non_existent.sort();
     files.sort();
 
     let mut results = String::new();
+    results.push_str(&non_existent.join(""));
+    process_files(&files, &flags, &mut results)?;
+    process_directories(input, directories, results, flags.as_u8(), files)
+}
 
-    for item in &non_paths {
-        results.push_str(&item);
+fn list_current_directory(flags: &LsFlags) -> Result<String, String> {
+    let path = Path::new(".");
+    if flags.long_format {
+        get_long_list(flags.as_u8(), path)
+    } else {
+        get_short_list(flags.as_u8(), path)
+    }
+}
+
+fn process_files(
+    files: &[String],
+    flags: &LsFlags,
+    results: &mut String,
+) -> Result<String, String> {
+    if files.is_empty() {
+        return Ok(results.to_string());
     }
 
-    if !files.is_empty() {
-        if flags & 2 != 0 {
-            for file in &files {
-                let file_path = Path::new(file);
-                let file_listing = get_long_list(flags, file_path)?;
-                results.push_str(&file_listing);
-            }
+    if flags.long_format {
+        for file in files {
+            let file_path = Path::new(file);
+            results.push_str(&get_long_list(flags.as_u8(), file_path)?);
+        }
+    } else {
+        results.push_str(&short_format_list(files.to_vec())?);
+    }
+
+    Ok(results.to_string())
+}
+
+fn classify_paths(paths: &[String]) -> PathClassification {
+    let mut directories = Vec::new();
+    let mut files = Vec::new();
+    let mut non_existent = Vec::new();
+
+    for path_str in paths {
+        let path = Path::new(path_str);
+        if path.is_dir() {
+            directories.push(path_str.to_string());
+        } else if path.exists() {
+            files.push(path_str.to_string());
         } else {
-            let formatted_files = short_format_list(files.clone())?;
-            results.push_str(&formatted_files);
+            non_existent.push(format!(
+                "\x1b[31m{}: No such file or directory found\x1b[0m\x1b[1m\n",
+                path_str
+            ));
         }
     }
 
-    // Process directories
+    PathClassification {
+        directories,
+        files,
+        non_existent,
+    }
+}
+
+fn process_directories(
+    input: &Vec<String>,
+    dirs: Vec<String>,
+    results: String,
+    flags: u8,
+    files: Vec<String>,
+) -> Result<String, String> {
+    let mut results = results;
     for (i, dir) in dirs.iter().enumerate() {
         let path = Path::new(dir);
 
