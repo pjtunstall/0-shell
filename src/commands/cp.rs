@@ -55,9 +55,9 @@ mod tests {
 
     #[test]
     fn test_cp() {
-        let temp_store = TempStore::new();
-        let source = &temp_store.source;
-        let target = &temp_store.target;
+        let temp_store = TempStore::new(2);
+        let source = &temp_store.store[0];
+        let target = &temp_store.store[1];
         let input = vec!["cp".into(), source.clone(), target.clone()];
 
         let content = "Hello, cruel world!";

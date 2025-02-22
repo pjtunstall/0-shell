@@ -46,13 +46,13 @@ mod tests {
 
     #[test]
     fn test_mv_to_dir() {
-        let temp_store = TempStore::new();
+        let temp_store = TempStore::new(2);
 
-        let source = &temp_store.source;
+        let source = &temp_store.store[0];
         let source_contents = "hello";
         fs::write(&source, source_contents).expect("Failed to create test source file");
 
-        let target = &temp_store.target;
+        let target = &temp_store.store[1];
         fs::create_dir(target).expect("Failed to create target directory");
 
         let input = vec!["mv".to_string(), source.to_string(), target.to_string()];
@@ -73,13 +73,13 @@ mod tests {
 
     #[test]
     fn test_mv_as_rename() {
-        let temp_store = TempStore::new();
+        let temp_store = TempStore::new(2);
 
-        let source = &temp_store.source;
+        let source = &temp_store.store[0];
         let source_contents = "hello";
         fs::write(&source, source_contents).expect("Failed to create test source file");
 
-        let target = &temp_store.target;
+        let target = &temp_store.store[1];
         fs::write(&target, "world").expect("Failed to create test source file");
 
         let input = vec!["mv".to_string(), source.to_string(), target.to_string()];
@@ -101,13 +101,13 @@ mod tests {
 
     #[test]
     fn test_mv_as_rename_when_new_name_already_exists() {
-        let temp_store = TempStore::new();
-        let source = Path::new(&temp_store.source);
+        let temp_store = TempStore::new(2);
+        let source = Path::new(&temp_store.store[0]);
 
         let source_contents = "hello";
         fs::write(&source, source_contents).expect("Failed to create test source file");
 
-        let target = Path::new(&temp_store.target);
+        let target = Path::new(&temp_store.store[1]);
         fs::write(&target, "world").expect("Failed to create test source file");
 
         let input = vec![
@@ -139,14 +139,14 @@ mod tests {
 
     #[test]
     fn test_mv_to_directory_and_rename() {
-        let temp_store = TempStore::new();
+        let temp_store = TempStore::new(2);
 
-        let source = &temp_store.source;
+        let source = &temp_store.store[0];
         let source_contents = "hello";
         fs::write(&source, source_contents)
             .expect(format!("Failed to create test source file {}", source).as_str());
 
-        let target = Path::new(&temp_store.target);
+        let target = Path::new(&temp_store.store[1]);
         fs::create_dir(target)
             .expect(format!("Failed to create target directory {}", target.display()).as_str());
 
@@ -190,9 +190,9 @@ mod tests {
 
     #[test]
     fn test_error_on_cycle() {
-        let temp_store = TempStore::new();
-        let source = &temp_store.source;
-        let target = &temp_store.target;
+        let temp_store = TempStore::new(2);
+        let source = &temp_store.store[0];
+        let target = &temp_store.store[1];
 
         fs::create_dir(source).expect("Failed to create source directory");
         fs::create_dir(target).expect("Failed to create target directory");

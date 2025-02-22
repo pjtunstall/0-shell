@@ -77,8 +77,8 @@ mod tests {
 
     #[test]
     fn test_rm_removes_one_file() {
-        let temp_store = TempStore::new();
-        let file = &temp_store.target;
+        let temp_store = TempStore::new(1);
+        let file = &temp_store.store[0];
         fs::write(file.to_string(), "").expect("Failed to create test file");
 
         let input = vec!["rm".to_string(), file.to_string()];
@@ -90,9 +90,9 @@ mod tests {
 
     #[test]
     fn test_rm_removes_multiple_files() {
-        let temp_store = TempStore::new();
-        let file1 = &temp_store.source;
-        let file2 = &temp_store.target;
+        let temp_store = TempStore::new(2);
+        let file1 = &temp_store.store[0];
+        let file2 = &temp_store.store[1];
         fs::write(file1.to_string(), "").expect("Failed to create test file");
         fs::write(file2.to_string(), "").expect("Failed to create test file");
 
@@ -106,8 +106,8 @@ mod tests {
 
     #[test]
     fn test_rm_error_when_argument_is_directory() {
-        let temp_store = TempStore::new();
-        let dir = &temp_store.target;
+        let temp_store = TempStore::new(1);
+        let dir = &temp_store.store[0];
         fs::create_dir(dir.to_string()).expect("Failed to create test directory");
 
         let input = vec!["rm".to_string(), dir.to_string()];
@@ -123,13 +123,11 @@ mod tests {
 
     #[test]
     fn test_rm_when_arguments_are_a_mixture_of_files_and_directories() {
-        let file_store = TempStore::new();
-        let file1 = &file_store.source;
-        let file2 = &file_store.target;
-
-        let dir_store = TempStore::new();
-        let dir2 = &dir_store.source;
-        let dir1 = &dir_store.target;
+        let temp_store = TempStore::new(4);
+        let file1 = &temp_store.store[0];
+        let file2 = &temp_store.store[1];
+        let dir1 = &temp_store.store[2];
+        let dir2 = &temp_store.store[3];
 
         fs::write(file1.to_string(), "").expect("Failed to create test file");
         fs::write(file2.to_string(), "").expect("Failed to create test file");
@@ -164,13 +162,11 @@ mod tests {
 
     #[test]
     fn test_rm_recursive() {
-        let file_store = TempStore::new();
-        let file1 = &file_store.source;
-        let file2 = &file_store.target;
-
-        let dir_store = TempStore::new();
-        let dir2 = Path::new(&dir_store.source);
-        let dir1 = Path::new(&dir_store.target);
+        let temp_store = TempStore::new(4);
+        let file1 = &temp_store.store[0];
+        let file2 = &temp_store.store[1];
+        let dir1 = Path::new(&temp_store.store[2]);
+        let dir2 = Path::new(&temp_store.store[3]);
 
         fs::create_dir(dir1).expect("Failed to create test directory");
         fs::create_dir(dir1.join(dir2)).expect("Failed to create test directory");

@@ -65,9 +65,9 @@ mod tests {
 
     #[test]
     fn test_mkdir_invalid_path() {
-        let temp_store = TempStore::new();
-        let dir = Path::new(&temp_store.target);
-        let prefix = Path::new(&temp_store.source);
+        let temp_store = TempStore::new(2);
+        let dir = Path::new(&temp_store.store[0]);
+        let prefix = Path::new(&temp_store.store[1]);
         let invalid_path = prefix.join(dir);
 
         let input = vec![

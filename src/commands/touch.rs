@@ -36,8 +36,8 @@ mod tests {
 
     #[test]
     fn test_touch() {
-        let temp_store = TempStore::new();
-        let source = &temp_store.source;
+        let temp_store = TempStore::new(1);
+        let source = &temp_store.store[0];
         let path = Path::new(source);
 
         let input = vec![String::from("touch"), source.to_string()];
