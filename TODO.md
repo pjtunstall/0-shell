@@ -23,6 +23,7 @@
 
 ## General
 
+- Test `ls` on Windows as is uses platform-specific code, conditional on which platform is being compiled for.
 - Look up Posix specifications.
 - See if there's a way to avoid some of those clones in the tests etc., e.g. `mv`. Look at whether there are places I can avoid copying, e.g. use refs instead of Strings either in the code or the tests.
 - Refactor for coinsistency of names and ways of doing things.

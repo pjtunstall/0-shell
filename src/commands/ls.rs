@@ -1,8 +1,16 @@
-use std::fs::DirEntry;
-use std::os::unix::fs::MetadataExt;
-use std::os::unix::fs::PermissionsExt;
+use std::fs::{DirEntry, Metadata};
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::{collections::VecDeque, fs, path::Path};
+use std::{
+    collections::VecDeque,
+    fs,
+    path::{Path, MAIN_SEPARATOR_STR},
+};
+
+#[cfg(unix)]
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
+
+#[cfg(windows)]
+use std::os::windows::fs::MetadataExt;
 
 use chrono;
 use terminal_size::{terminal_size, Width};
@@ -10,6 +18,39 @@ use users::{get_group_by_gid, get_user_by_uid};
 use xattr;
 
 const USAGE: &str = "Usage: ls [-a] [-l] [-F] [DIRECTORY]...";
+
+struct FileInfo {
+    file_type: String,
+    permissions: String,
+    hard_links: u64,
+    user_name: String,
+    group_name: String,
+    size: u64,
+    timestamp: String,
+    name: String,
+    suffix: String,
+    extended_attr: String,
+    symlink: String,
+}
+
+impl FileInfo {
+    fn format(&self) -> String {
+        format!(
+            "{}{:>7}{} {:>1} {:>7} {:>6} {:>6} {:>13} {}{} {}",
+            self.file_type,
+            self.permissions,
+            self.extended_attr,
+            self.hard_links,
+            self.user_name,
+            self.group_name,
+            self.size,
+            self.timestamp,
+            self.name.replace(" ", "*"),
+            self.suffix,
+            self.symlink
+        )
+    }
+}
 
 pub fn ls(input: &Vec<String>) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `ls` should not be empty");
@@ -123,30 +164,137 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
     Ok(results)
 }
 
-fn get_short_list(flags: u8, path: &Path) -> Result<String, String> {
-    let mut entries: VecDeque<String> = {
-        let read_result = fs::read_dir(path);
-        match read_result {
-            Ok(dir) => dir
-                .filter_map(|entry| match entry {
-                    Ok(e) => {
-                        let name = e.file_name().to_string_lossy().to_string();
-                        let suffix = if flags & 4 != 0 {
-                            classify(&e.path())
-                        } else {
-                            String::new()
-                        };
-                        Some(format!("{}{}", name, suffix))
-                    }
-                    Err(e) => Some(format!("Error reading entry: {}", e.to_string())),
-                })
-                .filter(|name| flags & 1 == 1 || !name.starts_with('.'))
-                .collect::<VecDeque<String>>(),
-            Err(e) => {
-                let error_message = format!("Error reading directory: {}", e.to_string());
-                VecDeque::from(vec![error_message])
-            }
+fn get_platform_specific_info(metadata: &Metadata) -> (String, u64, String, String) {
+    #[cfg(unix)]
+    {
+        let permissions = mode_to_string(metadata.mode());
+        let hard_links = metadata.nlink();
+        let (owner, group) = (metadata.uid(), metadata.gid());
+        let (user_name, group_name) = get_user_and_group(owner, group);
+        (permissions, hard_links, user_name, group_name)
+    }
+
+    #[cfg(windows)]
+    {
+        (
+            "rw-r--r--".to_string(),
+            1,
+            "Owner".to_string(),
+            "Group".to_string(),
+        )
+    }
+}
+
+fn get_extended_attributes(path: &Path) -> String {
+    #[cfg(unix)]
+    {
+        if has_extended_attributes(path) {
+            "@".to_string()
+        } else {
+            String::new()
         }
+    }
+
+    #[cfg(windows)]
+    {
+        String::new()
+    }
+}
+
+fn get_symlink_info(metadata: &Metadata) -> String {
+    #[cfg(unix)]
+    {
+        if metadata.file_type().is_symlink() {
+            "-> symlink".to_string()
+        } else {
+            String::new()
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        String::new()
+    }
+}
+
+fn format_entry<T: AsRef<Path>>(
+    path: T,
+    name: Option<String>,
+    metadata: Metadata,
+    flags: u8,
+) -> Option<String> {
+    let path = path.as_ref();
+    let name = name.unwrap_or_else(|| {
+        path.file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default()
+    });
+
+    let file_type = if metadata.is_dir() { "d" } else { "-" };
+    let (permissions, hard_links, user_name, group_name) = get_platform_specific_info(&metadata);
+
+    let suffix = if flags & 4 != 0 {
+        classify(path)
+    } else {
+        String::new()
+    };
+
+    let info = FileInfo {
+        file_type: file_type.to_string(),
+        permissions,
+        hard_links,
+        user_name,
+        group_name,
+        size: metadata.len(),
+        timestamp: format_time(metadata.modified().unwrap_or(UNIX_EPOCH)),
+        name,
+        suffix,
+        extended_attr: get_extended_attributes(path),
+        symlink: get_symlink_info(&metadata),
+    };
+
+    Some(info.format())
+}
+
+fn format_entry_from_direntry(e: DirEntry, flags: u8) -> Option<String> {
+    let metadata = e.metadata().ok()?;
+    format_entry(
+        e.path(),
+        Some(e.file_name().to_string_lossy().into_owned()),
+        metadata,
+        flags,
+    )
+}
+
+fn format_entry_from_path(path: &Path, name: &str, flags: u8) -> Option<String> {
+    let metadata = fs::metadata(path).ok()?;
+    format_entry(path, Some(name.to_string()), metadata, flags)
+}
+
+fn get_short_list(flags: u8, path: &Path) -> Result<String, String> {
+    let mut entries: VecDeque<String> = match fs::read_dir(path) {
+        Ok(dir) => dir
+            .filter_map(|entry| match entry {
+                Ok(e) => {
+                    let name = e.file_name().to_string_lossy().to_string();
+
+                    // Ensure hidden files are correctly filtered on Windows
+                    if flags & 1 == 0 && is_hidden(&e.path()) {
+                        return None;
+                    }
+
+                    let suffix = if flags & 4 != 0 {
+                        classify(&e.path())
+                    } else {
+                        String::new()
+                    };
+
+                    Some(format!("{}{}", name, suffix))
+                }
+                Err(e) => Some(format!("Error reading entry: {}", e)),
+            })
+            .collect(),
+        Err(e) => return Ok(format!("Error reading directory: {}", e)),
     };
 
     if flags & 1 == 1 {
@@ -157,10 +305,29 @@ fn get_short_list(flags: u8, path: &Path) -> Result<String, String> {
     if entries.is_empty() {
         return Ok(String::new());
     }
+
     let mut entries: Vec<_> = entries.into();
     entries.sort();
 
     short_format_list(entries)
+}
+
+fn is_hidden(path: &Path) -> bool {
+    #[cfg(unix)]
+    {
+        path.file_name()
+            .map(|name| name.to_string_lossy().starts_with('.'))
+            .unwrap_or(false)
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use winapi::um::winnt::FILE_ATTRIBUTE_HIDDEN;
+
+        fs::metadata(path)
+            .map(|metadata| metadata.file_attributes() & FILE_ATTRIBUTE_HIDDEN != 0)
+            .unwrap_or(false)
+    }
 }
 
 fn short_format_list(entries: Vec<String>) -> Result<String, String> {
@@ -239,11 +406,11 @@ fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
 
     let mut entries: VecDeque<String> = if metadata.is_dir() {
         match fs::read_dir(path) {
-            Ok(ok) => ok
+            Ok(entries) => entries
                 .filter_map(|entry| format_entry_from_direntry(entry.ok()?, flags))
                 .filter(|entry_str| {
-                    let name = entry_str.split_whitespace().last().unwrap_or(&"");
-                    flags & 1 == 1 || !name.starts_with('.')
+                    let name = entry_str.split_whitespace().last().unwrap_or("");
+                    flags & 1 == 1 || !is_hidden(Path::new(name))
                 })
                 .collect(),
             Err(_) => return Ok(String::new()),
@@ -251,9 +418,8 @@ fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
     } else {
         let file_name = path
             .file_name()
-            .and_then(|name| name.to_str())
-            .map(|s| s.to_string()) // Convert to owned String
-            .unwrap_or_else(|| path.to_string_lossy().into_owned()); // Convert Cow<str> to String
+            .map(|name| name.to_string_lossy().into_owned())
+            .unwrap_or_else(|| path.to_string_lossy().into_owned());
 
         match format_entry_from_path(path, &file_name, flags) {
             Some(entry_str) => VecDeque::from([entry_str]),
@@ -263,15 +429,15 @@ fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
 
     if flags & 1 == 1 {
         if let Ok(absolute_path) = fs::canonicalize(path) {
-            let parent_path = absolute_path.parent().unwrap_or(Path::new("/"));
-            let parent_dir_entry = format_entry_from_path(parent_path, "..", flags);
-            if let Some(entry) = parent_dir_entry {
+            let parent_path = absolute_path
+                .parent()
+                .unwrap_or(Path::new(MAIN_SEPARATOR_STR));
+            if let Some(entry) = format_entry_from_path(parent_path, "..", flags) {
                 entries.push_front(entry);
             }
         }
 
-        let current_dir_entry = format_entry_from_path(path, ".", flags);
-        if let Some(entry) = current_dir_entry {
+        if let Some(entry) = format_entry_from_path(path, ".", flags) {
             entries.push_front(entry);
         }
     }
@@ -280,89 +446,8 @@ fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
         return Ok(String::new());
     }
 
-    let entries: Vec<_> = entries.into_iter().collect();
     let total = get_total_blocks_in_directory(path);
-
-    long_format_list(entries, total)
-}
-
-fn format_entry_from_direntry(e: DirEntry, flags: u8) -> Option<String> {
-    let metadata = e.metadata().ok()?;
-    let file_type = if metadata.is_dir() { "d" } else { "-" };
-    let permissions = mode_to_string(metadata.mode());
-    let hard_links = get_hard_links(&e.path()).unwrap_or(0);
-    let size = metadata.len();
-    let owner = metadata.uid();
-    let group = metadata.gid();
-    let modified = metadata.modified().unwrap_or(UNIX_EPOCH);
-    let timestamp = format_time(modified);
-    let (user_name, group_name) = get_user_and_group(owner, group);
-
-    let name = e.file_name().to_string_lossy().to_string();
-    let suffix = if flags & 4 != 0 {
-        classify(&e.path())
-    } else {
-        String::new()
-    };
-
-    let extended_attr = if has_extended_attributes(&e.path()) {
-        "@"
-    } else {
-        ""
-    };
-
-    Some(format!(
-        "{}{:>7}{} {:>1} {:>7} {:>6} {:>6} {:>13} {}{}",
-        file_type,
-        permissions,
-        extended_attr,
-        hard_links,
-        user_name,
-        group_name,
-        size,
-        timestamp,
-        name.replace(" ", "*"),
-        suffix
-    ))
-}
-
-fn format_entry_from_path(path: &Path, name: &str, flags: u8) -> Option<String> {
-    let metadata = fs::metadata(path).ok()?;
-    let file_type = if metadata.is_dir() { "d" } else { "-" };
-    let permissions = mode_to_string(metadata.mode());
-    let hard_links = get_hard_links(path).unwrap_or(0);
-    let size = metadata.len();
-    let owner = metadata.uid();
-    let group = metadata.gid();
-    let modified = metadata.modified().unwrap_or(UNIX_EPOCH);
-    let timestamp = format_time(modified);
-    let (user_name, group_name) = get_user_and_group(owner, group);
-
-    let suffix = if flags & 4 != 0 && metadata.is_dir() {
-        "/"
-    } else {
-        ""
-    };
-
-    let extended_attr = if has_extended_attributes(path) {
-        "@"
-    } else {
-        ""
-    };
-
-    Some(format!(
-        "{}{:>7}{} {:>1} {:>7} {:>6} {:>6} {:>13} {}{}",
-        file_type,
-        permissions,
-        extended_attr,
-        hard_links,
-        user_name,
-        group_name,
-        size,
-        timestamp,
-        name,
-        suffix
-    ))
+    long_format_list(entries.into_iter().collect(), total)
 }
 
 fn long_format_list(entries: Vec<String>, total: u64) -> Result<String, String> {
@@ -489,11 +574,6 @@ fn has_extended_attributes(path: &Path) -> bool {
         Ok(attrs) => attrs.count() > 0,
         Err(_) => false,
     }
-}
-
-fn get_hard_links(path: &Path) -> Result<u64, String> {
-    let metadata = fs::metadata(path).map_err(|e| e.to_string())?;
-    Ok(metadata.nlink())
 }
 
 fn get_total_blocks_in_directory(path: &Path) -> u64 {
