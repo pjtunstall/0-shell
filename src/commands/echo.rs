@@ -116,11 +116,11 @@ fn handle_redirection(output: &str, filename: &str, append: bool) -> Result<Stri
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{env, fs};
 
     use uuid::Uuid;
 
-    use super::*;
+    use super::echo;
 
     #[test]
     fn test_basic_echo() {

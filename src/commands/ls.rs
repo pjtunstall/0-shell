@@ -514,7 +514,7 @@ fn get_total_blocks_in_directory(path: &Path) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::ls;
 
     #[test]
     fn test_ls() {

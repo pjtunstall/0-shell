@@ -50,7 +50,9 @@ pub fn cp(input: &Vec<String>) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::{fs, path::Path};
+
+    use super::cp;
     use crate::test_helpers::TempStore;
 
     #[test]

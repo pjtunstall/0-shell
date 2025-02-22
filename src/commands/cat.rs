@@ -20,9 +20,11 @@ pub fn cat(input: &Vec<String>) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use uuid::Uuid;
 
-    use super::*;
+    use super::cat;
 
     #[test]
     fn test_cat() {

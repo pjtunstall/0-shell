@@ -72,7 +72,9 @@ fn process_args(args: &[String], recursive: bool) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::{fs, path::Path};
+
+    use super::rm;
     use crate::test_helpers::TempStore;
 
     #[test]

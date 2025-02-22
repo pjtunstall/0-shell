@@ -37,11 +37,14 @@ pub fn mv(input: &Vec<String>) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::MAIN_SEPARATOR;
+    use std::{
+        fs,
+        path::{Path, MAIN_SEPARATOR},
+    };
 
     use uuid::Uuid;
 
-    use super::*;
+    use super::{mv, USAGE};
     use crate::test_helpers::TempStore;
 
     #[test]
