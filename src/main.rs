@@ -8,9 +8,12 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
-use zero_shell::commands::{
-    cat::cat, cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, mv::mv, pwd::pwd,
-    rm::rm, touch::touch,
+use zero_shell::{
+    commands::{
+        cat::cat, cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, mv::mv, pwd::pwd,
+        rm::rm, touch::touch,
+    },
+    helpers,
 };
 
 struct TextStyle;
@@ -30,27 +33,28 @@ impl Drop for TextStyle {
     }
 }
 
-fn red_println(text: &str) {
-    println!("\x1b[31m{}\x1b[0m\x1b[1m", text);
-}
-
 fn main() {
-    let _bold_text = TextStyle::new();
+    let _style = TextStyle::new();
     let mut history = VecDeque::new();
+    history.push_back(String::new());
 
     loop {
         let input = match get_input(&mut history) {
-            Ok(input) if input.is_empty() => continue,
             Ok(input) => input,
-            Err(_) => {
-                process::exit(0);
+            Err(err) => {
+                let text = format!("0-shell: failed to get input: {}", err);
+                red_println(&text);
+                continue;
             }
         };
 
+        if input.is_empty() {
+            continue;
+        };
         history.push_back(input.clone());
 
         let splitput: Vec<String>;
-        match zero_shell::helpers::split(&input) {
+        match helpers::split(&input) {
             Ok(res) => {
                 splitput = res;
             }
@@ -65,24 +69,11 @@ fn main() {
             continue;
         }
 
-        let command = splitput[0].as_str();
-
-        let result = match command {
-            "cat" => cat(&splitput),
-            "cd" => cd(&splitput),
-            "cp" => cp(&splitput),
-            "echo" => echo(&splitput),
-            "exit" => exit(&splitput),
-            "ls" => ls(&splitput),
-            "mkdir" => mkdir(&splitput),
-            "mv" => mv(&splitput),
-            "pwd" => pwd(&splitput),
-            "rm" => rm(&splitput),
-            "touch" => touch(&splitput),
-            _ => {
-                red_println(&format!("0-shell: command not found: {}", command));
-                continue;
-            }
+        let result = match_command(&splitput);
+        let command = if result.is_ok() {
+            &splitput[0]
+        } else {
+            "0-shell"
         };
 
         match result {
@@ -96,8 +87,36 @@ fn main() {
     }
 }
 
+fn match_command(splitput: &Vec<String>) -> Result<String, String> {
+    let command = splitput[0].as_str();
+    match command {
+        "cat" => cat(&splitput),
+        "cd" => cd(&splitput),
+        "cp" => cp(&splitput),
+        "echo" => echo(&splitput),
+        "exit" => exit(&splitput),
+        "ls" => ls(&splitput),
+        "mkdir" => mkdir(&splitput),
+        "mv" => mv(&splitput),
+        "pwd" => pwd(&splitput),
+        "rm" => rm(&splitput),
+        "touch" => touch(&splitput),
+        _ => Err(format!("command not found: {}", command)),
+    }
+}
+
 fn handle_error(command: &str, err: String) {
     red_println(&format!("{}: {}", command, err));
+}
+
+fn red_println(text: &str) {
+    println!("\x1b[31m{}\x1b[0m\x1b[1m", text);
+}
+
+fn prompt() -> io::Result<String> {
+    let cwd = std::env::current_dir()?.display().to_string();
+    let prompt = format!("{} ▶ ", cwd);
+    Ok(prompt)
 }
 
 fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
@@ -180,10 +199,4 @@ fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
     stdout.suspend_raw_mode().unwrap();
 
     Ok(input)
-}
-
-fn prompt() -> io::Result<String> {
-    let cwd = std::env::current_dir()?.display().to_string();
-    let prompt = format!("{} ▶ ", cwd);
-    Ok(prompt)
 }
