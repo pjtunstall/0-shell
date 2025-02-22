@@ -107,7 +107,7 @@ pub fn ls(input: &Vec<String>) -> Result<String, String> {
                 true => files.push(arg.to_string()),
                 false => non_paths.push(
                     format!(
-                        "\x1b[31m{}: No such file or directory found\x1b[0m\x1b[1m\n",
+                        "\x1b[31m{}: No such file or directory found\x1b[0m\x1b[1m\n", // red
                         arg
                     )
                     .to_string(),

@@ -65,3 +65,7 @@ cargo test -- --test-threads=1
 ```
 
 The success test for `pwd` expects the current directory to be `0-shell`, but the `cd` test temporarily changes the current directory.
+
+## Further
+
+See [todo.md](todo.md) for possible further developments and topics to explore.

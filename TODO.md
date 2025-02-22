@@ -33,6 +33,7 @@
 - Note parallels between commands (the better to structure code and tests, order creation of tests, reuse code and tests, memorize).
 - Check vetting of argument numbers and types in each command function. See if I can write a general function to check conditions on number of arguments (better that `check_num_args`), e.g. less than, greater than, or equal to.
 - Add redirection for `ls`.
+- Scripting.
 - RESEARCH: Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think.
 
 ## Command line
