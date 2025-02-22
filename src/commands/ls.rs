@@ -278,7 +278,6 @@ fn get_short_list(flags: u8, path: &Path) -> Result<String, String> {
                 Ok(e) => {
                     let name = e.file_name().to_string_lossy().to_string();
 
-                    // Ensure hidden files are correctly filtered on Windows
                     if flags & 1 == 0 && is_hidden(&e.path()) {
                         return None;
                     }
