@@ -3,6 +3,10 @@ name = "zero_shell"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "zero_shell"
+path = "src/lib.rs"
+
 [[bin]]
 name = "0-shell"
 path = "src/main.rs"

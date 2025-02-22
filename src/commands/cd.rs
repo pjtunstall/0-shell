@@ -32,3 +32,20 @@ pub fn cd(input: &Vec<String>) -> Result<String, String> {
         Err(e) => Err(format!("{}: {}", path, e)),
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::cd;
+
+    #[test]
+    fn test_cd() {
+        assert!(
+            cd(&vec!["cd".to_string(), "..".to_string()]).is_ok(),
+            "`cd ..` should be ok"
+        );
+        assert!(
+            cd(&vec!["cd".to_string(), "0-shell".to_string()]).is_ok(),
+            "`cd 0-shell` should be ok"
+        );
+    }
+}

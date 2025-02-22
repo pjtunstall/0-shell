@@ -33,7 +33,7 @@ pub fn cp(input: &Vec<String>) -> Result<String, String> {
         let src_path = Path::new(source);
 
         if src_path.is_dir() {
-            return Err(format!("`{}' is a directory (not copied)", source).to_string());
+            return Err(format!("{} is a directory (not copied)", source).to_string());
         }
 
         let dest_file = if dest_path.is_dir() {
@@ -64,7 +64,7 @@ mod tests {
         fs::write(&source, content).expect("Failed to create test source file");
 
         let result = cp(&input);
-        assert!(result.is_ok(), "`cp` failed: {:?}", result.err());
+        assert!(result.is_ok(), "`cp` should be ok: {:?}", result.err());
         assert!(Path::new(target).exists(), "File not created");
         let copied_content = fs::read_to_string(&target).expect("Failed to read target file");
         assert_eq!(copied_content, content, "File contents do not match");

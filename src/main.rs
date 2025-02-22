@@ -1,9 +1,3 @@
-mod commands;
-mod helpers;
-
-#[cfg(test)]
-mod test_helpers;
-
 use std::{
     collections::VecDeque,
     io::{self, Write},
@@ -14,9 +8,9 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
-use commands::{
-    cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, mv::mv, pwd::pwd, rm::rm,
-    touch::touch,
+use zero_shell::commands::{
+    cat::cat, cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, mv::mv, pwd::pwd,
+    rm::rm, touch::touch,
 };
 
 struct TextStyle;
@@ -56,7 +50,7 @@ fn main() {
         history.push_back(input.clone());
 
         let splitput: Vec<String>;
-        match helpers::split(&input) {
+        match zero_shell::helpers::split(&input) {
             Ok(res) => {
                 splitput = res;
             }
@@ -74,7 +68,7 @@ fn main() {
         let command = splitput[0].as_str();
 
         let result = match command {
-            "cat" => commands::cat::cat(&splitput),
+            "cat" => cat(&splitput),
             "cd" => cd(&splitput),
             "cp" => cp(&splitput),
             "echo" => echo(&splitput),

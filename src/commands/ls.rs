@@ -518,7 +518,22 @@ mod tests {
 
     #[test]
     fn test_ls() {
-        let result = ls(&vec!["ls".to_string()]);
-        assert!(result.is_ok());
+        let basic = vec!["ls".to_string()];
+        let a = vec!["ls".to_string(), "-a".to_string()];
+        let l = vec!["ls".to_string(), "-l".to_string()];
+        let f = vec!["ls".to_string(), "-F".to_string()];
+        let alf = vec!["ls".to_string(), "-alF".to_string()];
+        let l_a_f = vec![
+            "ls".to_string(),
+            "-l".to_string(),
+            "-a".to_string(),
+            "-F".to_string(),
+        ];
+
+        let inputs = [basic, a, l, f, alf, l_a_f];
+
+        for input in inputs {
+            assert!(ls(&input).is_ok(), "`ls` should be ok for {:?}", input);
+        }
     }
 }
