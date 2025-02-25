@@ -1,15 +1,8 @@
 [package]
-name = "zero_shell"
+name = "zero-shell"
 version = "0.1.0"
-edition = "2021"
-
-[lib]
-name = "zero_shell"
-path = "src/lib.rs"
-
-[[bin]]
-name = "0-shell"
-path = "src/main.rs"
+edition = "2024"
+build = "build.rs"
 
 [dependencies]
 chrono = "0.4.39"

@@ -65,7 +65,7 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ## Regarding the name
 
-Rust's build tool, Cargo, doesn't allow a package name to begin with a numeral, hence the package is called `zero-shell`. For all other purposes, the name is `0-shell`, as required by the brief. When you build the project, either with `cargo run` (to build and run in one step) or `cargo build` (to build only) or `cargo build --release` (to build in release mode), the binary will be named `0-shell`.
+The root directory and repo are named `0-shell`, as required by the brief. Rust's build tool, Cargo, doesn't allow a package name to begin with a numeral, hence the package is called `zero-shell` and the lib and bin crates `zero_shell` according to Rust convention. When you build the project, either with `cargo run` (to build and run in one step) or `cargo build` (to build only) or `cargo build --release` (to build in release mode), a build script will rename the binary to `0_shell`. It insists on the underscore. I gather this makes the name more broadly compatible across operating systems, so I've decided not not process it further (e.g. using a Cargo extension shell script or build system like `make`).
 
 ## Testing
 

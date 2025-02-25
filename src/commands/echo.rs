@@ -228,7 +228,9 @@ mod tests {
     #[test]
     fn test_env_var_set() {
         let prev_user = env::var("USER").ok();
-        env::set_var("USER", "testuser");
+        unsafe {
+            env::set_var("USER", "testuser");
+        }
 
         assert_eq!(
             echo(&vec!["echo".to_string(), "$USER".to_string()]),
@@ -237,25 +239,35 @@ mod tests {
         );
 
         if let Some(value) = prev_user {
-            env::set_var("USER", value);
+            unsafe {
+                env::set_var("USER", value);
+            }
         } else {
-            env::remove_var("USER");
+            unsafe {
+                env::remove_var("USER");
+            }
         }
     }
 
     #[test]
     fn test_env_var_unset() {
         let prev_lang = env::var("LANG").ok();
-        env::remove_var("LANG");
+        unsafe {
+            env::remove_var("LANG");
+        }
         assert_eq!(
             echo(&vec!["echo".to_string(), "$LANG".to_string()]),
             Ok("\n".to_string()),
             "Expected empty substitution when LANG is unset"
         );
         if let Some(value) = prev_lang {
-            env::set_var("LANG", value);
+            unsafe {
+                env::set_var("LANG", value);
+            }
         } else {
-            env::remove_var("LANG");
+            unsafe {
+                env::remove_var("LANG");
+            }
         }
     }
 
