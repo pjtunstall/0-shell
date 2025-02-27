@@ -4,17 +4,33 @@ use std::{
     process,
 };
 
-use termion::event::Key;
-use termion::input::TermRead;
-use termion::raw::IntoRawMode;
+use lazy_static::lazy_static;
+use termion::{event::Key, input::TermRead, raw::IntoRawMode};
 
 use zero_shell::{
+    backtrack,
     commands::{
         cat::cat, cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, mv::mv, pwd::pwd,
         rm::rm, touch::touch,
     },
     helpers,
 };
+
+lazy_static! {
+    static ref COMMANDS: Vec<String> = vec![
+        "cat".to_string(),
+        "cd".to_string(),
+        "cp".to_string(),
+        "echo".to_string(),
+        "exit".to_string(),
+        "ls".to_string(),
+        "mkdir".to_string(),
+        "mv".to_string(),
+        "pwd".to_string(),
+        "rm".to_string(),
+        "touch".to_string(),
+    ];
+}
 
 struct TextStyle;
 
@@ -39,8 +55,8 @@ fn main() {
     history.push_back(String::new());
 
     loop {
-        let input = match get_input(&mut history) {
-            Ok(input) => input,
+        let input_string = match get_input(&mut history) {
+            Ok(ok_input) => ok_input,
             Err(err) => {
                 let text = format!("0-shell: failed to get input: {}", err);
                 red_println(&text);
@@ -48,15 +64,15 @@ fn main() {
             }
         };
 
-        if input.is_empty() {
+        if input_string.is_empty() {
             continue;
         };
-        history.push_back(input.clone());
+        history.push_back(input_string.clone());
 
-        let splitput: Vec<String>;
-        match helpers::split(&input) {
+        let input_after_splitting: Vec<String>;
+        match helpers::split(&input_string) {
             Ok(res) => {
-                splitput = res;
+                input_after_splitting = res;
             }
             Err(err) => {
                 red_println(&format!("0-shell: {}", &err));
@@ -64,14 +80,14 @@ fn main() {
             }
         }
 
-        if splitput.is_empty() {
+        if input_after_splitting.is_empty() {
             red_println(&format!("0-shell: parse error near `\\n'"));
             continue;
         }
 
-        let result = match_command(&splitput);
+        let result = match_command(&input_after_splitting);
         let command = if result.is_ok() {
-            &splitput[0]
+            &input_after_splitting[0]
         } else {
             "0-shell"
         };
@@ -87,20 +103,20 @@ fn main() {
     }
 }
 
-fn match_command(splitput: &Vec<String>) -> Result<String, String> {
-    let command = splitput[0].as_str();
+fn match_command(input_after_splitting: &[String]) -> Result<String, String> {
+    let command = input_after_splitting[0].as_str();
     match command {
-        "cat" => cat(&splitput),
-        "cd" => cd(&splitput),
-        "cp" => cp(&splitput),
-        "echo" => echo(&splitput),
-        "exit" => exit(&splitput),
-        "ls" => ls(&splitput),
-        "mkdir" => mkdir(&splitput),
-        "mv" => mv(&splitput),
-        "pwd" => pwd(&splitput),
-        "rm" => rm(&splitput),
-        "touch" => touch(&splitput),
+        "cat" => cat(&input_after_splitting),
+        "cd" => cd(&input_after_splitting),
+        "cp" => cp(&input_after_splitting),
+        "echo" => echo(&input_after_splitting),
+        "exit" => exit(&input_after_splitting),
+        "ls" => ls(&input_after_splitting),
+        "mkdir" => mkdir(&input_after_splitting),
+        "mv" => mv(&input_after_splitting),
+        "pwd" => pwd(&input_after_splitting),
+        "rm" => rm(&input_after_splitting),
+        "touch" => touch(&input_after_splitting),
         _ => Err(format!("command not found: {}", command)),
     }
 }
@@ -124,6 +140,7 @@ fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
     let mut stdout = io::stdout().into_raw_mode()?;
     let mut input = String::new();
     let mut cursor = 0;
+    let mut num_spaces: usize = 0;
 
     let prompt = prompt()?;
     write!(stdout, "\r{}{}", prompt, termion::cursor::Show).unwrap();
@@ -131,18 +148,52 @@ fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
 
     for key in stdin.keys() {
         match key.unwrap() {
+            Key::Ctrl('c') | Key::Ctrl('d') => {
+                // Eventually change 'c' to handle internal processes without exiting 0-shell
+                write!(stdout, "\r\n").unwrap();
+                stdout.suspend_raw_mode().unwrap(); // Ensure terminal is reset
+                process::exit(0);
+            }
             Key::Char('\n') => {
                 write!(stdout, "\r\n").unwrap();
                 stdout.flush().unwrap();
                 break;
             }
+            Key::Char('\t') => {
+                if num_spaces > 0 {
+                    continue;
+                }
+                let matches = tab(&input);
+                if matches.len() == 1 {
+                    input.clear();
+                    input.push_str(matches[0].as_str());
+                    input.push(' ');
+                    cursor = input.len();
+                    num_spaces += 1;
+                } else {
+                    write!(stdout, "\r\n{}", matches.join("\r\n")).unwrap();
+                    write!(stdout, "\x1b[{}A", matches.len()).unwrap(); // Move up by matches' lines + 1 for the blank line, back to the beginning of the prompt
+                    write!(stdout, "\r{}{}{}", prompt, input, termion::cursor::Show).unwrap();
+                    stdout.flush().unwrap();
+
+                    continue; // To avoid overwriting with the prompt
+                }
+            }
             Key::Char(c) => {
                 input.insert(cursor, c);
                 cursor += 1;
+                if c == ' ' {
+                    num_spaces += 1;
+                }
             }
             Key::Backspace => {
                 if cursor > 0 {
                     cursor -= 1;
+                    if let Some(last) = input.chars().last() {
+                        if last == ' ' {
+                            num_spaces -= 1;
+                        }
+                    }
                     input.remove(cursor);
                 }
             }
@@ -175,12 +226,6 @@ fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                     }
                 }
             }
-            Key::Ctrl('c') | Key::Ctrl('d') => {
-                // Eventually change 'c' to handle internal processes without exiting 0-shell
-                write!(stdout, "\r\n").unwrap();
-                stdout.suspend_raw_mode().unwrap(); // Ensure terminal is reset
-                process::exit(0);
-            }
             _ => {}
         }
 
@@ -199,4 +244,39 @@ fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
     stdout.suspend_raw_mode().unwrap();
 
     Ok(input)
+}
+
+fn tab(input: &str) -> Vec<String> {
+    backtrack::find_matches(&COMMANDS, input)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tab() {
+        let mut expected;
+
+        expected = Vec::new();
+        assert_eq!(
+            tab("x"),
+            expected,
+            "`tab` should return an empty vector when there are no matches"
+        );
+
+        expected = vec!["cat".to_string(), "cd".to_string(), "cp".to_string()];
+        assert_eq!(
+            tab("c"),
+            expected,
+            "`tab(\"c\")` should find all three commands beginning with 'c'"
+        );
+
+        expected = vec!["mkdir".to_string()];
+        assert_eq!(
+            tab("mk"),
+            expected,
+            "`tab(\"mk\")` should return a vector containing just \"mkdir\""
+        );
+    }
 }

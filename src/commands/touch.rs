@@ -3,7 +3,7 @@ use std::path::Path;
 
 use filetime;
 
-pub fn touch(input: &Vec<String>) -> Result<String, String> {
+pub fn touch(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `touch` should not be empty");
     debug_assert!(
         input[0] == "touch",

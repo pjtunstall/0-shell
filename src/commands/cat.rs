@@ -1,6 +1,6 @@
 use std::fs;
 
-pub fn cat(input: &Vec<String>) -> Result<String, String> {
+pub fn cat(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `cat` should not be empty");
     debug_assert!(
         input[0] == "cat",

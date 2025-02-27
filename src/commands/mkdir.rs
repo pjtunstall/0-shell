@@ -1,6 +1,6 @@
 use std::fs;
 
-pub fn mkdir(input: &Vec<String>) -> Result<String, String> {
+pub fn mkdir(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `mkdir` should not be empty");
     debug_assert!(
         input[0] == "mkdir",

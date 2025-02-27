@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 const USAGE: &str = "Usage: rm [-r] FILE|DIRECTORY...";
 
-pub fn rm(input: &Vec<String>) -> Result<String, String> {
+pub fn rm(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `rm` should not be empty");
     debug_assert!(
         input[0] == "rm",

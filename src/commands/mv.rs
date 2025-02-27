@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 const USAGE: &str = "USAGE: mv source_file target_directory\n\tmv source_file target_directory/new_name\n\tmv source_file new_name";
 
-pub fn mv(input: &Vec<String>) -> Result<String, String> {
+pub fn mv(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `mv` should not be empty");
     debug_assert!(
         input[0] == "mv",
@@ -39,12 +39,12 @@ pub fn mv(input: &Vec<String>) -> Result<String, String> {
 mod tests {
     use std::{
         fs,
-        path::{Path, MAIN_SEPARATOR},
+        path::{MAIN_SEPARATOR, Path},
     };
 
     use uuid::Uuid;
 
-    use super::{mv, USAGE};
+    use super::{USAGE, mv};
     use crate::test_helpers::TempStore;
 
     #[test]

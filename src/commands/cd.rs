@@ -2,7 +2,7 @@ use std::env;
 
 use home;
 
-pub fn cd(input: &Vec<String>) -> Result<String, String> {
+pub fn cd(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `cd` should not be empty");
     debug_assert!(
         input[0] == "cd",

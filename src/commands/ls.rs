@@ -61,7 +61,7 @@ impl LsFlags {
     }
 }
 
-pub fn ls(input: &Vec<String>) -> Result<String, String> {
+pub fn ls(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `ls` should not be empty");
     debug_assert!(
         input[0] == "ls",
@@ -148,7 +148,7 @@ fn classify_paths(paths: &[String]) -> PathClassification {
 }
 
 fn process_directories(
-    input: &Vec<String>,
+    input: &[String],
     dirs: Vec<String>,
     results: String,
     flags: u8,

@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 const USAGE: &str = "USAGE: source_file target_file\n\tsource_file ... target_directory";
 
-pub fn cp(input: &Vec<String>) -> Result<String, String> {
+pub fn cp(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `cp` should not be empty");
     debug_assert!(
         input[0] == "cp",

@@ -1,6 +1,6 @@
 use crate::helpers;
 
-pub fn pwd(input: &Vec<String>) -> Result<String, String> {
+pub fn pwd(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `pwd` should not be empty");
     debug_assert!(
         input[0] == "pwd",

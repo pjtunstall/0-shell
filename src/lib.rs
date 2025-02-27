@@ -1,3 +1,4 @@
+pub mod backtrack;
 pub mod commands;
 pub mod helpers;
 
