@@ -10,8 +10,17 @@ use termion::{event::Key, input::TermRead, raw::IntoRawMode};
 use zero_shell::{
     backtrack,
     commands::{
-        cat::cat, cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, mv::mv, pwd::pwd,
-        rm::rm, touch::touch,
+        cat::cat,
+        cd::cd,
+        cp::cp,
+        echo::echo,
+        exit::exit,
+        ls::{format, ls},
+        mkdir::mkdir,
+        mv::mv,
+        pwd::pwd,
+        rm::rm,
+        touch::touch,
     },
     helpers,
 };
@@ -171,8 +180,12 @@ fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                     cursor = input.len();
                     num_spaces += 1;
                 } else {
-                    write!(stdout, "\r\n{}", matches.join("\r\n")).unwrap();
-                    write!(stdout, "\x1b[{}A", matches.len()).unwrap(); // Move up by matches' lines + 1 for the blank line, back to the beginning of the prompt
+                    let matches = format::short_format_list(matches).unwrap_or(String::new());
+
+                    let lines = matches.chars().filter(|c| *c == '\n').count() + 1;
+
+                    write!(stdout, "\r\n{}", matches).unwrap();
+                    write!(stdout, "\x1b[{}A", lines).unwrap(); // Move up by matches' lines, back to the beginning of the prompt
                     write!(stdout, "\r{}{}{}", prompt, input, termion::cursor::Show).unwrap();
                     stdout.flush().unwrap();
 
