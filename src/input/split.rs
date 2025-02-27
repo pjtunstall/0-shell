@@ -1,20 +1,3 @@
-use std::{env, io};
-
-pub fn check_num_args(input: &[String], expected: usize) -> Result<String, String> {
-    if input.len() > expected {
-        return Err("too many arguments".to_string());
-    } else if input.len() < expected {
-        return Err("missing argument".to_string());
-    }
-    Ok(String::new())
-}
-
-pub fn get_current_dir() -> io::Result<String> {
-    let cwd = env::current_dir()?;
-    let cwd = format!("{}", cwd.display());
-    Ok(cwd)
-}
-
 pub fn split(input: &str) -> Result<Vec<String>, String> {
     if let Some((part_1, divider, part_2)) = split_at_first_divider(input) {
         if part_2.is_empty() {

@@ -3,6 +3,8 @@ use std::path::Path;
 
 use filetime;
 
+use super::helpers;
+
 pub fn touch(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `touch` should not be empty");
     debug_assert!(
@@ -11,7 +13,7 @@ pub fn touch(input: &[String]) -> Result<String, String> {
         input[0]
     );
 
-    if let Err(err) = crate::helpers::check_num_args(input, 2) {
+    if let Err(err) = helpers::check_num_args(input, 2) {
         return Err(err);
     }
 

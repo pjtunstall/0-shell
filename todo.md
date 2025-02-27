@@ -11,10 +11,8 @@
 
 ## Next
 
-- Consider if I want to test `backtrack::find_matches`, as I am, via the test for `tab` or move this to integration tests or include a test for `find_matches` directly in `backtrack`.
-- Fix: Option + `u` produces a char that leads to panic on the next input.
-- Ctr + `u` to clear input and reset `num_spaces` to 0.
 - Extend tab to option, file, and directory names.
+- Handle tab inside quotes!
 - Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
 
 ## Fix?
