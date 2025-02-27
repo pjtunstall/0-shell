@@ -182,10 +182,10 @@ fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                 } else {
                     let matches = format::short_format_list(matches).unwrap_or(String::new());
 
-                    let lines = matches.chars().filter(|c| *c == '\n').count() + 1;
+                    let lines = matches.matches('\n').count() + 1;
 
                     write!(stdout, "\r\n{}", matches).unwrap();
-                    write!(stdout, "\x1b[{}A", lines).unwrap(); // Move up by matches' lines, back to the beginning of the prompt
+                    write!(stdout, "\x1b[{}A", lines).unwrap(); // Move up by the number of lines in the formatted output, back to the beginning of the prompt
                     write!(stdout, "\r{}{}{}", prompt, input, termion::cursor::Show).unwrap();
                     stdout.flush().unwrap();
 
