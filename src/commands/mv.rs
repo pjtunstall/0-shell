@@ -27,9 +27,21 @@ pub fn mv(input: &[String]) -> Result<String, String> {
                 .ok_or_else(|| "failed to join source name to target".to_string())? // Convert None to Err(String)
                 .to_owned(), // Convert &OsStr to OsString (needed for join)
         );
-        fs::rename(source_path, dest_file).map_err(|err| err.to_string())?
+        fs::rename(source_path, dest_file).map_err(|err| {
+            err.to_string()
+                .split(" (os ")
+                .next()
+                .unwrap_or(" ")
+                .to_string()
+        })?
     } else {
-        fs::rename(source_path, target_path).map_err(|err| err.to_string())?
+        fs::rename(source_path, target_path).map_err(|err| {
+            err.to_string()
+                .split(" (os ")
+                .next()
+                .unwrap_or(" ")
+                .to_string()
+        })?
     }
 
     Ok("".to_string())

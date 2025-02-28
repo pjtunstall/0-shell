@@ -16,7 +16,14 @@ pub fn mkdir(input: &[String]) -> Result<String, String> {
 
     let path = input.get(1).ok_or_else(|| "missing argument".to_string())?;
 
-    fs::create_dir(path).map_err(|err| err.to_string().to_lowercase())?;
+    fs::create_dir(path).map_err(|err| {
+        err.to_string()
+            .to_lowercase()
+            .split(" (os ")
+            .next()
+            .unwrap_or(" ")
+            .to_string()
+    })?;
 
     Ok(String::new())
 }

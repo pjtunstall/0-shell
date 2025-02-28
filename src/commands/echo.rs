@@ -50,7 +50,13 @@ pub fn echo(input: &[String]) -> Result<String, String> {
     }
 
     let json_output = format!("\"{}\"", output);
-    output = from_str::<String>(&json_output).map_err(|e| e.to_string())?;
+    output = from_str::<String>(&json_output).map_err(|e| {
+        e.to_string()
+            .split(" (os ")
+            .next()
+            .unwrap_or(" ")
+            .to_string()
+    })?;
 
     parse_environment_variables(&mut output);
     output.push('\n');

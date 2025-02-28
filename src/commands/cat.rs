@@ -14,7 +14,13 @@ pub fn cat(input: &[String]) -> Result<String, String> {
     };
     match fs::read_to_string(filename) {
         Ok(contents) => Ok(format!("{}", contents)),
-        Err(err) => return Err(format!("Error reading file: {}", err)),
+        Err(err) => {
+            return Err(format!("Error reading file: {}", err)
+                .split(" (os ")
+                .next()
+                .unwrap_or(" ")
+                .to_string());
+        }
     }
 }
 

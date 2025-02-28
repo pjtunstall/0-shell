@@ -3,6 +3,7 @@ pub mod split;
 
 use std::{
     collections::VecDeque,
+    env, fs,
     io::{self, Stdout, Write},
     process,
 };
@@ -67,14 +68,23 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                         break;
                     }
                     Key::Char('\t') => {
+                        let mut is_cmd = true;
                         if num_spaces > 0 {
-                            continue;
+                            is_cmd = false;
                         }
-                        let matches = find_matches(&input);
+                        let mut words = input.split_whitespace().collect::<Vec<_>>();
+                        let last_word = words.pop().unwrap_or("");
+                        let trimmed_input = words.join(" ");
+                        let matches = find_command_or_file(last_word, is_cmd);
                         match matches.len() {
                             0 => continue,
                             1 => {
-                                input.clear();
+                                input = trimmed_input;
+                                if let Some(c) = input.chars().last() {
+                                    if c != ' ' {
+                                        input.push(' ');
+                                    }
+                                }
                                 input.push_str(matches[0].as_str());
                                 input.push(' ');
                                 cursor = input.len();
@@ -168,8 +178,22 @@ fn prompt() -> io::Result<String> {
     Ok(prompt)
 }
 
-fn find_matches(input: &str) -> Vec<String> {
-    backtrack::find_matches(&COMMANDS, input)
+fn find_command_or_file(last_word: &str, is_cmd: bool) -> Vec<String> {
+    let entries;
+
+    let data: &[String] = if is_cmd {
+        &COMMANDS
+    } else {
+        entries = fs::read_dir(env::current_dir().unwrap())
+            .unwrap()
+            .filter_map(Result::ok)
+            .map(|entry| entry.file_name().to_string_lossy().to_string())
+            .collect::<Vec<String>>();
+
+        &entries
+    };
+
+    backtrack::find_matches(data, last_word)
 }
 
 fn display_matches(
@@ -186,38 +210,7 @@ fn display_matches(
     let lines = matches.matches('\n').count() + 1;
 
     write!(stdout, "\r\n{}", matches).unwrap();
-    write!(stdout, "\x1b[{}A", lines).unwrap(); // Move up by the number of lines in the formatted output, back to the beginning of the prompt
+    write!(stdout, "\x1b[{}A", lines).unwrap(); // Move up by the number of lines in the formatted output and thus back to the beginning of the prompt
     write!(stdout, "\r{}{}{}", prompt, input, termion::cursor::Show).unwrap();
     stdout.flush().unwrap();
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_find_matches() {
-        let mut expected;
-
-        expected = Vec::new();
-        assert_eq!(
-            find_matches("x"),
-            expected,
-            "`find_matches` should return an empty vector when there are no matches"
-        );
-
-        expected = vec!["cat".to_string(), "cd".to_string(), "cp".to_string()];
-        assert_eq!(
-            find_matches("c"),
-            expected,
-            "`find_matches(\"c\")` should find all three commands beginning with 'c'"
-        );
-
-        expected = vec!["mkdir".to_string()];
-        assert_eq!(
-            find_matches("mk"),
-            expected,
-            "`find_matches(\"mk\")` should return a vector containing just \"mkdir\""
-        );
-    }
 }

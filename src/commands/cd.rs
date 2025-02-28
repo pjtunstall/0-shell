@@ -18,8 +18,13 @@ pub fn cd(input: &[String]) -> Result<String, String> {
         Some(path) => path,
         None => {
             if let Some(home_path) = home::home_dir() {
-                env::set_current_dir(&home_path)
-                    .map_err(|e| format!("failed to change directory: {}", e))?;
+                env::set_current_dir(&home_path).map_err(|err| {
+                    format!("failed to change directory: {}", err)
+                        .split(" (os ")
+                        .next()
+                        .unwrap_or(" ")
+                        .to_string()
+                })?;
                 return Ok(String::new());
             } else {
                 return Err("could not determine home directory".to_string());
@@ -29,7 +34,11 @@ pub fn cd(input: &[String]) -> Result<String, String> {
 
     match env::set_current_dir(path) {
         Ok(_) => Ok(String::new()),
-        Err(e) => Err(format!("{}: {}", path, e)),
+        Err(err) => Err(format!("{}: {}", path, err)
+            .split(" (os ")
+            .next()
+            .unwrap_or(" ")
+            .to_string()),
     }
 }
 

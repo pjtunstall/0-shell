@@ -16,7 +16,13 @@ pub fn pwd(input: &[String]) -> Result<String, String> {
 
     let cwd = match env::current_dir() {
         Ok(cwd) => format!("{}", cwd.display()),
-        Err(err) => return Err(format!("getcwd: {}", err)),
+        Err(err) => {
+            return Err(format!("getcwd: {}", err)
+                .split(" (os")
+                .next()
+                .unwrap_or(" ")
+                .to_string());
+        }
     };
 
     let ok = format!("{}\n", cwd);

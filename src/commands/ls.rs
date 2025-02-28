@@ -16,7 +16,7 @@ struct LsFlags {
     show_hidden: bool, // -a
     long_format: bool, // -l
     classify: bool,    // -F
-    first_pathname_index: usize,
+    first_pathname_index: Option<usize>,
 }
 
 impl LsFlags {
@@ -25,12 +25,12 @@ impl LsFlags {
             show_hidden: false,
             long_format: false,
             classify: false,
-            first_pathname_index: 0,
+            first_pathname_index: None,
         };
 
         for (i, arg) in args.iter().enumerate() {
             if !arg.starts_with('-') {
-                flags.first_pathname_index = i;
+                flags.first_pathname_index = Some(i + 1); // +1 to account for the fact that args counts from the item after the command name here, but elsewhere input counts from the command name itself
                 break;
             }
 
@@ -70,12 +70,13 @@ pub fn ls(input: &[String]) -> Result<String, String> {
     );
 
     let flags = LsFlags::parse(&input[1..])?;
-
-    if flags.first_pathname_index == 0 {
-        return list_current_directory(&flags);
+    let first_pathname_index;
+    match flags.first_pathname_index {
+        Some(i) => first_pathname_index = i,
+        None => return list_current_directory(&flags),
     }
 
-    let paths = &input[(flags.first_pathname_index + 1)..];
+    let paths = &input[first_pathname_index..];
     let PathClassification {
         directories,
         mut files,

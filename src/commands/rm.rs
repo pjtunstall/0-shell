@@ -36,13 +36,21 @@ fn process_args(args: &[String], recursive: bool) -> Result<String, String> {
                 _ = fs::remove_dir_all(path).map_err(|err| {
                     let cmd = if i == 0 { "" } else { "rm: " };
                     i += 1;
-                    errors.push(Err(format!("{}{}: {}", cmd, arg, err)));
+                    errors.push(Err(format!("{}{}: {}", cmd, arg, err)
+                        .split(" (os")
+                        .next()
+                        .unwrap_or(" ")
+                        .to_string()));
                 });
             } else {
                 _ = fs::remove_file(path).map_err(|err| {
                     let cmd = if i == 0 { "" } else { "rm: " };
                     i += 1;
-                    errors.push(Err(format!("{}{}: {}", cmd, arg, err)));
+                    errors.push(Err(format!("{}{}: {}", cmd, arg, err)
+                        .split(" (os ")
+                        .next()
+                        .unwrap_or(" ")
+                        .to_string()));
                 });
             }
         } else {
@@ -53,7 +61,11 @@ fn process_args(args: &[String], recursive: bool) -> Result<String, String> {
             } else if let Err(err) = fs::remove_file(path) {
                 let cmd = if i == 0 { "" } else { "rm: " };
                 i += 1;
-                errors.push(Err(format!("{}{}: {}", cmd, arg, err)));
+                errors.push(Err(format!("{}{}: {}", cmd, arg, err)
+                    .split(" (os ")
+                    .next()
+                    .unwrap_or(" ")
+                    .to_string()));
             }
         }
     }

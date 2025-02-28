@@ -42,7 +42,13 @@ pub fn cp(input: &[String]) -> Result<String, String> {
             dest_path.to_path_buf()
         };
 
-        fs::copy(source, dest_file).map_err(|err| err.to_string())?;
+        fs::copy(source, dest_file).map_err(|err| {
+            err.to_string()
+                .split(" (os ")
+                .next()
+                .unwrap_or(" ")
+                .to_string()
+        })?;
     }
 
     Ok("".to_string())

@@ -21,9 +21,21 @@ pub fn touch(input: &[String]) -> Result<String, String> {
 
     if path.exists() {
         filetime::set_file_times(path, filetime::FileTime::now(), filetime::FileTime::now())
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| {
+                e.to_string()
+                    .split(" (os ")
+                    .next()
+                    .unwrap_or(" ")
+                    .to_string()
+            })?;
     } else {
-        File::create(path).map_err(|e| e.to_string())?;
+        File::create(path).map_err(|e| {
+            e.to_string()
+                .split(" (os ")
+                .next()
+                .unwrap_or(" ")
+                .to_string()
+        })?;
     }
 
     Ok(String::new())
