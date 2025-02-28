@@ -183,24 +183,37 @@ fn tab_and_should_continue(
         }
 
         // Looking for a file or folder?
-        let current_dir = env::current_dir().unwrap();
+        let current_dir = match env::current_dir() {
+            Ok(dir) => dir,
+            Err(_) => {
+                return true;
+            }
+        };
         let paths = fs::read_dir(&current_dir)
-            .unwrap()
-            .filter_map(Result::ok)
-            .map(|entry| entry.path())
-            .filter(|path| {
-                path.file_name()
-                    .and_then(|name| name.to_str())
-                    .map_or(false, |name| !name.starts_with("."))
+            .ok()
+            .map(|entries| {
+                entries
+                    .filter_map(Result::ok)
+                    .map(|entry| entry.path())
+                    .filter(|path| {
+                        path.file_name()
+                            .and_then(|name| name.to_str())
+                            .map_or(false, |name| !name.starts_with("."))
+                    })
+                    .map(|path| {
+                        path.file_name()
+                            .map(|name| {
+                                let mut name = name.to_string_lossy().to_string();
+                                if path.is_dir() {
+                                    name.push(MAIN_SEPARATOR);
+                                }
+                                name
+                            })
+                            .unwrap_or_default()
+                    })
+                    .collect::<Vec<String>>()
             })
-            .map(|path| {
-                let mut name = path.file_name().unwrap().to_string_lossy().to_string();
-                if path.is_dir() {
-                    name.push(MAIN_SEPARATOR);
-                }
-                name
-            })
-            .collect::<Vec<String>>();
+            .unwrap_or_default();
         data = &paths;
         partial = if last_char.map_or(false, |c| c == ' ') {
             ""
