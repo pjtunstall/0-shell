@@ -3,7 +3,9 @@ mod system;
 
 use std::path::Path;
 
-const USAGE: &str = "Usage: ls [-a] [-l] [-F] [DIRECTORY]...";
+const USAGE: &str = "Usage: ls [-F] [-a] [-l] [DIRECTORY]...";
+
+pub const OPTIONS_USAGE: &str = "-F      -- append file type indicators\n-a      -- list entries starting with .\n-l      -- long listing";
 
 struct PathClassification {
     directories: Vec<String>,
@@ -35,7 +37,7 @@ impl LsFlags {
             }
 
             if arg.chars().skip(1).any(|c| !['a', 'l', 'F'].contains(&c)) {
-                return Err(format!("unrecognized option `{}'\n{}", arg, USAGE));
+                return Err(format!("Unrecognized option `{}'\n{}", arg, USAGE));
             }
 
             flags.show_hidden |= arg.contains('a');

@@ -2,6 +2,8 @@ use std::{fs, path::Path};
 
 const USAGE: &str = "Usage: rm [-r] FILE|DIRECTORY...";
 
+pub const OPTIONS_USAGE: &str = "-R  -r  -- remove directories and their contents recursively";
+
 pub fn rm(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `rm` should not be empty");
     debug_assert!(
@@ -11,12 +13,12 @@ pub fn rm(input: &[String]) -> Result<String, String> {
     );
 
     if input.len() < 2 {
-        return Err(format!("not enough arguments\n{}", USAGE).to_string());
+        return Err(format!("Not enough arguments\n{}", USAGE).to_string());
     }
 
-    if input[1] == "-r" {
+    if input[1] == "-r" || input[1] == "-R" {
         if input.len() < 3 {
-            return Err(format!("not enough arguments\n{}", USAGE).to_string());
+            return Err(format!("Not enough arguments\n{}", USAGE).to_string());
         }
 
         return process_args(&input[2..], true);

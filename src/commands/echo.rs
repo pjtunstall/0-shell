@@ -28,7 +28,7 @@ pub fn echo(input: &[String]) -> Result<String, String> {
         if pos + 1 < input.len() {
             filename = input[pos + 1].clone();
         } else {
-            return Err("parse error near `\\n'".to_string()); // This should never happen now, thanks to `split`
+            return Err("Parse error near `\\n'".to_string()); // This should never happen now, thanks to `split`
         }
         input.drain(pos..);
     }

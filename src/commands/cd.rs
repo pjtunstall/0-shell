@@ -11,7 +11,7 @@ pub fn cd(input: &[String]) -> Result<String, String> {
     );
 
     if input.len() > 2 {
-        return Err("too many arguments".to_string());
+        return Err("Too many arguments".to_string());
     }
 
     let path: &String = match input.get(1) {
@@ -19,7 +19,7 @@ pub fn cd(input: &[String]) -> Result<String, String> {
         None => {
             if let Some(home_path) = home::home_dir() {
                 env::set_current_dir(&home_path).map_err(|err| {
-                    format!("failed to change directory: {}", err)
+                    format!("Failed to change directory: {}", err)
                         .split(" (os ")
                         .next()
                         .unwrap_or(" ")
@@ -27,7 +27,7 @@ pub fn cd(input: &[String]) -> Result<String, String> {
                 })?;
                 return Ok(String::new());
             } else {
-                return Err("could not determine home directory".to_string());
+                return Err("Could not determine home directory".to_string());
             }
         }
     };

@@ -11,7 +11,7 @@ pub fn cp(input: &[String]) -> Result<String, String> {
     );
 
     if input.len() < 3 {
-        return Err(format!("not enough arguments\n{}", USAGE).to_string());
+        return Err(format!("Not enough arguments\n{}", USAGE).to_string());
     }
 
     let sources = &input[1..input.len() - 1];
@@ -22,7 +22,7 @@ pub fn cp(input: &[String]) -> Result<String, String> {
     if sources.len() > 1 {
         if !dest_path.is_dir() {
             return Err(format!(
-                "target must be an existing directory when copying multiple sources\n{}",
+                "Target must be an existing directory when copying multiple sources\n{}",
                 USAGE
             )
             .to_string());
@@ -33,7 +33,7 @@ pub fn cp(input: &[String]) -> Result<String, String> {
         let src_path = Path::new(source);
 
         if src_path.is_dir() {
-            return Err(format!("{} is a directory (not copied)", source).to_string());
+            return Err(format!("`{}` is a directory (not copied)", source).to_string());
         }
 
         let dest_file = if dest_path.is_dir() {

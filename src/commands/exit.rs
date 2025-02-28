@@ -9,7 +9,7 @@ pub fn exit(input: &[String]) -> Result<String, String> {
     );
 
     if input.len() > 1 {
-        return Err("too many arguments".to_string());
+        return Err("Too many arguments".to_string());
     }
     process::exit(0);
 }

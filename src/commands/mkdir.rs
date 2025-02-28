@@ -14,7 +14,7 @@ pub fn mkdir(input: &[String]) -> Result<String, String> {
         return Err(err);
     }
 
-    let path = input.get(1).ok_or_else(|| "missing argument".to_string())?;
+    let path = input.get(1).ok_or_else(|| "Missing argument".to_string())?;
 
     fs::create_dir(path).map_err(|err| {
         err.to_string()

@@ -11,7 +11,7 @@ pub fn mv(input: &[String]) -> Result<String, String> {
     );
 
     if input.len() < 3 {
-        return Err(format!("not enough arguments\n{}", USAGE).to_string());
+        return Err(format!("Not enough arguments\n{}", USAGE).to_string());
     }
 
     let target = &input[2];
@@ -24,7 +24,7 @@ pub fn mv(input: &[String]) -> Result<String, String> {
         let dest_file = target_path.join(
             source_path
                 .file_name()
-                .ok_or_else(|| "failed to join source name to target".to_string())? // Convert None to Err(String)
+                .ok_or_else(|| "Failed to join source name to target".to_string())? // Convert None to Err(String)
                 .to_owned(), // Convert &OsStr to OsString (needed for join)
         );
         fs::rename(source_path, dest_file).map_err(|err| {

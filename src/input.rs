@@ -15,6 +15,8 @@ use termion::{
     raw::{IntoRawMode, RawTerminal},
 };
 
+use crate::commands::{ls, rm};
+
 lazy_static! {
     static ref COMMANDS: Vec<String> = vec![
         "cat".to_string(),
@@ -111,7 +113,7 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                         if cursor > 0 {
                             cursor -= 1;
                             if let Some(last) = input.chars().last() {
-                                if last == ' ' {
+                                if last == ' ' && num_spaces > 0 {
                                     num_spaces -= 1;
                                 }
                             }
