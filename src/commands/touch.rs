@@ -3,8 +3,6 @@ use std::path::Path;
 
 use filetime;
 
-use super::helpers;
-
 pub fn touch(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `touch` should not be empty");
     debug_assert!(
@@ -13,8 +11,8 @@ pub fn touch(input: &[String]) -> Result<String, String> {
         input[0]
     );
 
-    if let Err(err) = helpers::check_num_args(input, 2) {
-        return Err(err);
+    if input.len() < 2 {
+        return Err("Not enough arguments".to_string());
     }
 
     let path = Path::new(&input[1]);
@@ -49,7 +47,7 @@ mod tests {
     use crate::test_helpers::TempStore;
 
     #[test]
-    fn test_touch() {
+    fn test_touch_success() {
         let temp_store = TempStore::new(1);
         let source = &temp_store.store[0];
         let path = Path::new(source);

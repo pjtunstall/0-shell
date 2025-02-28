@@ -3,7 +3,6 @@ pub mod cd;
 pub mod cp;
 pub mod echo;
 pub mod exit;
-pub mod helpers;
 pub mod ls;
 pub mod mkdir;
 pub mod mv;

@@ -1,7 +1,5 @@
 use std::env;
 
-use super::helpers;
-
 pub fn pwd(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `pwd` should not be empty");
     debug_assert!(
@@ -10,9 +8,9 @@ pub fn pwd(input: &[String]) -> Result<String, String> {
         input[0]
     );
 
-    if let Err(err) = helpers::check_num_args(input, 1) {
-        return Err(err);
-    }
+    if input.len() > 1 {
+        return Err("Too many arguments".to_string());
+    };
 
     let cwd = match env::current_dir() {
         Ok(cwd) => format!("{}", cwd.display()),
