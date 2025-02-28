@@ -15,7 +15,7 @@
 
 ## Fix?
 
-- `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: too many arguments. What's the rule? Maybe I want to do it my way.
+- `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: Too many arguments. What's the rule? Maybe I want to do it my way.
 
 ## General
 

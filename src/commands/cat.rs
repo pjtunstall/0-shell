@@ -10,7 +10,7 @@ pub fn cat(input: &[String]) -> Result<String, String> {
 
     let filename = match input.get(1) {
         Some(filename) => filename,
-        None => return Err("Missing argument".to_string()),
+        None => return Err("Not enough arguments".to_string()),
     };
     match fs::read_to_string(filename) {
         Ok(contents) => Ok(format!("{}", contents)),

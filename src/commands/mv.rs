@@ -199,7 +199,7 @@ mod tests {
 
         let result = mv(&input);
         assert!(!result.is_ok(), "Result should not be ok");
-        let expected = Err(format!("not enough arguments\n{}", USAGE).to_string());
+        let expected = Err(format!("Not enough arguments\n{}", USAGE).to_string());
         assert_eq!(result, expected, "Result should show correct error message");
     }
 

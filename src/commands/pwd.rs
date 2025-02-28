@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn test_pwd_too_many_args() {
         let input = "pwd foo";
-        let expected = Err("too many arguments".to_string());
+        let expected = Err("Too many arguments".to_string());
         assert_eq!(pwd(&split(input).unwrap()), expected);
     }
 }

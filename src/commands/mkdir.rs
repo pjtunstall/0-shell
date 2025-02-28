@@ -14,7 +14,9 @@ pub fn mkdir(input: &[String]) -> Result<String, String> {
         return Err(err);
     }
 
-    let path = input.get(1).ok_or_else(|| "Missing argument".to_string())?;
+    let path = input
+        .get(1)
+        .ok_or_else(|| "Not enough arguments".to_string())?;
 
     fs::create_dir(path).map_err(|err| {
         err.to_string()
@@ -60,7 +62,7 @@ mod tests {
         let result = mkdir(&input);
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "missing argument");
+        assert_eq!(result.unwrap_err(), "Not enough arguments");
     }
 
     #[test]
@@ -69,7 +71,7 @@ mod tests {
         let result = mkdir(&input);
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "too many arguments");
+        assert_eq!(result.unwrap_err(), "Too many arguments");
     }
 
     #[test]
