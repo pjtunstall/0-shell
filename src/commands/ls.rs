@@ -5,7 +5,7 @@ use std::path::Path;
 
 const USAGE: &str = "Usage: ls [-F] [-a] [-l] [DIRECTORY]...";
 
-pub const OPTIONS_USAGE: &str = "-F      -- append file type indicators\n-a      -- list entries starting with .\n-l      -- long listing";
+pub const OPTIONS_USAGE: &str = "\r\n-F      -- append file type indicators\r\n-a      -- list entries starting with .\r\n-l      -- long listing";
 
 struct PathClassification {
     directories: Vec<String>,

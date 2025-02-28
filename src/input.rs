@@ -5,6 +5,7 @@ use std::{
     collections::VecDeque,
     env, fs,
     io::{self, Stdout, Write},
+    path::MAIN_SEPARATOR,
     process,
 };
 
@@ -33,14 +34,11 @@ lazy_static! {
     ];
 }
 
-use crate::commands::ls::format;
-
 pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
     let stdin = io::stdin();
     let mut stdout = io::stdout().into_raw_mode()?;
     let mut input = String::new();
     let mut cursor = 0;
-    let mut num_spaces: usize = 0;
 
     let prompt = prompt()?;
     write!(stdout, "\r{}{}", prompt, termion::cursor::Show).unwrap();
@@ -70,13 +68,7 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                         break;
                     }
                     Key::Char('\t') => {
-                        if tab_and_should_continue(
-                            &mut input,
-                            &mut num_spaces,
-                            &mut cursor,
-                            &mut stdout,
-                            &prompt,
-                        ) {
+                        if tab_and_should_continue(&mut input, &mut cursor, &mut stdout, &prompt) {
                             continue;
                         }
                     }
@@ -87,18 +79,10 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                         );
                         input.insert(cursor, c);
                         cursor += 1;
-                        if c == ' ' {
-                            num_spaces += 1;
-                        }
                     }
                     Key::Backspace => {
                         if cursor > 0 {
                             cursor -= 1;
-                            if let Some(last) = input.chars().last() {
-                                if last == ' ' && num_spaces > 0 {
-                                    num_spaces -= 1;
-                                }
-                            }
                             input.remove(cursor);
                         }
                     }
@@ -164,57 +148,97 @@ fn prompt() -> io::Result<String> {
 
 fn tab_and_should_continue(
     input: &mut String,
-    num_spaces: &mut usize,
     cursor: &mut usize,
     stdout: &mut RawTerminal<Stdout>,
     prompt: &str,
 ) -> bool {
-    let mut is_cmd = true;
-    if *num_spaces > 0 {
-        is_cmd = false;
-    }
-    let mut words = input.split_whitespace().collect::<Vec<_>>();
-    let last_word = words.pop().unwrap_or("");
-    let trimmed_input = words.join(" ");
-    let matches = find_command_or_file(last_word, is_cmd);
-    match matches.len() {
-        0 => return true,
-        1 => {
-            *input = trimmed_input;
-            if let Some(c) = input.chars().last() {
-                if c != ' ' {
-                    input.push(' ');
-                }
-            }
-            input.push_str(matches[0].as_str());
-            input.push(' ');
-            *cursor = input.len();
-            *num_spaces += 1;
-            return false;
-        }
-        _ => {
-            display_matches(stdout, matches, prompt, input);
-            return true; // To avoid overwriting with the prompt
-        }
-    }
-}
+    let last_char = input.chars().last();
+    let words = input.split_whitespace().collect::<Vec<&str>>();
+    let waiting_for_cmd =
+        words.is_empty() || (words.len() == 1 && last_char.map_or(false, |c| c != ' '));
 
-fn find_command_or_file(last_word: &str, is_cmd: bool) -> Vec<String> {
-    let entries;
+    let data: &[String];
+    let partial;
+    let matches;
 
-    let data: &[String] = if is_cmd {
-        &COMMANDS
+    if waiting_for_cmd {
+        data = &COMMANDS;
+        partial = if words.is_empty() {
+            ""
+        } else {
+            words.last().unwrap()
+        };
+        matches = backtrack::find_matches(data, partial);
     } else {
-        entries = fs::read_dir(env::current_dir().unwrap())
+        // Looking for an option?
+        if words.len() > 1 && *words.last().unwrap() == "-" {
+            let message;
+            match words[0] {
+                "rm" => message = rm::OPTIONS_USAGE,
+                "ls" => message = ls::OPTIONS_USAGE,
+                _ => message = "",
+            }
+            display_usage(stdout, message, prompt, input);
+            write!(stdout, "\r{}{}", prompt, input).unwrap();
+        }
+
+        // Looking for a file or folder?
+        let current_dir = env::current_dir().unwrap();
+        let paths = fs::read_dir(&current_dir)
             .unwrap()
             .filter_map(Result::ok)
-            .map(|entry| entry.file_name().to_string_lossy().to_string())
+            .map(|entry| entry.path())
+            .filter(|path| {
+                path.file_name()
+                    .and_then(|name| name.to_str())
+                    .map_or(false, |name| !name.starts_with("."))
+            })
+            .map(|path| {
+                let mut name = path.file_name().unwrap().to_string_lossy().to_string();
+                if path.is_dir() {
+                    name.push(MAIN_SEPARATOR);
+                }
+                name
+            })
             .collect::<Vec<String>>();
+        data = &paths;
+        partial = if last_char.map_or(false, |c| c == ' ') {
+            ""
+        } else {
+            words.last().unwrap()
+        };
+        matches = backtrack::find_matches(data, partial);
+    }
 
-        &entries
-    };
+    match matches.len() {
+        0 => true, // No matches, continue
+        1 => {
+            // Handle single match - replace the partial with the complete match
+            if words.len() > 0 {
+                *input = words[..words.len().saturating_sub(1)].join(" ");
+                if !input.is_empty() && !input.ends_with(' ') {
+                    input.push(' ');
+                }
+            } else {
+                input.clear();
+            }
 
-    backtrack::find_matches(data, last_word)
+            input.push_str(&matches[0]);
+            input.push(' ');
+            *cursor = input.len();
+
+            // Redraw the prompt with the updated input
+            write!(stdout, "\r\x1b[K{}{}", prompt, input).unwrap();
+            stdout.flush().unwrap();
+
+            false // Don't continue, we've handled it
+        }
+        _ => {
+            // Multiple matches, display them
+            display_matches(stdout, matches, prompt, input);
+            true // Continue to avoid overwriting with the prompt
+        }
+    }
 }
 
 fn display_matches(
@@ -223,15 +247,55 @@ fn display_matches(
     prompt: &str,
     input: &str,
 ) {
-    let matches = format::short_format_list(matches)
-        .unwrap_or(String::new())
-        .trim_end_matches('\n')
-        .to_string();
+    if matches.is_empty() {
+        // Shouldn't be called if matches is empty, but just in case ...
+        return;
+    }
 
-    let lines = matches.matches('\n').count() + 1;
+    let (term_width, _) = termion::terminal_size().unwrap_or((80, 24));
+    let term_width = term_width as usize;
 
-    write!(stdout, "\r\n{}", matches).unwrap();
-    write!(stdout, "\x1b[{}A", lines).unwrap(); // Move up by the number of lines in the formatted output and thus back to the beginning of the prompt
-    write!(stdout, "\r{}{}{}", prompt, input, termion::cursor::Show).unwrap();
+    let max_len = matches.iter().map(|s| s.len()).max().unwrap_or(0);
+    let col_width = max_len + 2; // Add spacing between columns
+
+    let num_cols = (term_width / col_width).max(1);
+
+    let num_items = matches.len();
+    let num_rows = (num_items + num_cols - 1) / num_cols;
+
+    write!(stdout, "\r\n").unwrap();
+
+    for row in 0..num_rows {
+        for col in 0..num_cols {
+            let idx = row + (col * num_rows);
+            if idx < num_items {
+                let entry = &matches[idx];
+                // Make sure we don't exceed terminal width
+                if col * col_width + entry.len() < term_width {
+                    write!(stdout, "{:<width$}", entry, width = col_width).unwrap();
+                }
+            }
+        }
+        if row < num_rows - 1 {
+            write!(stdout, "\r\n").unwrap();
+        }
+    }
+
+    // Move the cursor back up by the exact number of rows we displayed
+    write!(stdout, "\r\x1b[{}A", num_rows).unwrap();
+
+    // Redraw the prompt and input
+    write!(stdout, "\r{}{}", prompt, input).unwrap();
+    stdout.flush().unwrap();
+}
+
+fn display_usage(stdout: &mut RawTerminal<Stdout>, message: &str, prompt: &str, input: &str) {
+    if message.is_empty() {
+        return;
+    }
+    let lines = message.matches('\n').count();
+    write!(stdout, "{}", message).unwrap();
+    write!(stdout, "\r\x1b[{}A", lines).unwrap();
+    write!(stdout, "\r{}{}", prompt, input).unwrap();
     stdout.flush().unwrap();
 }

@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 const USAGE: &str = "Usage: rm [-r] FILE|DIRECTORY...";
 
-pub const OPTIONS_USAGE: &str = "-R  -r  -- remove directories and their contents recursively";
+pub const OPTIONS_USAGE: &str = "\r\n-R  -r  -- remove directories and their contents recursively";
 
 pub fn rm(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `rm` should not be empty");
