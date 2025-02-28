@@ -11,6 +11,7 @@
 
 ## Next
 
+- Remove unwraps in getting paths for tab.
 - tab: refactor.
 - tab: tidy spacing between cols.
 - Tidy: number of cols in short_format_list.
