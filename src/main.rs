@@ -61,12 +61,8 @@ fn main() {
             continue;
         }
 
+        let command = &input_after_splitting[0];
         let result = match_command(&input_after_splitting);
-        let command = if result.is_ok() {
-            &input_after_splitting[0]
-        } else {
-            "0-shell"
-        };
 
         match result {
             Ok(ok) => {

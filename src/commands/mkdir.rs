@@ -1,6 +1,4 @@
-use std::fs;
-
-use super::helpers;
+use std::{fs, path::Path};
 
 pub fn mkdir(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `mkdir` should not be empty");
@@ -10,24 +8,40 @@ pub fn mkdir(input: &[String]) -> Result<String, String> {
         input[0]
     );
 
-    if let Err(err) = helpers::check_num_args(input, 2) {
-        return Err(err);
+    if input.len() < 2 {
+        return Err("Not enough arguments".to_string());
     }
 
-    let path = input
-        .get(1)
-        .ok_or_else(|| "Not enough arguments".to_string())?;
+    let mut errors = Vec::new();
 
-    fs::create_dir(path).map_err(|err| {
-        err.to_string()
-            .to_lowercase()
-            .split(" (os ")
-            .next()
-            .unwrap_or(" ")
-            .to_string()
-    })?;
+    for path_str in input[1..].iter() {
+        let path = Path::new(path_str);
 
-    Ok(String::new())
+        if path.exists() {
+            errors.push(format!("mkdir: {}: File exists", path.display()));
+        } else {
+            if let Err(err) = fs::create_dir(path) {
+                errors.push(
+                    err.to_string()
+                        .split(" (os ")
+                        .next()
+                        .unwrap_or(" ")
+                        .to_string(),
+                );
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(String::new())
+    } else {
+        let joined_errors = errors.join("\n");
+        if let Some(suffix) = joined_errors.strip_prefix("mkdir: ") {
+            Err(suffix.to_string())
+        } else {
+            Err(joined_errors)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -57,7 +71,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mkdir_missing_argument() {
+    fn test_mkdir_failure_missing_argument() {
         let input = vec!["mkdir".to_string()];
         let result = mkdir(&input);
 
@@ -66,16 +80,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mkdir_invalid_args() {
-        let input = vec!["mkdir".to_string(), "dir".to_string(), "extra".to_string()];
-        let result = mkdir(&input);
-
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Too many arguments");
-    }
-
-    #[test]
-    fn test_mkdir_invalid_path() {
+    fn test_mkdir_failure_no_such_dir() {
         let temp_store = TempStore::new(2);
         let dir = Path::new(&temp_store.store[0]);
         let prefix = Path::new(&temp_store.store[1]);
@@ -88,5 +93,57 @@ mod tests {
         let result = mkdir(&input);
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mkdir_failure_dir_exists() {
+        let temp_store = TempStore::new(1);
+        let dir = temp_store.store[0].clone();
+
+        fs::create_dir(Path::new(&dir)).expect("Failed to create test directory");
+
+        let input = vec!["mkdir".to_string(), dir];
+        let result = mkdir(&input);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mkdir_failure_file_exists() {
+        let temp_store = TempStore::new(1);
+        let dir = temp_store.store[0].clone();
+
+        fs::write(Path::new(&dir), "").expect("Failed to create test file");
+
+        let input = vec!["mkdir".to_string(), dir];
+        let result = mkdir(&input);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mkdir_multiple_arguments() {
+        let temp_store = TempStore::new(2);
+
+        let existing_string = &temp_store.store[0];
+        let new_string = &temp_store.store[1];
+
+        let new_path = Path::new(new_string);
+
+        fs::create_dir(new_path).expect("Failed to create test directory");
+
+        let input = vec![
+            "mkdir".to_string(),
+            existing_string.clone(),
+            new_string.clone(),
+        ];
+        let result = mkdir(&input);
+
+        assert!(
+            result.is_err(),
+            "Result should be an error because one of the arguments already exists"
+        );
+        assert!(new_path.exists(), "New path should exist");
+        assert!(new_path.is_dir(), "New path should be a directory");
     }
 }
