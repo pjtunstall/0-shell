@@ -70,32 +70,14 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                         break;
                     }
                     Key::Char('\t') => {
-                        let mut is_cmd = true;
-                        if num_spaces > 0 {
-                            is_cmd = false;
-                        }
-                        let mut words = input.split_whitespace().collect::<Vec<_>>();
-                        let last_word = words.pop().unwrap_or("");
-                        let trimmed_input = words.join(" ");
-                        let matches = find_command_or_file(last_word, is_cmd);
-                        match matches.len() {
-                            0 => continue,
-                            1 => {
-                                input = trimmed_input;
-                                if let Some(c) = input.chars().last() {
-                                    if c != ' ' {
-                                        input.push(' ');
-                                    }
-                                }
-                                input.push_str(matches[0].as_str());
-                                input.push(' ');
-                                cursor = input.len();
-                                num_spaces += 1;
-                            }
-                            _ => {
-                                display_matches(&mut stdout, matches, &prompt, &input);
-                                continue; // To avoid overwriting with the prompt
-                            }
+                        if tab_and_should_continue(
+                            &mut input,
+                            &mut num_spaces,
+                            &mut cursor,
+                            &mut stdout,
+                            &prompt,
+                        ) {
+                            continue;
                         }
                     }
                     Key::Char(c) => {
@@ -178,6 +160,43 @@ fn prompt() -> io::Result<String> {
     let cwd = std::env::current_dir()?.display().to_string();
     let prompt = format!("{} ▶ ", cwd);
     Ok(prompt)
+}
+
+fn tab_and_should_continue(
+    input: &mut String,
+    num_spaces: &mut usize,
+    cursor: &mut usize,
+    stdout: &mut RawTerminal<Stdout>,
+    prompt: &str,
+) -> bool {
+    let mut is_cmd = true;
+    if *num_spaces > 0 {
+        is_cmd = false;
+    }
+    let mut words = input.split_whitespace().collect::<Vec<_>>();
+    let last_word = words.pop().unwrap_or("");
+    let trimmed_input = words.join(" ");
+    let matches = find_command_or_file(last_word, is_cmd);
+    match matches.len() {
+        0 => return true,
+        1 => {
+            *input = trimmed_input;
+            if let Some(c) = input.chars().last() {
+                if c != ' ' {
+                    input.push(' ');
+                }
+            }
+            input.push_str(matches[0].as_str());
+            input.push(' ');
+            *cursor = input.len();
+            *num_spaces += 1;
+            return false;
+        }
+        _ => {
+            display_matches(stdout, matches, prompt, input);
+            return true; // To avoid overwriting with the prompt
+        }
+    }
 }
 
 fn find_command_or_file(last_word: &str, is_cmd: bool) -> Vec<String> {

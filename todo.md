@@ -11,10 +11,10 @@
 
 ## Next
 
-- Fix: tab when history is recalled.
-- Fix: tab attempt to subtract with overflow.
+- Fix: tab when history is recalled and tab attempt to subtract with overflow.
 - Fix: tab for files/folders when there is no seed prefix, hence last_word is the command.
 - Extend tab to option, file, and directory names.
+- Use `USAGE` messages for options for `ls` and `rm` on tab.
 - Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
 
 ## Fix?
