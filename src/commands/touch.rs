@@ -1,8 +1,6 @@
 use std::fs::File;
 use std::path::Path;
 
-use filetime;
-
 pub fn touch(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `touch` should not be empty");
     debug_assert!(
@@ -66,6 +64,8 @@ pub fn touch(input: &[String]) -> Result<String, String> {
 mod tests {
     use std::{fs, path::Path, thread, time::Duration};
 
+    use filetime::FileTime;
+
     use super::touch;
     use crate::test_helpers::TempStore;
 
@@ -115,9 +115,7 @@ mod tests {
         fs::write(file_path, "").expect("Failed to create test file");
 
         let initial_metadata = fs::metadata(file_path).expect("Failed to get initial metadata");
-        let initial_mtime = initial_metadata
-            .modified()
-            .expect("Failed to get initial time from metatdata");
+        let initial_time = FileTime::from_last_modification_time(&initial_metadata);
 
         thread::sleep(Duration::from_millis(1024));
 
@@ -125,10 +123,8 @@ mod tests {
         assert!(result.is_ok());
 
         let updated_metadata = fs::metadata(file_path).expect("Failed to get final metadata");
-        let updated_mtime = updated_metadata
-            .modified()
-            .expect("Failed to get final time from metadata");
+        let updated_time = FileTime::from_last_modification_time(&updated_metadata);
 
-        assert!(updated_mtime > initial_mtime);
+        assert!(updated_time > initial_time);
     }
 }
