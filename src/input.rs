@@ -153,107 +153,134 @@ fn tab_and_should_continue(
     prompt: &str,
 ) -> bool {
     let last_char = input.chars().last();
-    let words = input.split_whitespace().collect::<Vec<&str>>();
+    let current_input = input.clone();
+    let words = current_input.split_whitespace().collect::<Vec<&str>>();
     let waiting_for_cmd =
         words.is_empty() || (words.len() == 1 && last_char.map_or(false, |c| c != ' '));
 
-    let data: &[String];
-    let partial;
     let matches;
 
     if waiting_for_cmd {
-        data = &COMMANDS;
-        partial = if words.is_empty() {
-            ""
-        } else {
-            words.last().unwrap()
-        };
-        matches = backtrack::find_matches(data, partial);
+        matches = check_cmds(&words);
     } else {
         // Looking for an option?
         if words.len() > 1 && *words.last().unwrap() == "-" {
-            let message;
-            match words[0] {
-                "rm" => message = rm::OPTIONS_USAGE,
-                "ls" => message = ls::OPTIONS_USAGE,
-                _ => message = "",
-            }
-            display_usage(stdout, message, prompt, input);
-            write!(stdout, "\r{}{}", prompt, input).unwrap();
+            check_options(stdout, prompt, input, words[0]);
+            return true;
         }
 
         // Looking for a file or folder?
-        let current_dir = match env::current_dir() {
-            Ok(dir) => dir,
-            Err(_) => {
-                return true;
-            }
-        };
-        let paths = fs::read_dir(&current_dir)
-            .ok()
-            .map(|entries| {
-                entries
-                    .filter_map(Result::ok)
-                    .map(|entry| entry.path())
-                    .filter(|path| {
-                        path.file_name()
-                            .and_then(|name| name.to_str())
-                            .map_or(false, |name| !name.starts_with("."))
-                    })
-                    .map(|path| {
-                        path.file_name()
-                            .map(|name| {
-                                let mut name = name.to_string_lossy().to_string();
-                                if path.is_dir() {
-                                    name.push(MAIN_SEPARATOR);
-                                }
-                                name
-                            })
-                            .unwrap_or_default()
-                    })
-                    .collect::<Vec<String>>()
-            })
-            .unwrap_or_default();
-        data = &paths;
-        partial = if last_char.map_or(false, |c| c == ' ') {
-            ""
-        } else {
-            words.last().unwrap()
-        };
-        matches = backtrack::find_matches(data, partial);
+        matches = match check_paths(last_char, &words) {
+            Some(v) => v,
+            None => return true,
+        }
     }
 
     match matches.len() {
         0 => true, // No matches, continue
         1 => {
-            if words.len() > 0 {
-                // Replace partial with complete match
-                *input = words[..words.len().saturating_sub(1)].join(" ");
-                if !input.is_empty() && !input.ends_with(' ') {
-                    input.push(' ');
-                }
-            } else {
-                input.clear();
-            }
-
-            input.push_str(&matches[0]);
-            input.push(' ');
-            *cursor = input.len();
-
-            write!(stdout, "\r\x1b[K{}{}", prompt, input).unwrap();
-            stdout.flush().unwrap();
-
+            display_match(stdout, cursor, matches, prompt, input, &words);
             false // Don't continue, we've handled it
         }
         _ => {
-            // Multiple matches, display them
-            display_matches(stdout, matches, prompt, input);
+            display_possibilities(stdout, matches, prompt, input);
             true // Continue to avoid overwriting with the prompt
         }
     }
 }
 
-fn display_matches(
+fn check_cmds(words: &Vec<&str>) -> Vec<String> {
+    let data = &COMMANDS;
+    let partial = if words.is_empty() {
+        ""
+    } else {
+        words.last().unwrap()
+    };
+    backtrack::find_matches(data, partial)
+}
+
+fn check_options(stdout: &mut RawTerminal<Stdout>, prompt: &str, input: &str, cmd: &str) {
+    let message;
+    match cmd {
+        "rm" => message = rm::OPTIONS_USAGE,
+        "ls" => message = ls::OPTIONS_USAGE,
+        _ => message = "",
+    }
+    display_usage(stdout, message, prompt, input);
+    write!(stdout, "\r{}{}", prompt, input).unwrap();
+}
+
+fn check_paths(last_char: Option<char>, words: &Vec<&str>) -> Option<Vec<String>> {
+    let current_dir = match env::current_dir() {
+        Ok(dir) => dir,
+        Err(_) => {
+            return None;
+        }
+    };
+
+    let paths = fs::read_dir(&current_dir)
+        .ok()
+        .map(|entries| {
+            entries
+                .filter_map(Result::ok)
+                .map(|entry| entry.path())
+                .filter(|path| {
+                    path.file_name()
+                        .and_then(|name| name.to_str())
+                        .map_or(false, |name| !name.starts_with("."))
+                })
+                .map(|path| {
+                    path.file_name()
+                        .map(|name| {
+                            let mut name = name.to_string_lossy().to_string();
+                            if path.is_dir() {
+                                name.push(MAIN_SEPARATOR);
+                            }
+                            name
+                        })
+                        .unwrap_or_default()
+                })
+                .collect::<Vec<String>>()
+        })
+        .unwrap_or_default();
+
+    let data = &paths;
+    let partial = if last_char.map_or(false, |c| c == ' ') {
+        ""
+    } else {
+        words.last().unwrap()
+    };
+
+    Some(backtrack::find_matches(data, partial))
+}
+
+fn display_match(
+    stdout: &mut RawTerminal<Stdout>,
+    cursor: &mut usize,
+    matches: Vec<String>,
+    prompt: &str,
+    input: &mut String,
+    words: &Vec<&str>,
+) {
+    if words.len() > 0 {
+        // Replace partial with complete match
+        *input = words[..words.len().saturating_sub(1)].join(" ");
+        if !input.is_empty() && !input.ends_with(' ') {
+            input.push(' ');
+        }
+    } else {
+        input.clear();
+    }
+
+    input.push_str(&matches[0]);
+    input.push(' ');
+    *cursor = input.len();
+
+    write!(stdout, "\r\x1b[K{}{}", prompt, input).unwrap();
+    stdout.flush().unwrap();
+}
+
+fn display_possibilities(
     stdout: &mut RawTerminal<Stdout>,
     matches: Vec<String>,
     prompt: &str,

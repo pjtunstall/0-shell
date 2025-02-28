@@ -20,17 +20,14 @@
 
 ## General
 
+- Test input functions.
 - Test `ls` on Windows as is uses platform-specific code, conditional on which platform is being compiled for.
 - See if there's a way to avoid some of those clones in the tests etc., e.g. `mv`. Look at whether there are places I can avoid copying, e.g. use refs instead of Strings either in the code or the tests.
-- Refactor for coinsistency of names and ways of doing things.
-- Refactor, splitting up some functions.
 - Use a loop to insert the right number of backslashes in echo special character test.
 - Check error messages are consistently formatted. Maybe start to explore this when I've got tests in place to compare my commands directly against the standard shell commands. Include arguments where appropriate; see `rm`.
 - Remove any remaining OS-specific error tests: e.g. ones that require a particular OS-generates error message.
 - Test what happens when `ls` encounters `permission denied` errors, if that even happens.
-- `ls -l`: look carefully at all that formatting and refactor if some is superfluous, maybe make submodules.
-- Note parallels between commands (the better to structure code and tests, order creation of tests, reuse code and tests, memorize).
-- Check vetting of argument numbers and types in each command function. See if I can write a general function to check conditions on number of arguments (better that `check_num_args`), e.g. less than, greater than, or equal to.
+- Check vetting of argument numbers and types in each command function. See if I can write a general function to check conditions on number of arguments (better than `check_num_args`), e.g. less than, greater than, or equal to.
 - Add redirection for `ls`.
 - Scripting.
 - RESEARCH: Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think.
