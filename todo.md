@@ -12,6 +12,7 @@
 ## Next
 
 - Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
+- `ls`: redirection. "Multiple Items After >: If you type something like ls > file1 file2 file3, the shell treats file1 as the target for redirection. file2 and file3 are treated as additional arguments to the ls command. Therefore, the shell will redirect the output of ls to the file named file1. The ls command will then try to list the files named file2 and file3, and if they do not exist, ls will output the error "No such file or directory" for each non-existant file."
 
 ## Fix?
 
