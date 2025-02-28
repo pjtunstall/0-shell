@@ -28,10 +28,10 @@ fn split_at_first_divider(input: &str) -> Option<(String, String, String)> {
             '"' | '\'' => {
                 if let Some(q) = quote_char {
                     if q == c {
-                        quote_char = None; // Closing matching quote
+                        quote_char = None; // Closing matching quote.
                     }
                 } else {
-                    quote_char = Some(c); // Opening new quote
+                    quote_char = Some(c); // Opening new quote.
                 }
             }
             '>' if quote_char.is_none() => {
@@ -63,13 +63,13 @@ fn split_part(input: &str) -> Result<Vec<String>, String> {
     for c in input.chars() {
         if inside_quotes {
             if c == '"' || c == '\'' {
-                // Closing quote, add the word to the result and reset
+                // Closing quote: add the word to the result and reset.
                 inside_quotes = false;
-                current_word.push(c); // Add the closing quote
+                current_word.push(c); // Add the closing quote.
                 result.push(current_word);
                 current_word = String::new();
             } else {
-                // Add character to current word inside quotes
+                // Add character to current word inside quotes.
                 current_word.push(c);
             }
         } else {
@@ -77,27 +77,27 @@ fn split_part(input: &str) -> Result<Vec<String>, String> {
                 return Err("parse error near `\\n'".to_string());
             }
             if c == '"' || c == '\'' {
-                // Opening quote, start capturing the word inside quotes
+                // Opening quote: start capturing the word inside quotes.
                 if !current_word.is_empty() {
                     result.push(current_word);
                     current_word = String::new();
                 }
                 inside_quotes = true;
-                current_word.push(c); // Add the opening quote
+                current_word.push(c); // Add the opening quote.
             } else if c.is_whitespace() {
-                // Split on whitespace when outside of quotes
+                // Split on whitespace when outside of quotes.
                 if !current_word.is_empty() {
                     result.push(current_word);
                     current_word = String::new();
                 }
             } else {
-                // Add non-whitespace characters to the current word
+                // Add non-whitespace characters to the current word.
                 current_word.push(c);
             }
         }
     }
 
-    // Push the last word if exists
+    // Push the last word if exists.
     if !current_word.is_empty() {
         result.push(current_word);
     }

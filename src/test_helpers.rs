@@ -20,7 +20,7 @@ impl Drop for TempStore {
     fn drop(&mut self) {
         for item in &self.store {
             if let Err(_) = fs::remove_file(&item) {
-                // If it's not a file, attempt to remove it as a directory
+                // If it's not a file, attempt to remove it as a directory.
                 fs::remove_dir_all(&item).ok();
             }
         }

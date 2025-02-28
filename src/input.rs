@@ -53,7 +53,7 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                         continue;
                     }
                     Key::Ctrl('c') | Key::Ctrl('d') => {
-                        // Eventually change 'c' to handle internal processes without exiting 0-shell
+                        // Eventually change 'c' to handle internal processes without exiting 0-shell.
                         write!(stdout, "\r\n").unwrap();
                         stdout.suspend_raw_mode().unwrap(); // Ensure terminal is reset
                         process::exit(0);
@@ -69,7 +69,7 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                     }
                     Key::Char('\t') => {
                         if tab_and_should_continue(&mut input, &mut cursor, &mut stdout, &prompt) {
-                            continue;
+                            continue; // Bypass printing of prompt if something was printed that we need to avoid overwriting.
                         }
                     }
                     Key::Char(c) => {
@@ -261,7 +261,7 @@ fn display_match(
     matches: Vec<String>,
 ) {
     if words.len() > 0 {
-        // Replace partial with complete match
+        // Replace partial with complete match.
         *input = words[..words.len().saturating_sub(1)].join(" ");
         if !input.is_empty() && !input.ends_with(' ') {
             input.push(' ');
@@ -274,7 +274,7 @@ fn display_match(
     input.push(' ');
     *cursor = input.len();
 
-    write!(stdout, "\r\x1b[K{}{}", prompt, input).unwrap();
+    write!(stdout, "\r\x1b[K{}{}", prompt, input).unwrap(); // Move the cursor back up.
     stdout.flush().unwrap();
 }
 
@@ -316,8 +316,8 @@ fn display_possibilities(
         }
     }
 
-    write!(stdout, "\r\x1b[{}A", num_rows).unwrap(); // Move the cursor back up
-    write!(stdout, "\r{}{}", prompt, input).unwrap(); // Redraw prompt and input
+    write!(stdout, "\r\x1b[{}A", num_rows).unwrap(); // Move the cursor back up.
+    write!(stdout, "\r{}{}", prompt, input).unwrap();
     stdout.flush().unwrap();
 }
 
@@ -327,7 +327,7 @@ fn display_usage(stdout: &mut RawTerminal<Stdout>, prompt: &str, input: &str, me
     }
     let num_rows = message.matches('\n').count();
     write!(stdout, "{}", message).unwrap();
-    write!(stdout, "\r\x1b[{}A", num_rows).unwrap();
+    write!(stdout, "\r\x1b[{}A", num_rows).unwrap(); // Move the cursor back up.
     write!(stdout, "\r{}{}", prompt, input).unwrap();
     stdout.flush().unwrap();
 }

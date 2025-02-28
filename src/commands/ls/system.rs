@@ -1,5 +1,8 @@
 use std::fs::Metadata;
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{MAIN_SEPARATOR_STR, Path},
+};
 
 #[cfg(unix)]
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
@@ -83,7 +86,7 @@ pub fn is_hidden(path: &Path) -> bool {
 
 pub fn classify(path: &Path) -> String {
     if path.is_dir() {
-        return "/".to_string();
+        return MAIN_SEPARATOR_STR.to_string();
     } else if path.is_symlink() {
         return "@".to_string();
     }

@@ -3,11 +3,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::{
     collections::VecDeque,
     fs,
-    path::{Path, MAIN_SEPARATOR_STR},
+    path::{MAIN_SEPARATOR_STR, Path},
 };
 
 use chrono;
-use terminal_size::{terminal_size, Width};
+use terminal_size::{Width, terminal_size};
 
 use super::system;
 
@@ -222,18 +222,18 @@ fn long_format_list(entries: Vec<String>, total: u64) -> Result<String, String> 
                 }
 
                 if i == 0 || i == 2 {
-                    // Left-align permissions, owner, group
+                    // Left-align permissions, owner, group:
                     result.push_str(&format!("{:<width$}", field, width = column_widths[i]));
                 } else if i == 3 {
                     result.push_str(&format!(" {:<width$} ", field, width = column_widths[i]));
                 } else if i == 1 || i == 4 {
-                    // Right-align link count and size
+                    // Right-align link count and size:
                     result.push_str(&format!("{:>width$}", field, width = column_widths[i]));
                 } else if i >= 5 && i < row.len() - 1 {
-                    // Date fields: standard spacing
+                    // Date fields: standard spacing:
                     result.push_str(&format!("{:<width$}", field, width = column_widths[i]));
                 } else if i == row.len() - 1 {
-                    // Filename: no padding
+                    // Filename: no padding:
                     result.push_str(field);
                 }
             }

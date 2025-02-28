@@ -21,7 +21,7 @@ impl TextStyle {
 impl Drop for TextStyle {
     fn drop(&mut self) {
         // Reset formatting to normal when the item is dropped,
-        print!("\x1b[0m"); // i.e. when the program ends
+        print!("\x1b[0m"); // i.e. when the program ends.
     }
 }
 

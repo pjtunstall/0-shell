@@ -32,7 +32,7 @@ impl LsFlags {
 
         for (i, arg) in args.iter().enumerate() {
             if !arg.starts_with('-') {
-                flags.first_pathname_index = Some(i + 1); // +1 to account for the fact that args counts from the item after the command name here, but elsewhere input counts from the command name itself
+                flags.first_pathname_index = Some(i + 1); // The +1 is to account for the fact that args counts from the item after the command name here, but elsewhere input counts from the command name itself.
                 break;
             }
 
@@ -161,12 +161,12 @@ fn process_directories(
     for (i, dir) in dirs.iter().enumerate() {
         let path = Path::new(dir);
 
-        // Add spacing between sections
+        // Add spacing between sections.
         if i > 0 || !files.is_empty() {
             results.push_str("\n");
         }
 
-        // Print directory header if multiple directories or if we had non-dir files
+        // Print directory header if multiple directories or if we had non-dir files.
         if input.len() > 2 {
             results.push_str(&format!("{}:\n", dir));
         }

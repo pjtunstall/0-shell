@@ -10,8 +10,7 @@ pub fn echo(input: &[String]) -> Result<String, String> {
         input[0]
     );
 
-    // Because we may want to drain the input
-    let input: Vec<String> = input.iter().map(|s| s.to_string()).collect();
+    let input: Vec<String> = input.iter().map(|s| s.to_string()).collect(); // ... because we may want to drain the input.
 
     if input.len() < 2 {
         return Ok("\n".to_string());
