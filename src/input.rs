@@ -226,8 +226,8 @@ fn tab_and_should_continue(
     match matches.len() {
         0 => true, // No matches, continue
         1 => {
-            // Handle single match - replace the partial with the complete match
             if words.len() > 0 {
+                // Replace partial with complete match
                 *input = words[..words.len().saturating_sub(1)].join(" ");
                 if !input.is_empty() && !input.ends_with(' ') {
                     input.push(' ');
@@ -240,7 +240,6 @@ fn tab_and_should_continue(
             input.push(' ');
             *cursor = input.len();
 
-            // Redraw the prompt with the updated input
             write!(stdout, "\r\x1b[K{}{}", prompt, input).unwrap();
             stdout.flush().unwrap();
 
@@ -261,7 +260,6 @@ fn display_matches(
     input: &str,
 ) {
     if matches.is_empty() {
-        // Shouldn't be called if matches is empty, but just in case ...
         return;
     }
 
@@ -269,7 +267,7 @@ fn display_matches(
     let term_width = term_width as usize;
 
     let max_len = matches.iter().map(|s| s.len()).max().unwrap_or(0);
-    let col_width = max_len + 2; // Add spacing between columns
+    let col_width = max_len + 2;
 
     let num_cols = (term_width / col_width).max(1);
 
@@ -283,7 +281,6 @@ fn display_matches(
             let idx = row + (col * num_rows);
             if idx < num_items {
                 let entry = &matches[idx];
-                // Make sure we don't exceed terminal width
                 if col * col_width + entry.len() < term_width {
                     write!(stdout, "{:<width$}", entry, width = col_width).unwrap();
                 }
@@ -294,11 +291,9 @@ fn display_matches(
         }
     }
 
-    // Move the cursor back up by the exact number of rows we displayed
-    write!(stdout, "\r\x1b[{}A", num_rows).unwrap();
+    write!(stdout, "\r\x1b[{}A", num_rows).unwrap(); // Move the cursor back up
 
-    // Redraw the prompt and input
-    write!(stdout, "\r{}{}", prompt, input).unwrap();
+    write!(stdout, "\r{}{}", prompt, input).unwrap(); // Redraw prompt and input
     stdout.flush().unwrap();
 }
 
@@ -306,9 +301,9 @@ fn display_usage(stdout: &mut RawTerminal<Stdout>, message: &str, prompt: &str, 
     if message.is_empty() {
         return;
     }
-    let lines = message.matches('\n').count();
+    let num_rows = message.matches('\n').count();
     write!(stdout, "{}", message).unwrap();
-    write!(stdout, "\r\x1b[{}A", lines).unwrap();
+    write!(stdout, "\r\x1b[{}A", num_rows).unwrap();
     write!(stdout, "\r{}{}", prompt, input).unwrap();
     stdout.flush().unwrap();
 }
