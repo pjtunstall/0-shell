@@ -12,8 +12,6 @@
 ## Next
 
 - tab: refactor.
-- tab: tidy spacing between cols.
-- Tidy: number of cols in short_format_list.
 - Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
 
 ## Fix?
