@@ -11,7 +11,6 @@
 
 ## Next
 
-- tab: refactor.
 - Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
 
 ## Fix?

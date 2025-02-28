@@ -146,6 +146,7 @@ fn prompt() -> io::Result<String> {
     Ok(prompt)
 }
 
+// Return true to continue. This will bypass the usual prompt printing, which would overwrite any possibilities or options message. Only return false when one exact match is found.
 fn tab_and_should_continue(
     input: &mut String,
     cursor: &mut usize,
@@ -155,36 +156,33 @@ fn tab_and_should_continue(
     let last_char = input.chars().last();
     let current_input = input.clone();
     let words = current_input.split_whitespace().collect::<Vec<&str>>();
+
+    if words.len() > 1 && *words.last().unwrap() == "-" {
+        check_options(stdout, prompt, input, words[0]);
+        return true; // On returning, continue
+    }
+
     let waiting_for_cmd =
         words.is_empty() || (words.len() == 1 && last_char.map_or(false, |c| c != ' '));
 
-    let matches;
-
-    if waiting_for_cmd {
-        matches = check_cmds(&words);
+    let matches = if waiting_for_cmd {
+        check_cmds(&words)
     } else {
-        // Looking for an option?
-        if words.len() > 1 && *words.last().unwrap() == "-" {
-            check_options(stdout, prompt, input, words[0]);
-            return true;
-        }
-
-        // Looking for a file or folder?
-        matches = match check_paths(last_char, &words) {
+        match check_paths(last_char, &words) {
             Some(v) => v,
             None => return true,
         }
-    }
+    };
 
     match matches.len() {
-        0 => true, // No matches, continue
+        0 => true,
         1 => {
-            display_match(stdout, cursor, matches, prompt, input, &words);
-            false // Don't continue, we've handled it
+            display_match(stdout, cursor, prompt, input, &words, matches);
+            false
         }
         _ => {
-            display_possibilities(stdout, matches, prompt, input);
-            true // Continue to avoid overwriting with the prompt
+            display_possibilities(stdout, prompt, input, matches);
+            true
         }
     }
 }
@@ -206,7 +204,7 @@ fn check_options(stdout: &mut RawTerminal<Stdout>, prompt: &str, input: &str, cm
         "ls" => message = ls::OPTIONS_USAGE,
         _ => message = "",
     }
-    display_usage(stdout, message, prompt, input);
+    display_usage(stdout, prompt, input, message);
     write!(stdout, "\r{}{}", prompt, input).unwrap();
 }
 
@@ -257,10 +255,10 @@ fn check_paths(last_char: Option<char>, words: &Vec<&str>) -> Option<Vec<String>
 fn display_match(
     stdout: &mut RawTerminal<Stdout>,
     cursor: &mut usize,
-    matches: Vec<String>,
     prompt: &str,
     input: &mut String,
     words: &Vec<&str>,
+    matches: Vec<String>,
 ) {
     if words.len() > 0 {
         // Replace partial with complete match
@@ -282,9 +280,9 @@ fn display_match(
 
 fn display_possibilities(
     stdout: &mut RawTerminal<Stdout>,
-    matches: Vec<String>,
     prompt: &str,
     input: &str,
+    matches: Vec<String>,
 ) {
     if matches.is_empty() {
         return;
@@ -319,12 +317,11 @@ fn display_possibilities(
     }
 
     write!(stdout, "\r\x1b[{}A", num_rows).unwrap(); // Move the cursor back up
-
     write!(stdout, "\r{}{}", prompt, input).unwrap(); // Redraw prompt and input
     stdout.flush().unwrap();
 }
 
-fn display_usage(stdout: &mut RawTerminal<Stdout>, message: &str, prompt: &str, input: &str) {
+fn display_usage(stdout: &mut RawTerminal<Stdout>, prompt: &str, input: &str, message: &str) {
     if message.is_empty() {
         return;
     }
