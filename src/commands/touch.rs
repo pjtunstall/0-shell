@@ -107,6 +107,27 @@ mod tests {
     }
 
     #[test]
+    fn test_touch_multiple_arguments() {
+        let temp_store = TempStore::new(3);
+        let dir = Path::new(&temp_store.store[0]);
+        let prefix = Path::new(&temp_store.store[1]);
+        let invalid_path = prefix.join(dir);
+        let valid_string = &temp_store.store[2];
+
+        let result = touch(&vec![
+            "touch".to_string(),
+            valid_string.clone(),
+            format!("{}", invalid_path.display()),
+        ]);
+
+        assert!(
+            result.is_err(),
+            "Result should be an error because one of the paths is invalid"
+        );
+        assert!(Path::new(valid_string).exists(), "Valid path should exist");
+    }
+
+    #[test]
     fn test_touch_updates_time_of_existing_file() {
         let temp_store = TempStore::new(1);
         let file_string = &temp_store.store[0];
