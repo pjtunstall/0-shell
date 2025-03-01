@@ -11,7 +11,8 @@
 
 ## Next
 
-- `cat`: write tests for redirection scenarios: different number of source and target files, mixed order, existence of target files, target files being directories, mixed existing directories and files for target files.
+- `cat`: write more tests for redirection scenarios: different number of source and target files, mixed order, existence of target files, target files being directories, mixed existing directories and files for target files.
+- Redirection for `ls`.
 - `cat`: handle mixed sequence of filenames and dashes.
 - Refactor `cat`: split up the pub function and flatten the nesting.
 - Add a `for_test_temp_files` directory in root; add it to `.gitignore`. Have all test files and directories placed in there so that they can be more easily removed if cleanup fails.
@@ -19,7 +20,6 @@
 - Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
 - Add `man` command.
 - `echo` with multiple redirect arguments.
-- Redirection for `ls`.
 - Check full redirection functionality for `cat`; decide on and note any deviations from stanrad behavior, e.g. whether to allow valid operations to proceed if one source file is really a directory (why not let them go ahead to be consistent with other graceful failures, e.g. in `ls`): All arguments not preceeded by `>` or `>>` (source files) are concatenated in order into all files that are preceded by `>` or `>>` (target files). If a source file doesn't exist, it triggers a "No such file or directory" error but any other sources are concatenated; if a source is a directory, it triggers an "is a directory" error (note the inconsistent casing; no need to replicate that)--and that error stops anything from working and also prevents any "No such file or directory" errors that would have occurred. If a target file doesn't exist, it's created. If there are no target files, the output is sent to stdout. `cat` with no source arguments waits for input from stdin; if there are target arguments, it creates them immediately if they don't exists, but only writes to them when it encounters EOF. It exits with Ctr + D or Ctrl + C.
 - Switch `echo` redirection tests to use `TempStore`.
 - Change the `get_input` input function in `cat` to use termion for greater control, of keyboard shortcuts and interrupts, especially Ctr + C.
