@@ -1,6 +1,6 @@
 use std::{
     fs::File,
-    io::{self, BufRead, Read},
+    io::{self, BufRead, Read, Write},
     path::Path,
 };
 
@@ -19,16 +19,14 @@ fn separate_sources_and_targets(input: &[String]) -> (Vec<&String>, Vec<[&String
             None
         };
 
-        // let next = input.get(index + 1);
-
-        if previous.is_none() {
-            sources.push(current);
-        }
-
         if let Some(previous) = previous {
             if previous == ">" || previous == ">>" {
                 targets.push([previous, current]);
+            } else {
+                sources.push(current);
             }
+        } else {
+            sources.push(current);
         }
     }
 
@@ -43,9 +41,9 @@ pub fn cat(input: &[String]) -> Result<String, String> {
         input[0]
     );
 
-    // let (sources, targets) = separate_sources_and_targets(input);
+    let (sources, targets) = separate_sources_and_targets(input);
 
-    if input.len() < 2 || input[1] == "-" {
+    if input.len() < 2 {
         return match get_input() {
             Ok(contents) => Ok(contents),
             Err(e) => Err(format!(
@@ -63,7 +61,7 @@ pub fn cat(input: &[String]) -> Result<String, String> {
     let mut concatenated_contents = String::new();
     let mut errors = Vec::new();
 
-    for path_str in input[1..].iter() {
+    for &path_str in sources.iter() {
         let path = Path::new(path_str);
         if path.exists() {
             if path.is_file() {
@@ -106,7 +104,29 @@ pub fn cat(input: &[String]) -> Result<String, String> {
         }
     }
 
-    println!("{}", concatenated_contents);
+    if targets.is_empty() {
+        println!("{}", concatenated_contents);
+    } else {
+        for target in targets.iter() {
+            let target_path = Path::new(target[1]);
+            if target_path.is_dir() {
+                errors.push(format!("cat: {}: Is a directory", target[1]));
+                continue;
+            }
+
+            if !target_path.exists() || target[0] == ">" {
+                let mut file = File::create(target_path).unwrap();
+                file.write_all(concatenated_contents.as_bytes()).unwrap();
+            } else {
+                let mut file = File::options()
+                    .append(true)
+                    .create(true)
+                    .open(target_path)
+                    .unwrap();
+                file.write_all(concatenated_contents.as_bytes()).unwrap();
+            }
+        }
+    }
 
     if errors.is_empty() {
         Ok(concatenated_contents)
