@@ -4,34 +4,7 @@ use std::{
     path::Path,
 };
 
-fn separate_sources_and_targets(input: &[String]) -> (Vec<&String>, Vec<[&String; 2]>) {
-    let mut sources = Vec::new();
-    let mut targets = Vec::new();
-
-    for (index, current) in input.iter().enumerate() {
-        if index == 0 || current == ">" || current == ">>" {
-            continue;
-        }
-
-        let previous = if index > 0 {
-            input.get(index - 1)
-        } else {
-            None
-        };
-
-        if let Some(previous) = previous {
-            if previous == ">" || previous == ">>" {
-                targets.push([previous, current]);
-            } else {
-                sources.push(current);
-            }
-        } else {
-            sources.push(current);
-        }
-    }
-
-    (sources, targets)
-}
+use super::redirect;
 
 pub fn cat(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `cat` should not be empty");
@@ -41,7 +14,7 @@ pub fn cat(input: &[String]) -> Result<String, String> {
         input[0]
     );
 
-    let (sources, targets) = separate_sources_and_targets(input);
+    let (sources, targets) = redirect::separate_sources_from_targets(input);
 
     if input.len() < 2 {
         return match get_input() {
