@@ -66,7 +66,7 @@ fn main() {
 
         match result {
             Ok(ok) => {
-                if !ok.is_empty() {
+                if !ok.is_empty() && command != "cat" {
                     print!("{}", &ok);
                 }
             }

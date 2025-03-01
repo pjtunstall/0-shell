@@ -1,5 +1,4 @@
-use std::fs::File;
-use std::path::Path;
+use std::{fs::File, path::Path};
 
 pub fn touch(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `touch` should not be empty");

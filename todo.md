@@ -11,10 +11,13 @@
 
 ## Next
 
+- Add a test_files directory in root; add it to `.gitignore`. Have all test files and directories placed in there so that they can be more easily removed in cleanup fails.
+- Add mutex to allow `cargo test`.
 - Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
-- `ls`: redirection. "Multiple Items After >: If you type something like ls > file1 file2 file3, the shell treats file1 as the target for redirection. file2 and file3 are treated as additional arguments to the ls command. Therefore, the shell will redirect the output of ls to the file named file1. The ls command will then try to list the files named file2 and file3, and if they do not exist, ls will output the error "No such file or directory" for each non-existant file."
-- `ls dir1 > file1 dir2 > file2` redirects all of `ls dir1 dir2` to both `file1` and `file2`, so that the two files have the same content.
-- `ls dir1 > file5 file6` redirects `ls dir` to `file5` and dismisses `file6` with the error message `ls: file6: No such file or directory`.
+- Add `man` command.
+- `echo` with multiple redirect arguments.
+- Redirection for `ls` and `cat`; multi-argument redirection for echo, and allow the redirect argument to preceed the text to be echoed. All arguments not preceeded by `>` or `>>` (source files) are concatenated in order into all files that are preceded by `>` or `>>` (target files). If a source file doesn't exist, it triggers a "No such file or directory" error but any other sources are concatenated; if a source is a directory, it triggers an "is a directory" error (note the inconsistent casing; no need to replicate that)--and that error stops anything from working and also prevents any "No such file or directory" errors that would have occurred. If a target file doesn't exist, it's created. If there are no target files, the output is sent to stdout. `cat` with no source arguments waits for input from stdin; if there are target arguments, it creates them immediately if they don't exists, but only writes to them when it encounters EOF. It exits with Ctr + D or Ctrl + C.
+- Switch `echo` redirection tests to use `TempStore`.
 
 ## Fix?
 
