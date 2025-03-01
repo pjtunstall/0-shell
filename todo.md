@@ -18,6 +18,7 @@
 - `echo` with multiple redirect arguments.
 - Redirection for `ls` and `cat`; multi-argument redirection for echo, and allow the redirect argument to preceed the text to be echoed. All arguments not preceeded by `>` or `>>` (source files) are concatenated in order into all files that are preceded by `>` or `>>` (target files). If a source file doesn't exist, it triggers a "No such file or directory" error but any other sources are concatenated; if a source is a directory, it triggers an "is a directory" error (note the inconsistent casing; no need to replicate that)--and that error stops anything from working and also prevents any "No such file or directory" errors that would have occurred. If a target file doesn't exist, it's created. If there are no target files, the output is sent to stdout. `cat` with no source arguments waits for input from stdin; if there are target arguments, it creates them immediately if they don't exists, but only writes to them when it encounters EOF. It exits with Ctr + D or Ctrl + C.
 - Switch `echo` redirection tests to use `TempStore`.
+- Change `cat` input function to use termion for greater control, of keyboard shortcuts and interrupts, especially Ctr + C.
 
 ## Fix?
 
