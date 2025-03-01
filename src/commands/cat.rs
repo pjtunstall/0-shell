@@ -205,7 +205,7 @@ mod tests {
         let source = &temp_store.store[0];
         let target_write = &temp_store.store[1];
         let target_append = &temp_store.store[2];
-        let expected = "Hello, this world!\n";
+        let expected = "Alright, world?\n";
 
         fs::write(source, expected).unwrap();
 
@@ -229,13 +229,13 @@ mod tests {
         );
 
         // Redirect with `>>`:
-        let _ = cat(&vec![
+        let append_result = cat(&vec![
             "cat".to_string(),
             source.to_string(),
             ">>".to_string(),
             target_append.to_string(),
         ]);
-        assert!(write_result.is_ok(), "`cat` with `>>` should be ok");
+        assert!(append_result.is_ok(), "`cat` with `>>` should be ok");
         assert!(
             Path::new(target_append).exists(),
             "Failed to create `>>` target file"
@@ -245,6 +245,32 @@ mod tests {
         assert_eq!(
             contents, expected,
             "Contents of new `>>` target file should match those of source file"
+        );
+    }
+
+    #[test]
+    fn test_cat_success_append_to_one_existing_file() {
+        let temp_store = TempStore::new(3);
+        let source = &temp_store.store[0];
+        let target = &temp_store.store[1];
+
+        let expected = "Hello, world!\n";
+
+        fs::write(source, "world!\n").expect("Failed to write to source file");
+        fs::write(target, "Hello, ").expect("Failed to write to target file");
+
+        let result = cat(&vec![
+            "cat".to_string(),
+            source.to_string(),
+            ">>".to_string(),
+            target.to_string(),
+        ]);
+        assert!(result.is_ok(), "`cat` with `>>` should be ok");
+
+        let contents = fs::read_to_string(target).expect("Failed to read from target file");
+        assert_eq!(
+            contents, expected,
+            "Target file should have source contents appended to it"
         );
     }
 
