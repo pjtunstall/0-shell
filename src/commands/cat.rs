@@ -267,19 +267,24 @@ mod tests {
         let temp_file1_path = &temp_store.store[0];
         let temp_file2_path = &temp_store.store[1];
 
-        let mut file1 = fs::File::create(temp_file1_path).unwrap();
-        file1.write_all(b"Hello, ").unwrap();
+        let mut file1 =
+            fs::File::create(temp_file1_path).expect("Failed to create first source file");
+        file1
+            .write_all(b"Hello, ")
+            .expect("Failed to write to first source file");
 
-        let mut file2 = fs::File::create(temp_file2_path).unwrap();
-        file2.write_all(b"world!").unwrap();
+        let mut file2 = fs::File::create(temp_file2_path).expect("Failed to create temp file");
+        file2
+            .write_all(b"world!")
+            .expect("Failed to write to second source file");
 
         let input = vec![
             "cat".to_string(),
             temp_file1_path.to_string(),
             temp_file2_path.to_string(),
         ];
-        let result = cat(&input).unwrap();
 
+        let result = cat(&input).expect("`cat` should be ok");
         assert_eq!(result, "Hello, world!");
     }
 
@@ -295,7 +300,7 @@ mod tests {
     #[test]
     fn test_cat_fail_one_directory() {
         let dir = &TempStore::new(1).store[0];
-        fs::create_dir(dir).unwrap();
+        fs::create_dir(dir).expect("Failed to create would-be source directory");
         let input = vec!["cat".to_string(), dir.to_string()];
         let result = cat(&input);
         assert!(result.is_err());

@@ -15,6 +15,8 @@
 - Redirection for `ls`.
 - `cat`: handle mixed sequence of filenames and dashes.
 - Refactor `cat`: split up the pub function and flatten the nesting.
+- Use this less verbose pattern in tests: `let result = cat(&input).expect("`cat` should be ok"); assert_eq!(result, "Hello, world!");`.
+- Is there any reason to prefer one above the other out of creating a file then writing to it, or creating it implicitly by writing to it?
 - Add a `for_test_temp_files` directory in root; add it to `.gitignore`. Have all test files and directories placed in there so that they can be more easily removed if cleanup fails.
 - Add mutex to allow `cargo test`.
 - Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
