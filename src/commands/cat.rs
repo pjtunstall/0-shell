@@ -4,45 +4,35 @@ use std::{
     path::Path,
 };
 
-fn get_input() -> Result<String, String> {
-    let stdin = io::stdin();
-    let mut handle = stdin.lock();
-    let mut line = String::new();
-    let mut contents = String::new();
+fn separate_sources_and_targets(input: &[String]) -> (Vec<&String>, Vec<[&String; 2]>) {
+    let mut sources = Vec::new();
+    let mut targets = Vec::new();
 
-    loop {
-        line.clear(); // Clear the buffer for each line.
-        match handle.read_line(&mut line) {
-            Ok(0) => {
-                // EOF (Ctrl+D) reached, exit the loop.
-                break;
-            }
-            Ok(_) => {
-                if line.ends_with('\n') {
-                    line.pop();
-                    if line.ends_with('\r') {
-                        line.pop();
-                    }
-                    contents.push_str(line.as_str());
-                }
-                println!("{}", line);
-            }
-            Err(e) => {
-                return Err(format!(
-                    "{}: {}: {}",
-                    "cat",
-                    "-",
-                    e.to_string()
-                        .split(" (os ")
-                        .next()
-                        .unwrap_or(" ")
-                        .to_string()
-                ));
+    for (index, current) in input.iter().enumerate() {
+        if index == 0 || current == ">" || current == ">>" {
+            continue;
+        }
+
+        let previous = if index > 0 {
+            input.get(index - 1)
+        } else {
+            None
+        };
+
+        // let next = input.get(index + 1);
+
+        if previous.is_none() {
+            sources.push(current);
+        }
+
+        if let Some(previous) = previous {
+            if previous == ">" || previous == ">>" {
+                targets.push([previous, current]);
             }
         }
     }
 
-    Ok(contents)
+    (sources, targets)
 }
 
 pub fn cat(input: &[String]) -> Result<String, String> {
@@ -52,6 +42,8 @@ pub fn cat(input: &[String]) -> Result<String, String> {
         "Input for `{}` should not be passed to `cat`",
         input[0]
     );
+
+    // let (sources, targets) = separate_sources_and_targets(input);
 
     if input.len() < 2 || input[1] == "-" {
         return match get_input() {
@@ -126,6 +118,47 @@ pub fn cat(input: &[String]) -> Result<String, String> {
             Err(joined_errors)
         }
     }
+}
+
+fn get_input() -> Result<String, String> {
+    let stdin = io::stdin();
+    let mut handle = stdin.lock();
+    let mut line = String::new();
+    let mut contents = String::new();
+
+    loop {
+        line.clear(); // Clear the buffer for each line.
+        match handle.read_line(&mut line) {
+            Ok(0) => {
+                // EOF (Ctrl+D) reached, exit the loop.
+                break;
+            }
+            Ok(_) => {
+                if line.ends_with('\n') {
+                    line.pop();
+                    if line.ends_with('\r') {
+                        line.pop();
+                    }
+                    contents.push_str(line.as_str());
+                }
+                println!("{}", line);
+            }
+            Err(e) => {
+                return Err(format!(
+                    "{}: {}: {}",
+                    "cat",
+                    "-",
+                    e.to_string()
+                        .split(" (os ")
+                        .next()
+                        .unwrap_or(" ")
+                        .to_string()
+                ));
+            }
+        }
+    }
+
+    Ok(contents)
 }
 
 #[cfg(test)]
