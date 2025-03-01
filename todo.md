@@ -11,7 +11,7 @@
 
 ## Next
 
-- Add a test_files directory in root; add it to `.gitignore`. Have all test files and directories placed in there so that they can be more easily removed in cleanup fails.
+- Add a `for_test_temp_files` directory in root; add it to `.gitignore`. Have all test files and directories placed in there so that they can be more easily removed if cleanup fails.
 - Add mutex to allow `cargo test`.
 - Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
 - Add `man` command.
