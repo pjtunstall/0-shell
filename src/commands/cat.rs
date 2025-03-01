@@ -183,7 +183,7 @@ fn get_input() -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, io::Write};
+    use std::{fs, io::Write, path::Path};
 
     use crate::test_helpers::TempStore;
 
@@ -197,6 +197,55 @@ mod tests {
         let result = cat(&vec!["cat".to_string(), file.to_string()]);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "Howdie, world!\n");
+    }
+
+    #[test]
+    fn test_cat_success_rediect_from_one_file_to_one_new_file() {
+        let temp_store = TempStore::new(3);
+        let source = &temp_store.store[0];
+        let target_write = &temp_store.store[1];
+        let target_append = &temp_store.store[2];
+        let expected = "Hello, this world!\n";
+
+        fs::write(source, expected).unwrap();
+
+        // Redirect with `>`:
+        let write_result = cat(&vec![
+            "cat".to_string(),
+            source.to_string(),
+            ">".to_string(),
+            target_write.to_string(),
+        ]);
+        assert!(write_result.is_ok(), "`cat` with `>` should be ok");
+        assert!(
+            Path::new(target_write).exists(),
+            "Failed to create `>` target file"
+        );
+
+        let contents = fs::read_to_string(target_write).expect("Failed to read from target file");
+        assert_eq!(
+            contents, expected,
+            "Contents of new `>` target file do should match those of source file"
+        );
+
+        // Redirect with `>>`:
+        let _ = cat(&vec![
+            "cat".to_string(),
+            source.to_string(),
+            ">>".to_string(),
+            target_append.to_string(),
+        ]);
+        assert!(write_result.is_ok(), "`cat` with `>>` should be ok");
+        assert!(
+            Path::new(target_append).exists(),
+            "Failed to create `>>` target file"
+        );
+
+        let contents = fs::read_to_string(target_append).expect("Failed to read from target file");
+        assert_eq!(
+            contents, expected,
+            "Contents of new `>>` target file should match those of source file"
+        );
     }
 
     #[test]
