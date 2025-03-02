@@ -96,11 +96,12 @@ pub fn ls(input: &[String]) -> Result<String, String> {
 
     let paths = &sources[first_pathname_index..];
     let PathClassification {
-        directories,
+        mut directories,
         mut files,
         mut non_existent,
     } = classify_paths(paths);
 
+    directories.sort();
     non_existent.sort();
     files.sort();
 

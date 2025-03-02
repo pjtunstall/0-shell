@@ -8,6 +8,9 @@
   - [echo something](#echo-something)
   - [Last orders, please](#last-orders-please)
 - [Regarding the name](#regarding-the-name)
+- [Testing](#testing)
+- [Deviations](#deviations)
+- [Further](#further)
 
 ## What is this?
 
@@ -76,6 +79,10 @@ cargo test -- --test-threads=1
 ```
 
 ... rather than in the default parallel mode, `cargo test`. This is necessary to prevent tests that change the current directory from interfering with tests that check the identity of the current ditectory, or the existence or nonexistence or contents of files they've created in it. The success test for `pwd`, for example, expects the current directory to be `0-shell`, but the `cd` test temporarily changes the current directory. The integration test in `integration.rs` also changes the current directory briefly.
+
+## Deviations
+
+There are many trivial deviations from Zsh (my default shell), even among the few items that I've implemented: bold text, differnt prompts, use of red for error messages, ... I've not been meticulous in mimicking the wording or capitalization of error messages. In Zsh, if you try to `cat` to a directory and a file, the operation fails completely and doesn't concatenated to the file. In my shell, it does what it can and reports any failures. We both have `cat: tests: Is a directory` when one of the sources is a directory, but, when one of the targets is a directory, I maintain capitalization with `0-shell: Is a directory: tests` versus `zsh: is a directory: tests`. Lack of `!` for history expansion is discussed above. You'll likely find other examples.
 
 ## Further
 

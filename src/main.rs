@@ -94,7 +94,11 @@ fn match_command(input_after_splitting: &[String]) -> Result<String, String> {
 }
 
 fn handle_error(command: &str, err: String) {
-    red_println(&format!("{}: {}", command, err));
+    if err.starts_with("0-shell: ") {
+        red_println(&format!("{}", err));
+    } else {
+        red_println(&format!("{}: {}", command, err));
+    }
 }
 
 fn red_println(text: &str) {

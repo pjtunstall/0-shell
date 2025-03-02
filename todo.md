@@ -11,10 +11,10 @@
 
 ## Next
 
-- Refactor end of `ls` function. Among other things, refactor out hacky way I'm using now to put spaces between sections for different directories in redirected short form.
+- Add tests for `ls` redirection, then ...
+- ... refactor end of `ls` function. Among other things, refactor out hacky way I'm using now to put spaces between sections for different directories in redirected short form.
 - Refactor `cat`: split up the pub function and flatten the nesting.
-- Look carefully at all these refs to collections to refs types in cat and ls.
-- What happens if you try to cat to a directory and a file? In Zsh, it fails completely and doesn't cat to the good one.
+- Look carefully at all these refs to collections to ref types in `cat` and `ls`. Examine what they all imply and what best practice is.
 - Replace unwraps with graceful error ballet in `cat` and `ls` redirect.
 - Make redirection logic more consistent between `cat` and `ls` so that I can call a common `redirect::redirect` function from both of them. This will mean bringing the error handling into line between these two commands: `ls` returns an ok result that incorporates errors; `cat` returns a result that is either a dummy ok (that's not actually printed by `main`) or an error containing all accumulated errors, including any redirection errors. `echo` does things even more its own ad hoc way since this was the first; it will also need upgrading to handle multiple redirections.
 - `cat`: write more tests for redirection scenarios: different number of source and target files, mixed order, existence of target files, target files being directories, mixed existing directories and files for target files.
