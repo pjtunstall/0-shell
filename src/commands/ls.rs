@@ -104,13 +104,16 @@ pub fn ls(input: &[String]) -> Result<String, String> {
     files.sort();
 
     let mut running_results = String::new();
-    running_results.push_str(&non_existent.join(""));
+    if targets.is_empty() {
+        running_results.push_str(&non_existent.join(""));
+    }
     process_files(&files, &flags, &mut running_results)?;
     let results = process_directories(input, directories, running_results, flags.as_u8(), files);
 
     return if targets.is_empty() || results.is_err() {
         results
     } else {
+        println!("{}", non_existent.join("").trim_end());
         redirect(targets, results.unwrap());
         Ok(String::new())
     };
@@ -124,7 +127,6 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
                 "\x1b[31m0-shell: Is a directory: {}\x1b[0m\x1b[1m",
                 target[1]
             );
-            break;
         }
 
         if !target_path.exists() || target[0] == ">" {
