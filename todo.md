@@ -11,10 +11,8 @@
 
 ## Next
 
+- Refactor end of `ls` function. Among other things, refactor out hacky way I'm using now to put spaces between sections for different directories in redirected short form.
 - Refactor `cat`: split up the pub function and flatten the nesting.
-- Refactor end of `ls` function.
-- `ls` shouldn't format redirected output into multiple columns.
-- `ls` should always print errors in the terminal; it shouldn't redirect those.
 - Look carefully at all these refs to collections to refs types in cat and ls.
 - What happens if you try to cat to a directory and a file? In Zsh, it fails completely and doesn't cat to the good one.
 - Replace unwraps with graceful error ballet in `cat` and `ls` redirect.
@@ -30,6 +28,7 @@
 - `echo` with multiple redirect arguments.
 - Switch `echo` redirection tests to use `TempStore`.
 - Change the `get_input` input function in `cat` to use termion for greater control, of keyboard shortcuts and interrupts, especially Ctr + C.
+- Redirection if `ls` when there's an error. Gemini: "The ls command, when it encounters errors, sometimes elects to suppress or not produce standard output. This is a design choice within the ls command itself. This behavior is not universally true for all commands, and it can vary between different versions of ls." At the moment, I'm still redirecting it. I don't know if that's right; I thought redirection was the responsibility of the shell.
 
 ## Fix?
 

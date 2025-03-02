@@ -44,7 +44,7 @@ impl FileInfo {
     }
 }
 
-pub fn get_short_list(flags: u8, path: &Path) -> Result<String, String> {
+pub fn get_short_list(flags: u8, path: &Path, is_redirect: bool) -> Result<String, String> {
     let mut entries: VecDeque<String> = match fs::read_dir(path) {
         Ok(dir) => dir
             .filter_map(|entry| match entry {
@@ -81,15 +81,19 @@ pub fn get_short_list(flags: u8, path: &Path) -> Result<String, String> {
     let mut entries: Vec<_> = entries.into();
     entries.sort();
 
-    short_format_list(entries)
+    short_format_list(entries, is_redirect)
 }
 
-pub fn short_format_list(entries: Vec<String>) -> Result<String, String> {
+pub fn short_format_list(entries: Vec<String>, is_redirect: bool) -> Result<String, String> {
     let term_width = get_terminal_width();
     let max_len = entries.iter().map(|s| s.len()).max().unwrap_or(0);
     let col_width = max_len + 6;
 
-    let num_cols = term_width / col_width;
+    let num_cols = if is_redirect {
+        1
+    } else {
+        term_width / col_width
+    };
     let num_rows = (entries.len() + num_cols - 1) / num_cols;
 
     let mut output = String::new();

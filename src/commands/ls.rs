@@ -75,18 +75,19 @@ pub fn ls(input: &[String]) -> Result<String, String> {
     );
 
     let (sources, targets) = redirect::separate_sources_from_targets(input);
+    let is_redirect = !targets.is_empty();
 
     let flags = LsFlags::parse(&sources)?;
     let first_pathname_index;
     match flags.first_pathname_index {
         Some(i) => first_pathname_index = i,
-        None => match list_current_directory(&flags) {
+        None => match list_current_directory(&flags, is_redirect) {
             Ok(res) => {
-                if targets.is_empty() {
-                    return Ok(res);
-                } else {
+                if is_redirect {
                     redirect(targets, res);
                     return Ok(String::new());
+                } else {
+                    return Ok(res);
                 }
             }
             Err(e) => return Err(e),
@@ -104,16 +105,23 @@ pub fn ls(input: &[String]) -> Result<String, String> {
     files.sort();
 
     let mut running_results = String::new();
-    if targets.is_empty() {
-        running_results.push_str(&non_existent.join(""));
+    print!("{}", non_existent.join(""));
+    process_files(&files, &flags, &mut running_results, is_redirect)?;
+    if is_redirect {
+        running_results.push_str("\n");
     }
-    process_files(&files, &flags, &mut running_results)?;
-    let results = process_directories(input, directories, running_results, flags.as_u8(), files);
+    let results = process_directories(
+        input,
+        directories,
+        running_results,
+        flags.as_u8(),
+        files,
+        is_redirect,
+    );
 
     return if targets.is_empty() || results.is_err() {
         results
     } else {
-        println!("{}", non_existent.join("").trim_end());
         redirect(targets, results.unwrap());
         Ok(String::new())
     };
@@ -143,12 +151,12 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
     }
 }
 
-fn list_current_directory(flags: &LsFlags) -> Result<String, String> {
+fn list_current_directory(flags: &LsFlags, is_redirect: bool) -> Result<String, String> {
     let path = Path::new(".");
     if flags.long_format {
         format::get_long_list(flags.as_u8(), path)
     } else {
-        format::get_short_list(flags.as_u8(), path)
+        format::get_short_list(flags.as_u8(), path, is_redirect)
     }
 }
 
@@ -156,6 +164,7 @@ fn process_files(
     files: &[String],
     flags: &LsFlags,
     results: &mut String,
+    is_redirect: bool,
 ) -> Result<String, String> {
     if files.is_empty() {
         return Ok(results.to_string());
@@ -167,7 +176,11 @@ fn process_files(
             results.push_str(&format::get_long_list(flags.as_u8(), file_path)?);
         }
     } else {
-        results.push_str(&format::short_format_list(files.to_vec())?);
+        if is_redirect {
+            results.push_str(files.to_vec().join("\n").as_str());
+        } else {
+            results.push_str(&format::short_format_list(files.to_vec(), false)?);
+        }
     }
 
     Ok(results.to_string())
@@ -186,7 +199,7 @@ fn classify_paths(paths: &[&String]) -> PathClassification {
             files.push(path_str.to_string());
         } else {
             non_existent.push(format!(
-                "\x1b[31m{}: No such file or directory found\x1b[0m\x1b[1m\n",
+                "\x1b[31mls: {}: No such file or directory found\x1b[0m\x1b[1m\n",
                 path_str
             ));
         }
@@ -205,6 +218,7 @@ fn process_directories(
     results: String,
     flags: u8,
     files: Vec<String>,
+    is_redirect: bool,
 ) -> Result<String, String> {
     let mut results = results;
     for (i, dir) in dirs.iter().enumerate() {
@@ -223,7 +237,7 @@ fn process_directories(
         let dir_listing = if flags & 2 != 0 {
             format::get_long_list(flags, path)?
         } else {
-            format::get_short_list(flags, path)?
+            format::get_short_list(flags, path, is_redirect)?
         };
 
         results.push_str(&dir_listing);
