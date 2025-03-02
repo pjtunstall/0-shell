@@ -15,14 +15,14 @@
 - `ls` should always print errors in the terminal; it doesn't redirect those.
 - Look carefully at all these refs to collections to refs types in cat and ls.
 - What happens if you try to cat to a directory and a file? In Zsh, it fails completely and doesn't cat to the good one.
-- Replace unwraps with garceful error ballet, e.g. in `cat` and `ls` redirect.
+- Replace unwraps with graceful error ballet, e.g. in `cat` and `ls` redirect.
 - Make redirection logic more consistent between `cat` and `ls` so that I can call a common `redirect::redirect` function from both of them. This will mean bringing the error handling into line between these two commands: `ls` returns an ok result that incorporates errors; `cat` returns a result that is either a dummy ok (that's not actually printed by `main`) or an error containing all accumulated errors, including any redirection errors. `echo` does things even more its own ad hoc way since this was the first; it will also need upgrading to handle multiple redirections.
 - `cat`: write more tests for redirection scenarios: different number of source and target files, mixed order, existence of target files, target files being directories, mixed existing directories and files for target files.
 - `cat`: handle mixed sequence of filenames and dashes.
 - Refactor `cat`: split up the pub function and flatten the nesting.
 - Use this less verbose pattern in tests: `let result = cat(&input).expect("`cat` should be ok"); assert_eq!(result, "Hello, world!");`.
 - Is there any reason to prefer one above the other out of creating a file then writing to it, or creating it implicitly by writing to it?
-- Add a `for_test_temp_files` directory in root; add it to `.gitignore`. Have all test files and directories placed in there so that they can be more easily removed if cleanup fails.
+- Make a `for_test_temp_files` directory in the project root; add it to `.gitignore`. Have all test files and directories placed in there so that they can be more easily removed if cleanup fails.
 - Add mutex to allow `cargo test`.
 - Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
 - Add `man` command.

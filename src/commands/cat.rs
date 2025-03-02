@@ -80,25 +80,7 @@ pub fn cat(input: &[String]) -> Result<String, String> {
     if targets.is_empty() {
         println!("{}", concatenated_contents);
     } else {
-        for &target in targets.iter() {
-            let target_path = Path::new(target[1]);
-            if target_path.is_dir() {
-                errors.push(format!("0-shell: Is a directory: {}", target[1]));
-                break;
-            }
-
-            if !target_path.exists() || target[0] == ">" {
-                let mut file = File::create(target_path).unwrap();
-                file.write_all(concatenated_contents.as_bytes()).unwrap();
-            } else {
-                let mut file = File::options()
-                    .append(true)
-                    .create(true)
-                    .open(target_path)
-                    .unwrap();
-                file.write_all(concatenated_contents.as_bytes()).unwrap();
-            }
-        }
+        redirect(targets, &concatenated_contents, &mut errors);
     }
 
     if errors.is_empty() {
@@ -109,6 +91,28 @@ pub fn cat(input: &[String]) -> Result<String, String> {
             Err(suffix.to_string())
         } else {
             Err(joined_errors)
+        }
+    }
+}
+
+fn redirect(targets: Vec<[&String; 2]>, concatenated_contents: &str, errors: &mut Vec<String>) {
+    for &target in targets.iter() {
+        let target_path = Path::new(target[1]);
+        if target_path.is_dir() {
+            errors.push(format!("0-shell: Is a directory: {}", target[1]));
+            break;
+        }
+
+        if !target_path.exists() || target[0] == ">" {
+            let mut file = File::create(target_path).unwrap();
+            file.write_all(concatenated_contents.as_bytes()).unwrap();
+        } else {
+            let mut file = File::options()
+                .append(true)
+                .create(true)
+                .open(target_path)
+                .unwrap();
+            file.write_all(concatenated_contents.as_bytes()).unwrap();
         }
     }
 }
