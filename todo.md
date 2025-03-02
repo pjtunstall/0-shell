@@ -11,6 +11,11 @@
 
 ## Next
 
+- `ls` doesn't format redirected output into multiple columns. It prints errors in the terminal; it doesn't redirect those.
+- Look carefully at all these refs to collections to refs types in cat and ls.
+- Extract `ls` errors as I did with `cat` so that they're not redirected.
+- What happens if you try to cat to a directory and a file? In Zsh, it fails completely and doesn't cat to the good one.
+- Replace unwraps with garceful error ballet, e.g. in `cat` and `ls` redirect.
 - Redirection for `ls`.
 - Make redirection logic more consistent between `cat` and `ls` so that I can call a common `redirect::redirect` function from both of them. This will mean bringing the error handling into line between these two commands: `ls` returns an ok result that incorporates errors; `cat` returns a result that is either a dummy ok (that's not actually printed by `main`) or an error containing all accumulated errors, including any redirection errors. `echo` does things even more its own ad hoc way since this was the first; it will also need upgrading to handle multiple redirections.
 - `cat`: write more tests for redirection scenarios: different number of source and target files, mixed order, existence of target files, target files being directories, mixed existing directories and files for target files.

@@ -1,7 +1,9 @@
 pub mod format;
 mod system;
 
-use std::path::Path;
+use std::{fs::File, io::Write, path::Path};
+
+use super::redirect;
 
 const USAGE: &str = "Usage: ls [-F] [-a] [-l] [DIRECTORY]...";
 
@@ -22,7 +24,7 @@ struct LsFlags {
 }
 
 impl LsFlags {
-    fn parse(args: &[String]) -> Result<Self, String> {
+    fn parse(args: &Vec<&String>) -> Result<Self, String> {
         let mut flags = LsFlags {
             show_hidden: false,
             long_format: false,
@@ -30,13 +32,14 @@ impl LsFlags {
             first_pathname_index: None,
         };
 
-        for (i, arg) in args.iter().enumerate() {
+        for (i, &arg) in args.iter().enumerate() {
             if !arg.starts_with('-') {
-                flags.first_pathname_index = Some(i + 1); // The +1 is to account for the fact that args counts from the item after the command name here, but elsewhere input counts from the command name itself.
+                flags.first_pathname_index = Some(i);
                 break;
             }
 
             if arg.chars().skip(1).any(|c| !['a', 'l', 'F'].contains(&c)) {
+                // `skip(1)` to skip the '-'.
                 return Err(format!("Unrecognized option `{}'\n{}", arg, USAGE));
             }
 
@@ -71,14 +74,26 @@ pub fn ls(input: &[String]) -> Result<String, String> {
         input[0]
     );
 
-    let flags = LsFlags::parse(&input[1..])?;
+    let (sources, targets) = redirect::separate_sources_from_targets(input);
+
+    let flags = LsFlags::parse(&sources)?;
     let first_pathname_index;
     match flags.first_pathname_index {
         Some(i) => first_pathname_index = i,
-        None => return list_current_directory(&flags),
+        None => match list_current_directory(&flags) {
+            Ok(res) => {
+                if targets.is_empty() {
+                    return Ok(res);
+                } else {
+                    redirect(targets, res);
+                    return Ok(String::new());
+                }
+            }
+            Err(e) => return Err(e),
+        },
     }
 
-    let paths = &input[first_pathname_index..];
+    let paths = &sources[first_pathname_index..];
     let PathClassification {
         directories,
         mut files,
@@ -88,10 +103,39 @@ pub fn ls(input: &[String]) -> Result<String, String> {
     non_existent.sort();
     files.sort();
 
-    let mut results = String::new();
-    results.push_str(&non_existent.join(""));
-    process_files(&files, &flags, &mut results)?;
-    process_directories(input, directories, results, flags.as_u8(), files)
+    let mut running_results = String::new();
+    running_results.push_str(&non_existent.join(""));
+    process_files(&files, &flags, &mut running_results)?;
+    let results = process_directories(input, directories, running_results, flags.as_u8(), files);
+
+    return if targets.is_empty() || results.is_err() {
+        results
+    } else {
+        redirect(targets, results.unwrap());
+        Ok(String::new())
+    };
+}
+
+fn redirect(targets: Vec<[&String; 2]>, contents: String) {
+    for &target in targets.iter() {
+        let target_path = Path::new(target[1]);
+        if target_path.is_dir() {
+            println!("\x1b[31mcat: {}: Is a directory\x1b[0m\x1b[1m", target[1]);
+            continue;
+        }
+
+        if !target_path.exists() || target[0] == ">" {
+            let mut file = File::create(target_path).unwrap();
+            file.write_all(contents.as_bytes()).unwrap();
+        } else {
+            let mut file = File::options()
+                .append(true)
+                .create(true)
+                .open(target_path)
+                .unwrap();
+            file.write_all(contents.as_bytes()).unwrap();
+        }
+    }
 }
 
 fn list_current_directory(flags: &LsFlags) -> Result<String, String> {
@@ -124,7 +168,7 @@ fn process_files(
     Ok(results.to_string())
 }
 
-fn classify_paths(paths: &[String]) -> PathClassification {
+fn classify_paths(paths: &[&String]) -> PathClassification {
     let mut directories = Vec::new();
     let mut files = Vec::new();
     let mut non_existent = Vec::new();
@@ -166,7 +210,7 @@ fn process_directories(
             results.push_str("\n");
         }
 
-        // Print directory header if multiple directories or if we had non-dir files.
+        // Add directory header if there are multiple directories or non-dir files.
         if input.len() > 2 {
             results.push_str(&format!("{}:\n", dir));
         }

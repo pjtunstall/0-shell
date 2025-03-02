@@ -80,7 +80,7 @@ pub fn cat(input: &[String]) -> Result<String, String> {
     if targets.is_empty() {
         println!("{}", concatenated_contents);
     } else {
-        for target in targets.iter() {
+        for &target in targets.iter() {
             let target_path = Path::new(target[1]);
             if target_path.is_dir() {
                 errors.push(format!("cat: {}: Is a directory", target[1]));
