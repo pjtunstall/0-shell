@@ -83,8 +83,8 @@ pub fn cat(input: &[String]) -> Result<String, String> {
         for &target in targets.iter() {
             let target_path = Path::new(target[1]);
             if target_path.is_dir() {
-                errors.push(format!("cat: {}: Is a directory", target[1]));
-                continue;
+                errors.push(format!("0-shell: Is a directory: {}", target[1]));
+                break;
             }
 
             if !target_path.exists() || target[0] == ">" {

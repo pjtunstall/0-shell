@@ -120,8 +120,11 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
     for &target in targets.iter() {
         let target_path = Path::new(target[1]);
         if target_path.is_dir() {
-            println!("\x1b[31mcat: {}: Is a directory\x1b[0m\x1b[1m", target[1]);
-            continue;
+            println!(
+                "\x1b[31m0-shell: Is a directory: {}\x1b[0m\x1b[1m",
+                target[1]
+            );
+            break;
         }
 
         if !target_path.exists() || target[0] == ">" {
