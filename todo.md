@@ -11,8 +11,8 @@
 
 ## Next
 
-- Add tests for `ls` redirection, then ...
-- ... refactor end of `ls` function. Among other things, refactor out hacky way I'm using now to put spaces between sections for different directories in redirected short form.
+- Remove superfluous inclusion of command in test function names.
+- Refactor `ls`.
 - Refactor `cat`: split up the pub function and flatten the nesting.
 - Look carefully at all these refs to collections to ref types in `cat` and `ls`. Examine what they all imply and what best practice is.
 - Replace unwraps with graceful error ballet in `cat` and `ls` redirect.

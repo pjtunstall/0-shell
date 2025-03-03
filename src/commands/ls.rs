@@ -108,7 +108,8 @@ pub fn ls(input: &[String]) -> Result<String, String> {
     let mut running_results = String::new();
     print!("{}", non_existent.join(""));
     process_files(&files, &flags, &mut running_results, is_redirect)?;
-    if is_redirect {
+    running_results = running_results.trim_start().to_string();
+    if is_redirect && !running_results.is_empty() {
         running_results.push_str("\n");
     }
     let results = process_directories(
@@ -249,7 +250,10 @@ fn process_directories(
 
 #[cfg(test)]
 mod tests {
+    use std::{env, fs, path::Path};
+
     use super::ls;
+    use crate::test_helpers::TempStore;
 
     #[test]
     fn test_ls() {
@@ -270,5 +274,86 @@ mod tests {
         for input in inputs {
             assert!(ls(&input).is_ok(), "`ls` should be ok for {:?}", input);
         }
+    }
+
+    #[test]
+    fn test_redirect() {
+        let temp_store = TempStore::new(1);
+        let root_str = &temp_store.store[0];
+
+        let root = Path::new(root_str);
+        let file_1 = &root.join(Path::new("file_1"));
+        let file_2 = &root.join(Path::new("file_2"));
+        let folder_1 = &root.join(Path::new("folder_1"));
+        let folder_2 = &root.join(Path::new("folder_2"));
+
+        fs::create_dir_all(folder_1).expect("Failed to create temp folder");
+        fs::create_dir(folder_2).expect("Failed to create temp folder");
+        fs::write(file_1, "").expect("Failed to create temp file");
+        fs::write(file_2, "").expect("Failed to create temp file");
+
+        let file_a = folder_1.join(Path::new("file_a"));
+        let file_b = folder_1.join(Path::new("file_b"));
+        let folder_a = folder_1.join(Path::new("folder_a"));
+
+        fs::write(file_a, "").expect("Failed to create temp file");
+        fs::write(file_b, "").expect("Failed to create temp file");
+        fs::create_dir(folder_a).expect("Failed to create temp folder");
+
+        let file_c = folder_2.join(Path::new("file_c"));
+        let folder_c = folder_2.join(Path::new("folder_c"));
+        let folder_d = folder_2.join(Path::new("folder_d"));
+
+        fs::write(file_c, "").expect("Failed to create temp file");
+        fs::create_dir_all(folder_c).expect("Failed to create temp folder");
+        fs::create_dir_all(folder_d).expect("Failed to create temp folder");
+
+        let original_dir = env::current_dir().expect("Failed to get current directory");
+        env::set_current_dir(root).expect("Failed to set current directory");
+
+        let v = Path::new("v");
+        fs::write(v, "prefix").expect("Failed to write to temp file");
+
+        let input = vec![
+            "ls".to_string(),
+            "file_1".to_string(),
+            "file_2".to_string(),
+            "folder_1".to_string(),
+            ">".to_string(),
+            "u".to_string(),
+            "folder_2".to_string(),
+            ">>".to_string(),
+            "v".to_string(),
+        ];
+
+        let result = ls(&input);
+        assert!(
+            result.is_ok(),
+            "Result of `ls file_1 file_2 folder_1 > u folder_2 >> v` should be ok"
+        );
+
+        let u = Path::new("u");
+        assert!(u.exists(), "Target file `u` should have been created");
+        assert!(v.exists(), "Target file `v` should have been created");
+
+        let mut contents_of_u = fs::read_to_string(u).expect("Failed to read target file `u`");
+        contents_of_u = contents_of_u.replace("\r\n", "\n");
+        let expected_u = "file_1\nfile_2\n\nfolder_1:\nfile_a\nfile_b\nfolder_a\n\nfolder_2:\nfile_c\nfolder_c\nfolder_d\n";
+
+        let mut contents_of_v = fs::read_to_string(v).expect("Failed to read target file `u`");
+        contents_of_v = contents_of_v.replace("\r\n", "\n");
+        let mut expected_v = String::from("prefix");
+        expected_v.push_str(expected_u);
+
+        env::set_current_dir(original_dir).expect("Failed to set current directory");
+
+        assert_eq!(
+            contents_of_u, expected_u,
+            "Contents of new target file `u` did not match expected"
+        );
+        assert_eq!(
+            contents_of_v, expected_v,
+            "Contents of existing target file `v` did not match expected"
+        );
     }
 }

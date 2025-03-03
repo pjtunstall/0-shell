@@ -78,11 +78,15 @@ Tests should be run in single-threaded mode ...
 cargo test -- --test-threads=1
 ```
 
-... rather than in the default parallel mode, `cargo test`. This is necessary to prevent tests that change the current directory from interfering with tests that check the identity of the current ditectory, or the existence or nonexistence or contents of files they've created in it. The success test for `pwd`, for example, expects the current directory to be `0-shell`, but the `cd` test temporarily changes the current directory. The integration test in `integration.rs` also changes the current directory briefly.
+... rather than in the default parallel mode, `cargo test`. This is necessary to prevent tests that change the current directory from interfering with tests that check the identity of the current ditectory, or the existence or nonexistence or contents of files they've created in it. The success test for `pwd`, for example, expects the current directory to be `0-shell`, but the `cd` test temporarily changes the current directory. The integration test in `integration.rs` also changes the current directory briefly. If it was just one or two such clashes, they could be guarded with a mutex, but relying on a mutex would put the burdon on anyone adding a test to any of the modules to remember to use it. It seems more robust to just run them all sequentially.
 
 ## Deviations
 
-There are many trivial deviations from Zsh (my default shell), even among the few items that I've implemented: bold text, differnt prompts, use of red for error messages, ... I've not been meticulous in mimicking the wording or capitalization of error messages. In Zsh, if you try to `cat` to a directory and a file, the operation fails completely and doesn't concatenated to the file. In my shell, it does what it can and reports any failures. We both have `cat: tests: Is a directory` when one of the sources is a directory, but, when one of the targets is a directory, I maintain capitalization with `0-shell: Is a directory: tests` versus `zsh: is a directory: tests`. Lack of `!` for history expansion is discussed above. You'll likely find other examples.
+There are many trivial deviations from Zsh (my default shell), even among the few items that I've implemented: bold text, different prompts, use of red for error messages, ... Lack of `!` for history expansion is discussed above. In Zsh, if you try to `cat` to a directory and a file, the operation fails completely and doesn't concatenated to the file. In my shell, it does what it can and reports any failures. That's more consistent with how Zsh behaves with `rm`, say.
+
+I've not been meticulous in mimicking the wording or capitalization of error messages. We both have `cat: tests: Is a directory` when one of the sources is a directory, but, when one of the targets is a directory, I maintain capitalization with `0-shell: Is a directory: tests` versus `zsh: is a directory: tests`.
+
+You'll likely find other examples.
 
 ## Further
 
