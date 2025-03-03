@@ -10,7 +10,7 @@ use std::os::unix::fs::{MetadataExt, PermissionsExt};
 #[cfg(windows)]
 use std::os::windows::fs::MetadataExt;
 
-use users::{get_group_by_gid, get_user_by_uid};
+use uzers::{get_group_by_gid, get_user_by_uid};
 use xattr;
 
 pub fn get_platform_specific_info(metadata: &Metadata) -> (String, u64, String, String) {
