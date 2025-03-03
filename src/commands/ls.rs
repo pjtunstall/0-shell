@@ -262,12 +262,10 @@ mod tests {
         let l = vec!["ls".to_string(), "-l".to_string()];
         let f = vec!["ls".to_string(), "-F".to_string()];
         let alf = vec!["ls".to_string(), "-alF".to_string()];
-        let l_a_f = vec![
-            "ls".to_string(),
-            "-l".to_string(),
-            "-a".to_string(),
-            "-F".to_string(),
-        ];
+        let l_a_f = vec!["ls", "-l", "-a", "-F"]
+            .into_iter()
+            .map(String::from)
+            .collect();
 
         let inputs = [basic, a, l, f, alf, l_a_f];
 

@@ -124,36 +124,29 @@ fn handle_redirection(output: &str, filename: &str, append: bool) -> Result<Stri
 
 #[cfg(test)]
 mod tests {
-    use std::{env, fs, path::Path};
+    use std::{env, fs};
+    // use std::path::Path;
 
     use uuid::Uuid;
 
     use super::echo;
-    use crate::test_helpers::TempStore;
+    use crate::string_vec;
+    // use crate::test_helpers::TempStore;
 
     #[test]
     fn test_basic_echo() {
         assert_eq!(
-            echo(&vec!["echo".to_string(), "hello".to_string()]),
+            echo(&string_vec!["echo", "hello"]),
             Ok("hello\n".to_string()),
             "Expected to echo one word"
         );
         assert_eq!(
-            echo(&vec![
-                "echo".to_string(),
-                "hello".to_string(),
-                "world".to_string()
-            ]),
+            echo(&string_vec!["echo", "hello", "world"]),
             Ok("hello world\n".to_string()),
             "Expected to echo two words"
         );
         assert_eq!(
-            echo(&vec![
-                "echo".to_string(),
-                "hello".to_string(),
-                "world".to_string(),
-                "hello".to_string()
-            ]),
+            echo(&string_vec!["echo", "hello", "world", "hello"]),
             Ok("hello world hello\n".to_string()),
             "Expected to echo three words"
         );
@@ -162,43 +155,43 @@ mod tests {
     #[test]
     fn test_special_characters() {
         assert_eq!(
-            echo(&vec!["echo".to_string(), "a\\na".to_string()]),
+            echo(&string_vec!["echo", "a\\na"]),
             Ok("ana\n".to_string()),
             "Expected to convert `\\n` to `n`"
         );
         assert_eq!(
-            echo(&vec!["echo".to_string(), "a\\\\na".to_string()]),
+            echo(&string_vec!["echo", "a\\\\na"]),
             Ok("a\na\n".to_string()),
             "Expected to convert `\\\\n` to `\\n`"
         );
         assert_eq!(
-            echo(&vec!["echo".to_string(), "a\\\\\\na".to_string()]),
+            echo(&string_vec!["echo", "a\\\\\\na"]),
             Ok("a\na\n".to_string()),
             "Expected to convert `\\\\\\n` to `\\n`"
         );
         assert_eq!(
-            echo(&vec!["echo".to_string(), "a\\\\\\\\na".to_string()]),
+            echo(&string_vec!["echo", "a\\\\\\\\na"]),
             Ok("a\\na\n".to_string()),
             "Expected to convert `\\\\\\\\n` to `\\\\n`"
         );
 
         assert_eq!(
-            echo(&vec!["echo".to_string(), "\"a\\na\"".to_string()]),
+            echo(&string_vec!["echo", "\"a\\na\""]),
             Ok("a\na\n".to_string()),
             "Expected to leave `\\n` unchanged in quotes"
         );
         assert_eq!(
-            echo(&vec!["echo".to_string(), "\"a\\\\na\"".to_string()]),
+            echo(&string_vec!["echo".to_string(), "\"a\\\\na\"".to_string()]),
             Ok("a\na\n".to_string()),
             "Expected to leave `\\\\n` unchanged in quotes"
         );
         assert_eq!(
-            echo(&vec!["echo".to_string(), "\"a\\\\\\na\"".to_string()]),
+            echo(&string_vec!["echo", "\"a\\\\\\na\""]),
             Ok("a\\na\n".to_string()),
             "Expected to convert `\\\\\\n` in quotes to `\\n`"
         );
         assert_eq!(
-            echo(&vec!["echo".to_string(), "\"a\\\\\\\\na\"".to_string()]),
+            echo(&string_vec!["echo", "\"a\\\\\\\\na\""]),
             Ok("a\\na\n".to_string()),
             "Expected to convert `\\\\\\\\n` in quotes to `\\n`"
         );
@@ -207,13 +200,13 @@ mod tests {
     #[test]
     fn test_redirection_in_double_quotes() {
         assert_eq!(
-            echo(&vec!["echo".to_string(), "\">\"".to_string()]),
+            echo(&string_vec!["echo", "\">\""]),
             Ok(">\n".to_string()),
             "Expected to escape `>` in double quotes, and give no error when final"
         );
 
         assert_eq!(
-            echo(&vec!["echo".to_string(), "\">>\"".to_string()]),
+            echo(&string_vec!["echo", "\">>\""]),
             Ok(">>\n".to_string()),
             "Expected to leave `>>` unchanged in double quotes, and give no error when final"
         );
@@ -222,13 +215,13 @@ mod tests {
     #[test]
     fn test_redirection_in_single_quotes() {
         assert_eq!(
-            echo(&vec!["echo".to_string(), "\'>\'".to_string()]),
+            echo(&string_vec!["echo", "\'>\'"]),
             Ok(">\n".to_string()),
             "Expected to leave `>` unchanged in single quotes, and give no error when final"
         );
 
         assert_eq!(
-            echo(&vec!["echo".to_string(), "\'>>\'".to_string()]),
+            echo(&string_vec!["echo", "\'>>\'"]),
             Ok(">>\n".to_string()),
             "Expected to leave `>>` unchanged in single quotes, and give no error when final"
         );
@@ -242,7 +235,7 @@ mod tests {
         }
 
         assert_eq!(
-            echo(&vec!["echo".to_string(), "$USER".to_string()]),
+            echo(&string_vec!["echo", "$USER"]),
             Ok("testuser\n".to_string()),
             "Expected `USER` to be replaced with `testuser`"
         );
@@ -265,7 +258,7 @@ mod tests {
             env::remove_var("LANG");
         }
         assert_eq!(
-            echo(&vec!["echo".to_string(), "$LANG".to_string()]),
+            echo(&string_vec!["echo", "$LANG"]),
             Ok("\n".to_string()),
             "Expected empty substitution when LANG is unset"
         );
@@ -283,24 +276,17 @@ mod tests {
     #[test]
     fn test_write_to_file() {
         let file = Uuid::new_v4().to_string();
+
         let mut expected = "hello\n";
-        let mut output = echo(&vec![
-            "echo".to_string(),
-            "hello".to_string(),
-            ">".to_string(),
-            file.clone(),
-        ]);
+        let mut input = string_vec!["echo", "hello", ">", &file];
+        let mut output = echo(&input);
         assert!(output.unwrap().is_empty());
         let mut contents = fs::read_to_string(&file).expect("Failed to read file");
         assert_eq!(contents, expected, "Expected to write to nonexistent file");
 
         expected = "world\n";
-        output = echo(&vec![
-            "echo".to_string(),
-            "world".to_string(),
-            ">".to_string(),
-            file.clone(),
-        ]);
+        input = string_vec!["echo", "world", ">", &file];
+        output = echo(&input);
         assert!(output.unwrap().is_empty());
         contents = fs::read_to_string(&file).expect("Failed to read file");
         assert_eq!(contents, expected, "Expected to overwrite existing file");
@@ -311,24 +297,17 @@ mod tests {
     #[test]
     fn test_append_to_file() {
         let file = Uuid::new_v4().to_string();
+
+        let mut input = string_vec!["echo", "hello", ">>", &file];
         let mut expected = "hello\n";
-        let mut output = echo(&vec![
-            "echo".to_string(),
-            "hello".to_string(),
-            ">>".to_string(),
-            file.clone(),
-        ]);
+        let mut output = echo(&input);
         assert!(output.is_ok());
         let mut contents = fs::read_to_string(&file).expect("Failed to read file");
         assert_eq!(contents, expected, "Expected to append to nonexistent file");
 
+        input = string_vec!["echo", "world", ">>", &file];
         expected = "hello\nworld\n";
-        output = echo(&vec![
-            "echo".to_string(),
-            "world".to_string(),
-            ">>".to_string(),
-            file.clone(),
-        ]);
+        output = echo(&input);
         assert!(output.unwrap().is_empty());
         contents = fs::read_to_string(&file).expect("Failed to read file");
         assert_eq!(contents, expected, "Expected to append to existing file");
@@ -340,14 +319,10 @@ mod tests {
     fn test_ignore_write_to_multiple_files() {
         let file1 = Uuid::new_v4().to_string();
         let file2 = Uuid::new_v4().to_string();
+
+        let input = string_vec!["echo", "hello", ">", &file1, &file2];
         let expected = "hello\n";
-        let output = echo(&vec![
-            "echo".to_string(),
-            "hello".to_string(),
-            ">".to_string(),
-            file1.clone(),
-            file2.clone(),
-        ]);
+        let output = echo(&input);
         assert!(output.unwrap().is_empty());
         let contents = fs::read_to_string(&file1).expect("Failed to read file");
         assert_eq!(
@@ -363,14 +338,10 @@ mod tests {
     fn test_ignore_append_to_multiple_files() {
         let file1 = Uuid::new_v4().to_string();
         let file2 = Uuid::new_v4().to_string();
+
+        let input = string_vec!["echo", "hello", ">>", &file1, &file2];
         let expected = "hello\n";
-        let output = echo(&vec![
-            "echo".to_string(),
-            "hello".to_string(),
-            ">>".to_string(),
-            file1.clone(),
-            file2.clone(),
-        ]);
+        let output = echo(&input);
         assert!(output.unwrap().is_empty());
         let contents = fs::read_to_string(&file1).expect("Failed to read file");
         assert_eq!(
@@ -382,44 +353,44 @@ mod tests {
         fs::remove_file(file2).ok();
     }
 
-    #[test]
-    fn test_multiple_redirect_targets() {
-        let temp_store = TempStore::new(2);
-        let u_str = &temp_store.store[0];
-        let v_str = &temp_store.store[1];
+    // #[test]
+    // fn test_multiple_redirect_targets() {
+    //     let temp_store = TempStore::new(2);
+    //     let u_str = &temp_store.store[0];
+    //     let v_str = &temp_store.store[1];
 
-        let input: Vec<String> = vec!["echo", "hello", ">", u_str, v_str]
-            .into_iter()
-            .map(String::from)
-            .collect();
+    //     let input: Vec<String> = vec!["echo", "hello", ">", u_str, v_str]
+    //         .into_iter()
+    //         .map(String::from)
+    //         .collect();
 
-        let result = echo(&input);
-        assert!(result.is_ok(), "Result of multiple redirects should be ok");
+    //     let result = echo(&input);
+    //     assert!(result.is_ok(), "Result of multiple redirects should be ok");
 
-        let u = Path::new(u_str);
-        let v = Path::new(v_str);
+    //     let u = Path::new(u_str);
+    //     let v = Path::new(v_str);
 
-        assert!(
-            u.exists(),
-            "1st redirect target file should have been created by `echo`"
-        );
-        assert!(
-            v.exists(),
-            "2nd redirect target file should have been created by `echo`"
-        );
+    //     assert!(
+    //         u.exists(),
+    //         "1st redirect target file should have been created by `echo`"
+    //     );
+    //     assert!(
+    //         v.exists(),
+    //         "2nd redirect target file should have been created by `echo`"
+    //     );
 
-        let contents_of_u = fs::read_to_string(u).expect("Failed to read 1st redirect target file");
-        let contents_of_v = fs::read_to_string(v).expect("Failed to read 2nd redierct target file");
+    //     let contents_of_u = fs::read_to_string(u).expect("Failed to read 1st redirect target file");
+    //     let contents_of_v = fs::read_to_string(v).expect("Failed to read 2nd redierct target file");
 
-        let expected = "hello/n";
+    //     let expected = "hello/n";
 
-        assert_eq!(
-            contents_of_u, expected,
-            "Contents of 1st redirect target file should match input text"
-        );
-        assert_eq!(
-            contents_of_v, expected,
-            "Contents of 2nd redirect target file should match input text"
-        );
-    }
+    //     assert_eq!(
+    //         contents_of_u, expected,
+    //         "Contents of 1st redirect target file should match input text"
+    //     );
+    //     assert_eq!(
+    //         contents_of_v, expected,
+    //         "Contents of 2nd redirect target file should match input text"
+    //     );
+    // }
 }

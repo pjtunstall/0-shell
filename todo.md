@@ -11,9 +11,9 @@
 
 ## Next
 
-- Replace the repeated `"...".to_string()` in vector initializations in tests with iterator way of doing it.
+- Write a test for redirect.
 - Switch `echo` redirection tests to use `TempStore`.
-- Add an initially failing test for `echo` with multiple redirect targets.
+- Remove `echo` tests that expect there to not be multiple redirection targets!
 - Implement `echo` with multiple redirect arguments.
 - Remove superfluous inclusion of command in test function names.
 - Refactor `ls`.

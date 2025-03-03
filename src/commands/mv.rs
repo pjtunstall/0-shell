@@ -57,7 +57,7 @@ mod tests {
     use uuid::Uuid;
 
     use super::{USAGE, mv};
-    use crate::test_helpers::TempStore;
+    use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
     fn test_mv_to_dir() {
@@ -70,7 +70,7 @@ mod tests {
         let target = &temp_store.store[1];
         fs::create_dir(target).expect("Failed to create target directory");
 
-        let input = vec!["mv".to_string(), source.to_string(), target.to_string()];
+        let input = string_vec!["mv", source, target];
         let result = mv(&input);
 
         assert!(result.is_ok(), "`mv` failed: {:?}", result.err());
@@ -97,7 +97,7 @@ mod tests {
         let target = &temp_store.store[1];
         fs::write(&target, "world").expect("Failed to create test source file");
 
-        let input = vec!["mv".to_string(), source.to_string(), target.to_string()];
+        let input = string_vec!["mv", source, target];
         let result = mv(&input);
 
         assert!(result.is_ok(), "`mv` failed: {:?}", result.err());
@@ -117,25 +117,15 @@ mod tests {
     #[test]
     fn test_mv_as_rename_when_new_name_already_exists() {
         let temp_store = TempStore::new(2);
-        let source = Path::new(&temp_store.store[0]);
+        let source = &temp_store.store[0];
 
         let source_contents = "hello";
-        fs::write(&source, source_contents).expect("Failed to create test source file");
+        fs::write(source, source_contents).expect("Failed to create test source file");
 
-        let target = Path::new(&temp_store.store[1]);
+        let target = &temp_store.store[1];
         fs::write(&target, "world").expect("Failed to create test source file");
 
-        let input = vec![
-            "mv".to_string(),
-            source
-                .to_str()
-                .expect("Unable to convert path to string")
-                .to_string(),
-            target
-                .to_str()
-                .expect("Unable to convert path to string")
-                .to_string(),
-        ];
+        let input = string_vec!["mv", source, target];
         let result = mv(&input);
 
         assert!(result.is_ok(), "`mv' failed: {:?}", result.err());
@@ -168,14 +158,9 @@ mod tests {
         let binding = Uuid::new_v4().to_string();
         let new_name = Path::new(&binding);
         let path = target.join(new_name);
+        let path_str = format!("{}", path.display());
 
-        let input = vec![
-            "mv".to_string(),
-            source.to_string(),
-            path.to_str()
-                .expect("Unable to convert path to string")
-                .to_string(),
-        ];
+        let input = string_vec!["mv", source, path_str];
         let result = mv(&input);
 
         assert!(result.is_ok(), "`mv' failed: {:?}", result.err());
@@ -195,10 +180,12 @@ mod tests {
     #[test]
     fn test_error_when_not_enough_arguments() {
         let file = Uuid::new_v4().to_string();
-        let input = vec!["mv".to_string(), file];
 
+        let input = string_vec!["mv", file];
         let result = mv(&input);
+
         assert!(!result.is_ok(), "Result should not be ok");
+
         let expected = Err(format!("Not enough arguments\n{}", USAGE).to_string());
         assert_eq!(result, expected, "Result should show correct error message");
     }
@@ -206,13 +193,25 @@ mod tests {
     #[test]
     fn test_error_on_cycle() {
         let temp_store = TempStore::new(2);
-        let source = &temp_store.store[0];
-        let target = &temp_store.store[1];
+        let mover = &temp_store.store[0];
+        let subdirectory = &temp_store.store[1];
+        let subdirectory = format!(
+            "{}",
+            Path::new(mover).join(Path::new(subdirectory)).display()
+        );
 
-        fs::create_dir(source).expect("Failed to create source directory");
-        fs::create_dir(target).expect("Failed to create target directory");
+        fs::create_dir(mover).expect("Failed to create directory to be moved");
+        fs::create_dir(&subdirectory).expect("Failed to create subdirectory");
 
-        let input = vec![String::from("mv"), target.clone(), target.clone()];
+        let input = string_vec!["mv", mover, mover];
+        let output = mv(&input);
+
+        assert!(
+            output.is_err(),
+            "Moving a directory into one of itself should be an error"
+        );
+
+        let input = string_vec!["mv", mover, subdirectory];
         let output = mv(&input);
 
         assert!(

@@ -59,21 +59,23 @@ mod tests {
     use std::{fs, path::Path};
 
     use super::cp;
-    use crate::test_helpers::TempStore;
+    use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
     fn test_cp() {
         let temp_store = TempStore::new(2);
         let source = &temp_store.store[0];
         let target = &temp_store.store[1];
-        let input = vec!["cp".into(), source.clone(), target.clone()];
 
         let content = "Hello, cruel world!";
         fs::write(&source, content).expect("Failed to create test source file");
 
+        let input = string_vec!["cp", source, target];
         let result = cp(&input);
+
         assert!(result.is_ok(), "`cp` should be ok: {:?}", result.err());
         assert!(Path::new(target).exists(), "File not created");
+
         let copied_content = fs::read_to_string(&target).expect("Failed to read target file");
         assert_eq!(copied_content, content, "File contents do not match");
     }

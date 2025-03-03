@@ -32,21 +32,25 @@ mod tests {
     use std::path::MAIN_SEPARATOR;
 
     use super::pwd;
-    use crate::input::split::split;
+    use crate::string_vec;
 
     #[test]
     fn test_pwd_success() {
-        let input = "pwd";
+        let input = string_vec!["pwd"];
         let expected = "0-shell\n";
-        let result = pwd(&split(input).unwrap()).unwrap();
+        let result = pwd(&input).expect("`pwd` should be ok");
         let last_segment = result.split(MAIN_SEPARATOR).last().unwrap();
         assert_eq!(last_segment, expected);
     }
 
     #[test]
     fn test_pwd_too_many_args() {
-        let input = "pwd foo";
+        let input = string_vec!["pwd", "foo"];
         let expected = Err("Too many arguments".to_string());
-        assert_eq!(pwd(&split(input).unwrap()), expected);
+        assert_eq!(
+            pwd(&input),
+            expected,
+            "Should be the correct error when more arguments than none are passed to `pwd`"
+        );
     }
 }

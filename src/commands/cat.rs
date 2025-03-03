@@ -162,16 +162,16 @@ fn get_input() -> Result<String, String> {
 mod tests {
     use std::{fs, io::Write, path::Path};
 
-    use crate::test_helpers::TempStore;
-
     use super::cat;
+    use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
     fn test_cat_success_one_existing_file() {
         let file = &TempStore::new(1).store[0];
         fs::write(file, "Howdie, world!\n").unwrap();
 
-        let result = cat(&vec!["cat".to_string(), file.to_string()]);
+        let input = string_vec!["cat", file];
+        let result = cat(&input);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "Howdie, world!\n");
     }
@@ -191,12 +191,9 @@ mod tests {
     fn redirect_helper(source: &str, expected: &str, op: &str) {
         let target = &TempStore::new(1).store[0];
 
-        let result = cat(&vec![
-            "cat".to_string(),
-            source.to_string(),
-            op.to_string(),
-            target.to_string(),
-        ]);
+        let input = string_vec!["cat", source, op, target];
+        let result = cat(&input);
+
         assert!(result.is_ok(), "`cat` with `{}` should be ok", op);
         assert!(
             Path::new(target).exists(),
@@ -223,12 +220,9 @@ mod tests {
         fs::write(source, "world!\n").expect("Failed to write to source file");
         fs::write(target, "Hello, ").expect("Failed to write to target file");
 
-        let result = cat(&vec![
-            "cat".to_string(),
-            source.to_string(),
-            ">>".to_string(),
-            target.to_string(),
-        ]);
+        let input = string_vec!["cat", source, ">>", target];
+        let result = cat(&input);
+
         assert!(result.is_ok(), "`cat` with `>>` should be ok");
 
         let contents = fs::read_to_string(target).expect("Failed to read from target file");
@@ -255,13 +249,9 @@ mod tests {
             .write_all(b"world!")
             .expect("Failed to write to second source file");
 
-        let input = vec![
-            "cat".to_string(),
-            source1_string.clone(),
-            source2_string.clone(),
-        ];
-
+        let input = string_vec!["cat", source1_string, source2_string];
         let result = cat(&input).expect("`cat` should be ok");
+
         assert_eq!(result, "Hello, world!");
     }
 
@@ -293,17 +283,17 @@ mod tests {
         let mut _target2 =
             fs::File::create(target2_string).expect("Failed to create second target file");
 
-        let input = vec![
-            "cat".to_string(),
-            source1_string.clone(),
-            source2_string.clone(),
-            ">>".to_string(),
-            target1_string.clone(),
-            ">>".to_string(),
-            target2_string.clone(),
+        let input = string_vec![
+            "cat",
+            source1_string,
+            source2_string,
+            ">>",
+            target1_string,
+            ">>",
+            target2_string
         ];
-
         let result = cat(&input).expect("`cat` should be ok");
+
         assert_eq!(result, "Hello, world!");
 
         let contents1 =
@@ -320,7 +310,7 @@ mod tests {
 
     #[test]
     fn test_cat_fail_one_nonexistent_source_file() {
-        let input = vec!["cat".to_string(), "nonexistent.txt".to_string()];
+        let input = string_vec!["cat", "nonexistent.txt"];
         let result = cat(&input);
 
         assert!(result.is_err());
@@ -331,8 +321,10 @@ mod tests {
     fn test_cat_fail_one_source_directory() {
         let dir = &TempStore::new(1).store[0];
         fs::create_dir(dir).expect("Failed to create would-be source directory");
-        let input = vec!["cat".to_string(), dir.to_string()];
+
+        let input = string_vec!["cat", dir];
         let result = cat(&input);
+
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Is a directory"));
     }

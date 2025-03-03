@@ -51,7 +51,7 @@ mod tests {
     use uuid::Uuid;
 
     use super::mkdir;
-    use crate::test_helpers::TempStore;
+    use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
     fn test_mkdir_success() {
@@ -61,7 +61,7 @@ mod tests {
             fs::remove_dir(test_dir).unwrap();
         }
 
-        let input = vec!["mkdir".to_string(), test_dir.to_string()];
+        let input = string_vec!["mkdir", test_dir];
         let result = mkdir(&input);
 
         assert!(result.is_ok());
@@ -72,7 +72,7 @@ mod tests {
 
     #[test]
     fn test_mkdir_failure_missing_argument() {
-        let input = vec!["mkdir".to_string()];
+        let input = string_vec!["mkdir"];
         let result = mkdir(&input);
 
         assert!(result.is_err());
@@ -85,11 +85,11 @@ mod tests {
         let dir = Path::new(&temp_store.store[0]);
         let prefix = Path::new(&temp_store.store[1]);
         let invalid_path = prefix.join(dir);
+        let invalid_str = invalid_path
+            .to_str()
+            .expect("Failed to get string from invalid path");
 
-        let input = vec![
-            "mkdir".to_string(),
-            invalid_path.to_str().unwrap().to_string(),
-        ];
+        let input = string_vec!["mkdir", invalid_str];
         let result = mkdir(&input);
 
         assert!(result.is_err());
@@ -102,7 +102,7 @@ mod tests {
 
         fs::create_dir(Path::new(&dir)).expect("Failed to create test directory");
 
-        let input = vec!["mkdir".to_string(), dir];
+        let input = string_vec!["mkdir", dir];
         let result = mkdir(&input);
 
         assert!(result.is_err());
@@ -115,7 +115,7 @@ mod tests {
 
         fs::write(Path::new(&dir), "").expect("Failed to create test file");
 
-        let input = vec!["mkdir".to_string(), dir];
+        let input = string_vec!["mkdir", dir];
         let result = mkdir(&input);
 
         assert!(result.is_err());
@@ -132,11 +132,7 @@ mod tests {
 
         fs::create_dir(new_path).expect("Failed to create test directory");
 
-        let input = vec![
-            "mkdir".to_string(),
-            existing_string.clone(),
-            new_string.clone(),
-        ];
+        let input = string_vec!["mkdir", existing_string, new_string];
         let result = mkdir(&input);
 
         assert!(

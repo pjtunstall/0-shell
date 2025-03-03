@@ -66,7 +66,7 @@ mod tests {
     use filetime::FileTime;
 
     use super::touch;
-    use crate::test_helpers::TempStore;
+    use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
     fn test_touch_success() {
@@ -74,7 +74,7 @@ mod tests {
         let source = &temp_store.store[0];
         let path = Path::new(source);
 
-        let input = vec![String::from("touch"), source.to_string()];
+        let input = string_vec!["touch", source];
         let result = touch(&input);
         assert!(result.is_ok(), "Result should be ok");
         assert!(path.exists(), "New file should exist");
@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_touch_failure_missing_argument() {
-        let input = vec!["touch".to_string()];
+        let input = string_vec!["touch"];
         let result = touch(&input);
 
         assert!(result.is_err());
@@ -95,11 +95,11 @@ mod tests {
         let dir = Path::new(&temp_store.store[0]);
         let prefix = Path::new(&temp_store.store[1]);
         let invalid_path = prefix.join(dir);
+        let invalid_str = invalid_path
+            .to_str()
+            .expect("Failed to turn path to nonexistent directory back into &str");
 
-        let input = vec![
-            "touch".to_string(),
-            invalid_path.to_str().unwrap().to_string(),
-        ];
+        let input = string_vec!["touch", invalid_str];
         let result = touch(&input);
 
         assert!(result.is_err());
@@ -112,12 +112,11 @@ mod tests {
         let prefix = Path::new(&temp_store.store[1]);
         let invalid_path = prefix.join(dir);
         let valid_string = &temp_store.store[2];
+        let invalid_string = format!("{}", invalid_path.display());
 
-        let result = touch(&vec![
-            "touch".to_string(),
-            valid_string.clone(),
-            format!("{}", invalid_path.display()),
-        ]);
+        let input = string_vec!["touch", valid_string, invalid_string];
+
+        let result = touch(&input);
 
         assert!(
             result.is_err(),
@@ -139,7 +138,8 @@ mod tests {
 
         thread::sleep(Duration::from_millis(1024));
 
-        let result = touch(&vec!["touch".to_string(), file_string.clone()]);
+        let input = string_vec!["touch", file_string];
+        let result = touch(&input);
         assert!(result.is_ok());
 
         let updated_metadata = fs::metadata(file_path).expect("Failed to get final metadata");

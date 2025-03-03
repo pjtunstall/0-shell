@@ -45,16 +45,14 @@ pub fn cd(input: &[String]) -> Result<String, String> {
 #[cfg(test)]
 mod test {
     use super::cd;
+    use crate::string_vec;
 
     #[test]
     fn test_cd() {
-        assert!(
-            cd(&vec!["cd".to_string(), "..".to_string()]).is_ok(),
-            "`cd ..` should be ok"
-        );
-        assert!(
-            cd(&vec!["cd".to_string(), "0-shell".to_string()]).is_ok(),
-            "`cd 0-shell` should be ok"
-        );
+        let mut input = string_vec!["cd", ".."];
+        assert!(cd(&input).is_ok(), "`cd ..` should be ok");
+
+        input = string_vec!["cd", "0-shell"];
+        assert!(cd(&input).is_ok(), "`cd 0-shell` should be ok");
     }
 }
