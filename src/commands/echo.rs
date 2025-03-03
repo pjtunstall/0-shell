@@ -124,11 +124,12 @@ fn handle_redirection(output: &str, filename: &str, append: bool) -> Result<Stri
 
 #[cfg(test)]
 mod tests {
-    use std::{env, fs};
+    use std::{env, fs, path::Path};
 
     use uuid::Uuid;
 
     use super::echo;
+    use crate::test_helpers::TempStore;
 
     #[test]
     fn test_basic_echo() {
@@ -379,5 +380,46 @@ mod tests {
 
         fs::remove_file(file1).ok();
         fs::remove_file(file2).ok();
+    }
+
+    #[test]
+    fn test_multiple_redirect_targets() {
+        let temp_store = TempStore::new(2);
+        let u_str = &temp_store.store[0];
+        let v_str = &temp_store.store[1];
+
+        let input: Vec<String> = vec!["echo", "hello", ">", u_str, v_str]
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+        let result = echo(&input);
+        assert!(result.is_ok(), "Result of multiple redirects should be ok");
+
+        let u = Path::new(u_str);
+        let v = Path::new(v_str);
+
+        assert!(
+            u.exists(),
+            "1st redirect target file should have been created by `echo`"
+        );
+        assert!(
+            v.exists(),
+            "2nd redirect target file should have been created by `echo`"
+        );
+
+        let contents_of_u = fs::read_to_string(u).expect("Failed to read 1st redirect target file");
+        let contents_of_v = fs::read_to_string(v).expect("Failed to read 2nd redierct target file");
+
+        let expected = "hello/n";
+
+        assert_eq!(
+            contents_of_u, expected,
+            "Contents of 1st redirect target file should match input text"
+        );
+        assert_eq!(
+            contents_of_v, expected,
+            "Contents of 2nd redirect target file should match input text"
+        );
     }
 }

@@ -314,17 +314,12 @@ mod tests {
         let v = Path::new("v");
         fs::write(v, "prefix").expect("Failed to write to temp file");
 
-        let input = vec![
-            "ls".to_string(),
-            "file_1".to_string(),
-            "file_2".to_string(),
-            "folder_1".to_string(),
-            ">".to_string(),
-            "u".to_string(),
-            "folder_2".to_string(),
-            ">>".to_string(),
-            "v".to_string(),
-        ];
+        let input: Vec<String> = vec![
+            "ls", "file_1", "file_2", "folder_1", ">", "u", "folder_2", ">>", "v",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
 
         let result = ls(&input);
         assert!(
