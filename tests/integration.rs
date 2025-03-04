@@ -1,11 +1,11 @@
-use std::path::{Path, MAIN_SEPARATOR};
+use std::path::{MAIN_SEPARATOR, Path};
 
 use zero_shell::commands::{
     cat::cat, cd::cd, cp::cp, echo::echo, mkdir::mkdir, mv::mv, rm::rm, touch::touch,
 };
 
 #[test]
-fn test_audit() {
+fn audit_question() {
     assert!(
         mkdir(&vec!["mkdir".to_string(), "new_folder1".to_string()]).is_ok(),
         "Result of making `new_folder1` should be ok"

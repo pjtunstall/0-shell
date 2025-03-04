@@ -1,16 +1,7 @@
 use std::env;
 
 pub fn pwd(input: &[String]) -> Result<String, String> {
-    debug_assert!(!input.is_empty(), "Input for `pwd` should not be empty");
-    debug_assert!(
-        input[0] == "pwd",
-        "Input for `{}` should not be passed to `pwd`",
-        input[0]
-    );
-
-    if input.len() > 1 {
-        return Err("Too many arguments".to_string());
-    };
+    validate_input(input)?;
 
     let cwd = match env::current_dir() {
         Ok(cwd) => format!("{}", cwd.display()),
@@ -27,6 +18,21 @@ pub fn pwd(input: &[String]) -> Result<String, String> {
     Ok(ok)
 }
 
+fn validate_input(input: &[String]) -> Result<(), String> {
+    debug_assert!(!input.is_empty(), "Input for `pwd` should not be empty");
+    debug_assert!(
+        input[0] == "pwd",
+        "Input for `{}` should not be passed to `pwd`",
+        input[0]
+    );
+
+    if input.len() > 1 {
+        return Err("Too many arguments".to_string());
+    };
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::MAIN_SEPARATOR;
@@ -35,7 +41,7 @@ mod tests {
     use crate::string_vec;
 
     #[test]
-    fn test_pwd_success() {
+    fn pwd_ok() {
         let input = string_vec!["pwd"];
         let expected = "0-shell\n";
         let result = pwd(&input).expect("`pwd` should be ok");
@@ -44,7 +50,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pwd_too_many_args() {
+    fn pwd_too_many_args_fails() {
         let input = string_vec!["pwd", "foo"];
         let expected = Err("Too many arguments".to_string());
         assert_eq!(

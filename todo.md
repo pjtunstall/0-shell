@@ -11,10 +11,8 @@
 
 ## Next
 
-Summary: Refactor echo. Check echo redirection. Remove unwraps.
+Summary: Refactor echo. Check echo redirection.
 
-- Remove superfluous inclusion of command in test function names.
-- Replace unwraps with graceful error ballet in `cat` and `ls` redirect.
 - Switch `echo` redirection tests to use `TempStore`.
 - Check exact behavior of `echo` with multiple redirect arguments: multiple spaces, etc. Write more tests.
 - Check errorhandling in `echo`, especially for multiple redirection targets.

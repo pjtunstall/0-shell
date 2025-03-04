@@ -75,11 +75,11 @@ pub fn ls(input: &[String]) -> Result<String, String> {
     let flags = LsFlags::parse(&sources)?;
 
     // Handle current directory listing if no path is specified.
-    if flags.first_pathname_index.is_none() {
-        return handle_current_directory_listing(input, &flags, is_redirect);
-    }
+    let first_pathname_index = match flags.first_pathname_index {
+        Some(i) => i,
+        None => return handle_current_directory_listing(input, &flags, is_redirect),
+    };
 
-    let first_pathname_index = flags.first_pathname_index.unwrap();
     let paths = &sources[first_pathname_index..];
 
     let mut path_classification = classify_paths(paths);
@@ -175,7 +175,7 @@ fn finalize_directory_listing(
     if targets.is_empty() || results.is_err() {
         results
     } else {
-        redirect(targets, results.unwrap());
+        redirect(targets, results.unwrap()); // This can't fail as we checked for errors above.
         Ok(String::new())
     }
 }
@@ -191,15 +191,39 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
         }
 
         if !target_path.exists() || target[0] == ">" {
-            let mut file = File::create(target_path).unwrap();
-            file.write_all(contents.as_bytes()).unwrap();
+            match File::create(target_path) {
+                Ok(mut file) => {
+                    if let Err(_) = file.write_all(contents.as_bytes()) {
+                        println!(
+                            "\x1b[31m0-shell: Failed to write to file: {}\x1b[0m\x1b[1m",
+                            target[1]
+                        );
+                    }
+                }
+                Err(_) => {
+                    println!(
+                        "\x1b[31m0-shell: Failed to create file: {}\x1b[0m\x1b[1m",
+                        target[1]
+                    );
+                }
+            }
         } else {
-            let mut file = File::options()
-                .append(true)
-                .create(true)
-                .open(target_path)
-                .unwrap();
-            file.write_all(contents.as_bytes()).unwrap();
+            match File::options().append(true).create(true).open(target_path) {
+                Ok(mut file) => {
+                    if let Err(_) = file.write_all(contents.as_bytes()) {
+                        println!(
+                            "\x1b[31m0-shell: Failed to append to file: {}\x1b[0m\x1b[1m",
+                            target[1]
+                        );
+                    }
+                }
+                Err(_) => {
+                    println!(
+                        "\x1b[31m0-shell: Failed to open file: {}\x1b[0m\x1b[1m",
+                        target[1]
+                    );
+                }
+            }
         }
     }
 }
@@ -307,7 +331,7 @@ mod tests {
     use crate::test_helpers::TempStore;
 
     #[test]
-    fn test_ls() {
+    fn test_basic_and_flags_ok() {
         let basic = vec!["ls".to_string()];
         let a = vec!["ls".to_string(), "-a".to_string()];
         let l = vec!["ls".to_string(), "-l".to_string()];
@@ -326,7 +350,7 @@ mod tests {
     }
 
     #[test]
-    fn test_redirect() {
+    fn ls_redirect() {
         let temp_store = TempStore::new(1);
         let root_str = &temp_store.store[0];
 

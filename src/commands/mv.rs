@@ -3,16 +3,7 @@ use std::{fs, path::Path};
 const USAGE: &str = "USAGE: mv source_file target_directory\n\tmv source_file target_directory/new_name\n\tmv source_file new_name";
 
 pub fn mv(input: &[String]) -> Result<String, String> {
-    debug_assert!(!input.is_empty(), "Input for `mv` should not be empty");
-    debug_assert!(
-        input[0] == "mv",
-        "Input for `{}` should not be passed to `mv`",
-        input[0]
-    );
-
-    if input.len() < 3 {
-        return Err(format!("Not enough arguments\n{}", USAGE).to_string());
-    }
+    validate_input(input)?;
 
     let target = &input[2];
     let source = &input[1];
@@ -47,6 +38,21 @@ pub fn mv(input: &[String]) -> Result<String, String> {
     Ok("".to_string())
 }
 
+fn validate_input(input: &[String]) -> Result<(), String> {
+    debug_assert!(!input.is_empty(), "Input for `mv` should not be empty");
+    debug_assert!(
+        input[0] == "mv",
+        "Input for `{}` should not be passed to `mv`",
+        input[0]
+    );
+
+    if input.len() < 3 {
+        return Err(format!("Not enough arguments\n{}", USAGE).to_string());
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use std::{
@@ -60,7 +66,7 @@ mod tests {
     use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
-    fn test_mv_to_dir() {
+    fn mv_to_dir() {
         let temp_store = TempStore::new(2);
 
         let source = &temp_store.store[0];
@@ -87,7 +93,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mv_as_rename() {
+    fn mv_as_rename() {
         let temp_store = TempStore::new(2);
 
         let source = &temp_store.store[0];
@@ -115,7 +121,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mv_as_rename_when_new_name_already_exists() {
+    fn mv_as_rename_when_new_name_already_exists() {
         let temp_store = TempStore::new(2);
         let source = &temp_store.store[0];
 
@@ -128,22 +134,23 @@ mod tests {
         let input = string_vec!["mv", source, target];
         let result = mv(&input);
 
-        assert!(result.is_ok(), "`mv' failed: {:?}", result.err());
+        assert!(result.is_ok(), "`mv` should not fail: {:?}", result.err());
         assert!(Path::new(target).exists(), "Renamed file should exist");
         assert!(
             !Path::new(source).exists(),
             "File should not exist still under old name"
         );
 
-        let new_target_contents = fs::read_to_string(target).expect("Failed to read new file");
+        let new_target_contents =
+            fs::read_to_string(target).expect("Should be able to read new file");
         assert_eq!(
             new_target_contents, source_contents,
-            "File contents do not match"
+            "File contents should match"
         );
     }
 
     #[test]
-    fn test_mv_to_directory_and_rename() {
+    fn mv_to_directory_and_rename() {
         let temp_store = TempStore::new(2);
 
         let source = &temp_store.store[0];
@@ -178,7 +185,7 @@ mod tests {
     }
 
     #[test]
-    fn test_error_when_not_enough_arguments() {
+    fn mv_insufficient_arguments_fails() {
         let file = Uuid::new_v4().to_string();
 
         let input = string_vec!["mv", file];
@@ -191,7 +198,7 @@ mod tests {
     }
 
     #[test]
-    fn test_error_on_cycle() {
+    fn mv_with_cycle_fails() {
         let temp_store = TempStore::new(2);
         let mover = &temp_store.store[0];
         let subdirectory = &temp_store.store[1];

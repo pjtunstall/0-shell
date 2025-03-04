@@ -1,16 +1,7 @@
 use std::{fs, path::Path};
 
 pub fn mkdir(input: &[String]) -> Result<String, String> {
-    debug_assert!(!input.is_empty(), "Input for `mkdir` should not be empty");
-    debug_assert!(
-        input[0] == "mkdir",
-        "Input for `{}` should not be passed to `mkdir`",
-        input[0]
-    );
-
-    if input.len() < 2 {
-        return Err("Not enough arguments".to_string());
-    }
+    validate_input(input)?;
 
     let mut errors = Vec::new();
 
@@ -44,6 +35,21 @@ pub fn mkdir(input: &[String]) -> Result<String, String> {
     }
 }
 
+fn validate_input(input: &[String]) -> Result<(), String> {
+    debug_assert!(!input.is_empty(), "Input for `mkdir` should not be empty");
+    debug_assert!(
+        input[0] == "mkdir",
+        "Input for `{}` should not be passed to `mkdir`",
+        input[0]
+    );
+
+    if input.len() < 2 {
+        return Err("Not enough arguments".to_string());
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use std::{fs, path::Path};
@@ -54,7 +60,7 @@ mod tests {
     use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
-    fn test_mkdir_success() {
+    fn mkdir_ok() {
         let test_dir = &Uuid::new_v4().to_string();
 
         if Path::new(test_dir).exists() {
@@ -71,7 +77,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mkdir_failure_missing_argument() {
+    fn mkdir_missing_argument_fails() {
         let input = string_vec!["mkdir"];
         let result = mkdir(&input);
 
@@ -80,7 +86,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mkdir_failure_no_such_dir() {
+    fn mkdir_invalid_path_fails() {
         let temp_store = TempStore::new(2);
         let dir = Path::new(&temp_store.store[0]);
         let prefix = Path::new(&temp_store.store[1]);
@@ -96,7 +102,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mkdir_failure_dir_exists() {
+    fn mkdir_dir_exists_fails() {
         let temp_store = TempStore::new(1);
         let dir = temp_store.store[0].clone();
 
@@ -109,7 +115,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mkdir_failure_file_exists() {
+    fn mkdir_file_exists_fails() {
         let temp_store = TempStore::new(1);
         let dir = temp_store.store[0].clone();
 
@@ -122,7 +128,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mkdir_multiple_arguments() {
+    fn mkdir_multiple_arguments() {
         let temp_store = TempStore::new(2);
 
         let existing_string = &temp_store.store[0];

@@ -5,12 +5,7 @@ use serde_json::de::from_str;
 use crate::redirect;
 
 pub fn echo(input: &[String]) -> Result<String, String> {
-    debug_assert!(!input.is_empty(), "Input for `echo` should not be empty");
-    debug_assert!(
-        input[0] == "echo",
-        "Input for `{}` should not be passed to `echo`",
-        input[0]
-    );
+    validate_input(input)?;
 
     let (sources, targets) = redirect::separate_sources_from_targets(input);
 
@@ -51,6 +46,16 @@ pub fn echo(input: &[String]) -> Result<String, String> {
     } else {
         handle_redirection(&output, targets)
     }
+}
+
+fn validate_input(input: &[String]) -> Result<(), String> {
+    debug_assert!(!input.is_empty(), "Input for `echo` should not be empty");
+    debug_assert!(
+        input[0] == "echo",
+        "Input for `{}` should not be passed to `echo`",
+        input[0]
+    );
+    Ok(())
 }
 
 fn process_backslashes(s: &str, plus: usize) -> String {
@@ -123,7 +128,7 @@ mod tests {
     use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
-    fn test_basic_echo() {
+    fn echo_basic() {
         assert_eq!(
             echo(&string_vec!["echo", "hello"]),
             Ok("hello\n".to_string()),
@@ -142,7 +147,7 @@ mod tests {
     }
 
     #[test]
-    fn test_special_characters() {
+    fn echo_special_characters() {
         assert_eq!(
             echo(&string_vec!["echo", "a\\na"]),
             Ok("ana\n".to_string()),
@@ -187,7 +192,7 @@ mod tests {
     }
 
     #[test]
-    fn test_redirection_in_double_quotes() {
+    fn echo_redirection_in_double_quotes() {
         assert_eq!(
             echo(&string_vec!["echo", "\">\""]),
             Ok(">\n".to_string()),
@@ -202,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn test_redirection_in_single_quotes() {
+    fn echo_redirection_in_single_quotes() {
         assert_eq!(
             echo(&string_vec!["echo", "\'>\'"]),
             Ok(">\n".to_string()),
@@ -217,7 +222,7 @@ mod tests {
     }
 
     #[test]
-    fn test_env_var_set() {
+    fn echo_env_var_set() {
         let prev_user = env::var("USER").ok();
         unsafe {
             env::set_var("USER", "testuser");
@@ -241,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    fn test_env_var_unset() {
+    fn echo_env_var_unset() {
         let prev_lang = env::var("LANG").ok();
         unsafe {
             env::remove_var("LANG");
@@ -263,7 +268,7 @@ mod tests {
     }
 
     #[test]
-    fn test_write_to_file() {
+    fn echo_redirect_write() {
         let file = Uuid::new_v4().to_string();
 
         let mut expected = "hello\n";
@@ -284,7 +289,7 @@ mod tests {
     }
 
     #[test]
-    fn test_append_to_file() {
+    fn echo_redirect_append() {
         let file = Uuid::new_v4().to_string();
 
         let mut input = string_vec!["echo", "hello", ">>", &file];
@@ -305,7 +310,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ignore_write_to_multiple_files() {
+    fn echo_redirect_write_interpolated() {
         let file1 = Uuid::new_v4().to_string();
 
         let input = string_vec!["echo", "hello", ">", &file1, "file2"];
@@ -324,7 +329,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ignore_append_to_multiple_files() {
+    fn echo_redirect_append_interpolated() {
         let file1 = Uuid::new_v4().to_string();
 
         let input = string_vec!["echo", "hello", ">>", &file1, "file2"];
@@ -342,7 +347,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_redirect_targets() {
+    fn echo_multiple_redirect_targets() {
         let temp_store = TempStore::new(2);
         let u_str = &temp_store.store[0];
         let v_str = &temp_store.store[1];

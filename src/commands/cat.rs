@@ -7,12 +7,7 @@ use std::{
 use crate::redirect;
 
 pub fn cat(input: &[String]) -> Result<String, String> {
-    debug_assert!(!input.is_empty(), "Input for `cat` should not be empty");
-    debug_assert!(
-        input[0] == "cat",
-        "Input for `{}` should not be passed to `cat`",
-        input[0]
-    );
+    validate_input(input)?;
 
     let (sources, targets) = redirect::separate_sources_from_targets(input);
 
@@ -52,6 +47,16 @@ pub fn cat(input: &[String]) -> Result<String, String> {
     }
 }
 
+fn validate_input(input: &[String]) -> Result<(), String> {
+    debug_assert!(!input.is_empty(), "Input for `cat` should not be empty");
+    debug_assert!(
+        input[0] == "cat",
+        "Input for `{}` should not be passed to `cat`",
+        input[0]
+    );
+    Ok(())
+}
+
 fn redirect(targets: Vec<[&String; 2]>, concatenated_contents: &str, errors: &mut Vec<String>) {
     for &target in targets.iter() {
         let target_path = Path::new(target[1]);
@@ -61,15 +66,27 @@ fn redirect(targets: Vec<[&String; 2]>, concatenated_contents: &str, errors: &mu
         }
 
         if !target_path.exists() || target[0] == ">" {
-            let mut file = File::create(target_path).unwrap();
-            file.write_all(concatenated_contents.as_bytes()).unwrap();
+            match File::create(target_path) {
+                Ok(mut file) => {
+                    if let Err(_) = file.write_all(concatenated_contents.as_bytes()) {
+                        errors.push(format!("Failed to write to file: {}", target[1]));
+                    }
+                }
+                Err(_) => {
+                    errors.push(format!("Failed to create file: {}", target[1]));
+                }
+            }
         } else {
-            let mut file = File::options()
-                .append(true)
-                .create(true)
-                .open(target_path)
-                .unwrap();
-            file.write_all(concatenated_contents.as_bytes()).unwrap();
+            match File::options().append(true).create(true).open(target_path) {
+                Ok(mut file) => {
+                    if let Err(_) = file.write_all(concatenated_contents.as_bytes()) {
+                        errors.push(format!("Failed to append to file: {}", target[1]));
+                    }
+                }
+                Err(_) => {
+                    errors.push(format!("Failed to open file: {}", target[1]));
+                }
+            }
         }
     }
 }
@@ -169,7 +186,7 @@ mod tests {
     use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
-    fn test_cat_success_one_existing_file() {
+    fn cat_one_source_file() {
         let file = &TempStore::new(1).store[0];
         fs::write(file, "Howdie, world!\n").unwrap();
 
@@ -180,7 +197,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cat_success_rediect_from_one_file_to_one_new_file() {
+    fn cat_rediect_from_one_file_to_one_new_file() {
         let temp_store = TempStore::new(3);
         let source = &temp_store.store[0];
         let expected = "Now then, world?\n";
@@ -213,7 +230,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cat_success_append_to_one_existing_file() {
+    fn cat_append_to_one_existing_file() {
         let temp_store = TempStore::new(3);
         let source = &temp_store.store[0];
         let target = &temp_store.store[1];
@@ -236,21 +253,22 @@ mod tests {
     }
 
     #[test]
-    fn test_cat_success_two_source_files() {
+    fn cat_two_source_files() {
         let temp_store = TempStore::new(2);
         let source1_string = &temp_store.store[0];
         let source2_string = &temp_store.store[1];
 
         let mut source1 =
-            fs::File::create(source1_string).expect("Failed to create first source file");
+            fs::File::create(source1_string).expect("Failed to create 1st source file");
         source1
             .write_all(b"Hello, ")
-            .expect("Failed to write to first source file");
+            .expect("Failed to write to 1st source file");
 
-        let mut source2 = fs::File::create(source2_string).expect("Failed to second source file");
+        let mut source2 =
+            fs::File::create(source2_string).expect("Failed to create 2nd source file");
         source2
             .write_all(b"world!")
-            .expect("Failed to write to second source file");
+            .expect("Failed to write to 2nd source file");
 
         let input = string_vec!["cat", source1_string, source2_string];
         let result = cat(&input).expect("`cat` should be ok");
@@ -259,7 +277,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cat_success_two_sources_and_two_targets() {
+    fn cat_two_sources_and_two_targets() {
         let temp_store = TempStore::new(4);
         let source1_string = &temp_store.store[0];
         let source2_string = &temp_store.store[1];
@@ -267,24 +285,25 @@ mod tests {
         let target2_string = &temp_store.store[3];
 
         let mut source1 =
-            fs::File::create(source1_string).expect("Failed to create first source file");
+            fs::File::create(source1_string).expect("Failed to create 1st source file");
         source1
             .write_all(b"Hello, ")
-            .expect("Failed to write to first source file");
+            .expect("Failed to write to 1st source file");
 
-        let mut source2 = fs::File::create(source2_string).expect("Failed to second source file");
+        let mut source2 =
+            fs::File::create(source2_string).expect("Failed to create 2nd source file");
         source2
             .write_all(b"world!")
-            .expect("Failed to write to second source file");
+            .expect("Failed to write to 2nd source file");
 
         let mut target1 =
-            fs::File::create(target1_string).expect("Failed to create first target file");
+            fs::File::create(target1_string).expect("Failed to create 1st target file");
         target1
             .write_all(b"Oy! ")
-            .expect("Failed to write to first target file");
+            .expect("Failed to write to 1st target file");
 
         let mut _target2 =
-            fs::File::create(target2_string).expect("Failed to create second target file");
+            fs::File::create(target2_string).expect("Failed to create 2nd target file");
 
         let input = string_vec![
             "cat",
@@ -300,19 +319,19 @@ mod tests {
         assert_eq!(result, "Hello, world!");
 
         let contents1 =
-            fs::read_to_string(target1_string).expect("Failed to read from target file");
+            fs::read_to_string(target1_string).expect("Failed to read from 1st target file");
         assert_eq!(
             contents1, "Oy! Hello, world!",
-            "First target should have combined contents of both sources"
+            "1st target should have combined contents of both sources"
         );
 
         let contents2 =
-            fs::read_to_string(target2_string).expect("Failed to read from target file");
+            fs::read_to_string(target2_string).expect("Failed to read from 2nd target file");
         assert_eq!(contents2, "Hello, world!");
     }
 
     #[test]
-    fn test_cat_fail_one_nonexistent_source_file() {
+    fn cat_one_nonexistent_source_file_fails() {
         let input = string_vec!["cat", "nonexistent.txt"];
         let result = cat(&input);
 
@@ -321,7 +340,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cat_fail_one_source_directory() {
+    fn cat_one_source_directory_fails() {
         let dir = &TempStore::new(1).store[0];
         fs::create_dir(dir).expect("Failed to create would-be source directory");
 

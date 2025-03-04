@@ -1,16 +1,7 @@
 use std::{fs::File, path::Path};
 
 pub fn touch(input: &[String]) -> Result<String, String> {
-    debug_assert!(!input.is_empty(), "Input for `touch` should not be empty");
-    debug_assert!(
-        input[0] == "touch",
-        "Input for `{}` should not be passed to `touch`",
-        input[0]
-    );
-
-    if input.len() < 2 {
-        return Err("Not enough arguments".to_string());
-    }
+    validate_input(input)?;
 
     let mut errors = Vec::new();
 
@@ -59,6 +50,21 @@ pub fn touch(input: &[String]) -> Result<String, String> {
     }
 }
 
+fn validate_input(input: &[String]) -> Result<(), String> {
+    debug_assert!(!input.is_empty(), "Input for `touch` should not be empty");
+    debug_assert!(
+        input[0] == "touch",
+        "Input for `{}` should not be passed to `touch`",
+        input[0]
+    );
+
+    if input.len() < 2 {
+        return Err("Not enough arguments".to_string());
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use std::{fs, path::Path, thread, time::Duration};
@@ -69,7 +75,7 @@ mod tests {
     use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
-    fn test_touch_success() {
+    fn touch_new_file() {
         let temp_store = TempStore::new(1);
         let source = &temp_store.store[0];
         let path = Path::new(source);
@@ -81,7 +87,7 @@ mod tests {
     }
 
     #[test]
-    fn test_touch_failure_missing_argument() {
+    fn touch_insufficient_arguments_fails() {
         let input = string_vec!["touch"];
         let result = touch(&input);
 
@@ -90,7 +96,7 @@ mod tests {
     }
 
     #[test]
-    fn test_touch_failure_no_such_dir() {
+    fn touch_invalid_path_fails() {
         let temp_store = TempStore::new(2);
         let dir = Path::new(&temp_store.store[0]);
         let prefix = Path::new(&temp_store.store[1]);
@@ -106,7 +112,7 @@ mod tests {
     }
 
     #[test]
-    fn test_touch_multiple_arguments() {
+    fn touch_multiple_arguments() {
         let temp_store = TempStore::new(3);
         let dir = Path::new(&temp_store.store[0]);
         let prefix = Path::new(&temp_store.store[1]);
@@ -126,7 +132,7 @@ mod tests {
     }
 
     #[test]
-    fn test_touch_updates_time_of_existing_file() {
+    fn touch_updates_time_of_existing_file() {
         let temp_store = TempStore::new(1);
         let file_string = &temp_store.store[0];
 

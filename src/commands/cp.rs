@@ -62,7 +62,7 @@ mod tests {
     use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
-    fn test_cp() {
+    fn cp_one_source_and_one_target() {
         let temp_store = TempStore::new(2);
         let source = &temp_store.store[0];
         let target = &temp_store.store[1];

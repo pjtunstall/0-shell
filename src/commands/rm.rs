@@ -5,16 +5,7 @@ const USAGE: &str = "Usage: rm [-r] FILE|DIRECTORY...";
 pub const OPTIONS_USAGE: &str = "\r\n-R  -r  -- remove directories and their contents recursively";
 
 pub fn rm(input: &[String]) -> Result<String, String> {
-    debug_assert!(!input.is_empty(), "Input for `rm` should not be empty");
-    debug_assert!(
-        input[0] == "rm",
-        "Input for `{}` should not be passed to `rm`",
-        input[0]
-    );
-
-    if input.len() < 2 {
-        return Err(format!("Not enough arguments\n{}", USAGE).to_string());
-    }
+    validate_input(input)?;
 
     if input[1] == "-r" || input[1] == "-R" {
         if input.len() < 3 {
@@ -84,6 +75,21 @@ fn process_args(args: &[String], recursive: bool) -> Result<String, String> {
     return Ok(String::new());
 }
 
+fn validate_input(input: &[String]) -> Result<(), String> {
+    debug_assert!(!input.is_empty(), "Input for `rm` should not be empty");
+    debug_assert!(
+        input[0] == "rm",
+        "Input for `{}` should not be passed to `rm`",
+        input[0]
+    );
+
+    if input.len() < 2 {
+        return Err(format!("Not enough arguments\n{}", USAGE).to_string());
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use std::{fs, path::Path};
@@ -92,7 +98,7 @@ mod tests {
     use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
-    fn test_rm_removes_one_file() {
+    fn rm_removes_one_file() {
         let temp_store = TempStore::new(1);
         let file = &temp_store.store[0];
         fs::write(file.to_string(), "").expect("Failed to create test file");
@@ -105,7 +111,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rm_removes_multiple_files() {
+    fn rm_removes_multiple_files() {
         let temp_store = TempStore::new(2);
         let file1 = &temp_store.store[0];
         let file2 = &temp_store.store[1];
@@ -121,7 +127,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rm_error_when_argument_is_directory() {
+    fn rm_directory_fails() {
         let temp_store = TempStore::new(1);
         let dir = &temp_store.store[0];
         fs::create_dir(dir.to_string()).expect("Failed to create test directory");
@@ -138,7 +144,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rm_when_arguments_are_a_mixture_of_files_and_directories() {
+    fn rm_files_and_directories_fails() {
         let temp_store = TempStore::new(4);
         let file1 = &temp_store.store[0];
         let file2 = &temp_store.store[1];
@@ -171,7 +177,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rm_recursive() {
+    fn rm_recursive() {
         let temp_store = TempStore::new(4);
         let file1 = &temp_store.store[0];
         let file2 = &temp_store.store[1];
