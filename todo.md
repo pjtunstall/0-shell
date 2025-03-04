@@ -11,15 +11,21 @@
 
 ## Next
 
-Summary: Refactor echo. Check echo redirection.
+Refactor echo. Check echo redirection.
 
-- Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
 - Switch `echo` redirection tests to use `TempStore`.
 - Check exact behavior of `echo` with multiple redirect arguments: multiple spaces, etc. Write more tests.
 - Check errorhandling in `echo`, especially for multiple redirection targets.
-- Refactor `echo`.=
+- Refactor `echo`.
+
+Help and usage.
+
+- Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
 - Add `man` command.
 - Add `--help`.
+
+Tests.
+
 - Use this less verbose pattern in tests: `let result = cat(&input).expect("`cat` should be ok"); assert_eq!(result, "Hello, world!");`.
 - Is there any reason to prefer one above the other: creating a file then writing to it, or creating it implicitly by writing to it?
 
