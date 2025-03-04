@@ -11,11 +11,12 @@
 
 ## Next
 
-- Write a test for redirect.
+Summary: refactor echo, cat, and ls. Check echo redirection.
+
 - Switch `echo` redirection tests to use `TempStore`.
-- Remove `echo` tests that expect there to not be multiple redirection targets!
-- Implement `echo` with multiple redirect arguments.
+- Check exact behavior of `echo` with multiple redirect arguments: multiple spaces, etc. Write more tests.
 - Remove superfluous inclusion of command in test function names.
+- Refactor `echo`.
 - Refactor `ls`.
 - Refactor `cat`: split up the pub function and flatten the nesting.
 - Look carefully at all these refs to collections to ref types in `cat` and `ls`. Examine what they all imply and what best practice is.

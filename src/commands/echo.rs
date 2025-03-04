@@ -2,6 +2,8 @@ use std::{env, fs::OpenOptions, io::Write};
 
 use serde_json::de::from_str;
 
+use super::redirect;
+
 pub fn echo(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `echo` should not be empty");
     debug_assert!(
@@ -10,30 +12,14 @@ pub fn echo(input: &[String]) -> Result<String, String> {
         input[0]
     );
 
-    let input: Vec<String> = input.iter().map(|s| s.to_string()).collect(); // ... because we may want to drain the input.
+    let (sources, targets) = redirect::separate_sources_from_targets(input);
 
     if input.len() < 2 {
         return Ok("\n".to_string());
     }
 
-    let mut input = input.clone();
-
-    let mut append = false;
-    let mut filename = String::new();
-    if let Some(pos) = input.iter().position(|arg| arg == ">" || arg == ">>") {
-        if input[pos] == ">>" {
-            append = true;
-        }
-        if pos + 1 < input.len() {
-            filename = input[pos + 1].clone();
-        } else {
-            return Err("Parse error near `\\n'".to_string()); // This should never happen now, thanks to `split`
-        }
-        input.drain(pos..);
-    }
-
     let mut output = String::new();
-    for (i, arg) in input[1..].iter().enumerate() {
+    for (i, &arg) in sources.iter().enumerate() {
         if i > 0 {
             output.push(' ');
         }
@@ -60,10 +46,10 @@ pub fn echo(input: &[String]) -> Result<String, String> {
     parse_environment_variables(&mut output);
     output.push('\n');
 
-    if filename.is_empty() {
+    if targets.is_empty() {
         Ok(output)
     } else {
-        handle_redirection(&output, &filename, append)
+        handle_redirection(&output, targets)
     }
 }
 
@@ -107,31 +93,34 @@ fn parse_environment_variables(output: &mut String) {
     *output = output.replace("$TERM", &env::var("TERM").unwrap_or_default());
 }
 
-fn handle_redirection(output: &str, filename: &str, append: bool) -> Result<String, String> {
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .append(append)
-        .truncate(!append)
-        .open(filename)
-        .map_err(|e| e.to_string())?;
+fn handle_redirection(output: &str, targets: Vec<[&String; 2]>) -> Result<String, String> {
+    for target in targets {
+        let append = target[0] == ">>";
 
-    file.write_all(output.as_bytes())
-        .map_err(|e| e.to_string())?;
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .append(append)
+            .truncate(!append)
+            .open(target[1])
+            .map_err(|e| e.to_string())?;
+
+        file.write_all(output.as_bytes())
+            .map_err(|e| e.to_string())?;
+    }
 
     Ok(String::new())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
     use std::{env, fs};
-    // use std::path::Path;
 
     use uuid::Uuid;
 
     use super::echo;
-    use crate::string_vec;
-    // use crate::test_helpers::TempStore;
+    use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
     fn test_basic_echo() {
@@ -318,79 +307,75 @@ mod tests {
     #[test]
     fn test_ignore_write_to_multiple_files() {
         let file1 = Uuid::new_v4().to_string();
-        let file2 = Uuid::new_v4().to_string();
 
-        let input = string_vec!["echo", "hello", ">", &file1, &file2];
-        let expected = "hello\n";
+        let input = string_vec!["echo", "hello", ">", &file1, "file2"];
+        let expected = "hello file2\n";
         let output = echo(&input);
+
         assert!(output.unwrap().is_empty());
         let contents = fs::read_to_string(&file1).expect("Failed to read file");
-        assert_eq!(
-            contents, expected,
-            "Expected to write to only one file when two names are given"
+        assert!(
+            !Path::new("file2").exists(),
+            "Expected to write to only one file when two names appear after a single write operator"
         );
+        assert_eq!(contents, expected, "Contents should include `file2`");
 
         fs::remove_file(file1).ok();
-        fs::remove_file(file2).ok();
     }
 
     #[test]
     fn test_ignore_append_to_multiple_files() {
         let file1 = Uuid::new_v4().to_string();
-        let file2 = Uuid::new_v4().to_string();
 
-        let input = string_vec!["echo", "hello", ">>", &file1, &file2];
-        let expected = "hello\n";
+        let input = string_vec!["echo", "hello", ">>", &file1, "file2"];
+        let expected = "hello file2\n";
         let output = echo(&input);
         assert!(output.unwrap().is_empty());
         let contents = fs::read_to_string(&file1).expect("Failed to read file");
-        assert_eq!(
-            contents, expected,
-            "Expected to write to only one file when two names are given"
+        assert!(
+            !Path::new("file2").exists(),
+            "Expected to write to only one file when two names appear after a single append operator"
         );
+        assert_eq!(contents, expected, "Contents should include `file2`");
 
         fs::remove_file(file1).ok();
-        fs::remove_file(file2).ok();
     }
 
-    // #[test]
-    // fn test_multiple_redirect_targets() {
-    //     let temp_store = TempStore::new(2);
-    //     let u_str = &temp_store.store[0];
-    //     let v_str = &temp_store.store[1];
+    #[test]
+    fn test_multiple_redirect_targets() {
+        let temp_store = TempStore::new(2);
+        let u_str = &temp_store.store[0];
+        let v_str = &temp_store.store[1];
 
-    //     let input: Vec<String> = vec!["echo", "hello", ">", u_str, v_str]
-    //         .into_iter()
-    //         .map(String::from)
-    //         .collect();
+        let input: Vec<String> = string_vec!["echo", "hello", ">", u_str, ">", v_str];
 
-    //     let result = echo(&input);
-    //     assert!(result.is_ok(), "Result of multiple redirects should be ok");
+        let result = echo(&input);
+        assert!(result.is_ok(), "Result of multiple redirects should be ok");
 
-    //     let u = Path::new(u_str);
-    //     let v = Path::new(v_str);
+        let u = Path::new(u_str);
+        let v = Path::new(v_str);
 
-    //     assert!(
-    //         u.exists(),
-    //         "1st redirect target file should have been created by `echo`"
-    //     );
-    //     assert!(
-    //         v.exists(),
-    //         "2nd redirect target file should have been created by `echo`"
-    //     );
+        assert!(
+            u.exists(),
+            "1st redirect target file should have been created by `echo`"
+        );
+        assert!(
+            v.exists(),
+            "2nd redirect target file should have been created by `echo`"
+        );
 
-    //     let contents_of_u = fs::read_to_string(u).expect("Failed to read 1st redirect target file");
-    //     let contents_of_v = fs::read_to_string(v).expect("Failed to read 2nd redierct target file");
+        let contents_of_u = fs::read_to_string(u).expect("Failed to read 1st redirect target file");
+        let contents_of_v = fs::read_to_string(v).expect("Failed to read 2nd redierct target file");
 
-    //     let expected = "hello/n";
+        let expected = "hello\n";
 
-    //     assert_eq!(
-    //         contents_of_u, expected,
-    //         "Contents of 1st redirect target file should match input text"
-    //     );
-    //     assert_eq!(
-    //         contents_of_v, expected,
-    //         "Contents of 2nd redirect target file should match input text"
-    //     );
-    // }
+        assert_eq!(
+            contents_of_u, expected,
+            "Contents of 1st redirect target file should match input text"
+        );
+        assert_eq!(
+            contents_of_v, expected,
+            "Contents of 2nd redirect target file should match input text"
+        );
+    }
 }
