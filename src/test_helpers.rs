@@ -26,3 +26,39 @@ impl Drop for TempStore {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::*;
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_temp_store() {
+            let path1_str;
+            let path2_str;
+
+            {
+                let store = TempStore::new(2);
+                assert_eq!(store.store.len(), 2);
+                path1_str = store.store[0].clone();
+                path2_str = store.store[1].clone();
+                let path1 = Path::new(&path1_str);
+                let path2 = Path::new(&path2_str);
+                fs::write(path1, "Lorem ipsum, dude!").expect("Failed to write to file");
+                fs::create_dir(path2).expect("Failed to create temp folder");
+                assert!(path1.exists());
+                assert!(path2.exists());
+            }
+
+            let path1 = Path::new(&path1_str);
+            let path2 = Path::new(&path2_str);
+            assert!(!path1.exists(), "File should have been removed");
+            assert!(!path2.exists(), "Directory should have been removed");
+        }
+    }
+}
