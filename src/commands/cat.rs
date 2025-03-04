@@ -16,6 +16,7 @@ pub fn cat(input: &[String]) -> Result<String, String> {
 
     let (sources, targets) = redirect::separate_sources_from_targets(input);
 
+    // Handle input from stdin.
     if input.len() < 2 {
         return match get_input() {
             Ok(contents) => Ok(contents),
