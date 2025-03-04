@@ -1,7 +1,7 @@
 pub fn split(input: &str) -> Result<Vec<String>, String> {
     if let Some((part_1, divider, part_2)) = split_at_first_divider(input) {
         if part_2.is_empty() {
-            return Err("parse error near `\\n'".to_string());
+            return Err("Parse error near `\\n'".to_string());
         }
 
         let mut result = Vec::new();
@@ -103,4 +103,19 @@ fn split_part(input: &str) -> Result<Vec<String>, String> {
     }
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::split;
+    use crate::string_vec;
+
+    #[test]
+    fn test_split() {
+        assert_eq!(split(""), Ok(vec![]));
+        assert_eq!(
+            split("echo foo bar>>baz > qux"),
+            Ok(string_vec!["echo", "foo", "bar", ">>", "baz", ">", "qux"])
+        );
+    }
 }

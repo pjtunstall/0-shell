@@ -30,7 +30,7 @@ fn get_candidates(partial: &str, data: &[String]) -> Vec<String> {
     candidates
 }
 
-pub fn backtrack(data: &[String], partial: &str, matches: &mut Vec<String>) {
+fn backtrack(data: &[String], partial: &str, matches: &mut Vec<String>) {
     if reject(partial, data) {
         return;
     }
@@ -50,21 +50,12 @@ pub fn backtrack(data: &[String], partial: &str, matches: &mut Vec<String>) {
 mod tests {
     use lazy_static::lazy_static;
 
-    use super::*;
+    use super::find_matches;
+    use crate::string_vec;
 
     lazy_static! {
-        static ref COMMANDS: Vec<String> = vec![
-            "cat".to_string(),
-            "cd".to_string(),
-            "cp".to_string(),
-            "echo".to_string(),
-            "exit".to_string(),
-            "ls".to_string(),
-            "mkdir".to_string(),
-            "mv".to_string(),
-            "pwd".to_string(),
-            "rm".to_string(),
-            "touch".to_string(),
+        static ref COMMANDS: Vec<String> = string_vec![
+            "cat", "cd", "cp", "echo", "exit", "ls", "mkdir", "mv", "pwd", "rm", "touch"
         ];
     }
 

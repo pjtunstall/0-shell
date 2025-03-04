@@ -18,8 +18,6 @@ Summary: refactor echo, cat, and ls. Check echo redirection.
 - Check errorhandling in `echo`, especially for multiple redirection targets.
 - Remove superfluous inclusion of command in test function names.
 - Refactor `echo`.
-- Refactor `ls`.
-- Refactor `cat`: split up the pub function and flatten the nesting.
 - Look carefully at all these refs to collections to ref types in `cat` and `ls`. Examine what they all imply and what best practice is.
 - Replace unwraps with graceful error ballet in `cat` and `ls` redirect.
 - Make redirection logic more consistent between `cat` and `ls` so that I can call a common `redirect::redirect` function from both of them. This will mean bringing the error handling into line between these two commands: `ls` returns an ok result that incorporates errors; `cat` returns a result that is either a dummy ok (that's not actually printed by `main`) or an error containing all accumulated errors, including any redirection errors. `echo` does things even more its own ad hoc way since this was the first; it will also need upgrading to handle multiple redirections.

@@ -115,6 +115,19 @@ fn get_input() -> Result<String, String> {
     Ok(contents)
 }
 
+fn format(s: &str, e: io::Error) -> String {
+    format!(
+        "{}: {}: {}",
+        "cat",
+        s,
+        e.to_string()
+            .split(" (os ")
+            .next()
+            .unwrap_or(" ")
+            .to_string()
+    )
+}
+
 fn assemble_contents(sources: Vec<&String>) -> (String, Vec<String>) {
     let mut concatenated_contents = String::new();
     let mut errors = Vec::new();
@@ -126,32 +139,14 @@ fn assemble_contents(sources: Vec<&String>) -> (String, Vec<String>) {
                 let mut file = match File::open(path) {
                     Ok(file) => file,
                     Err(e) => {
-                        errors.push(format!(
-                            "{}: {}: {}",
-                            "cat",
-                            path_str,
-                            e.to_string()
-                                .split(" (os ")
-                                .next()
-                                .unwrap_or(" ")
-                                .to_string()
-                        ));
+                        errors.push(format(path_str, e));
                         continue;
                     }
                 };
 
                 let mut contents = String::new();
                 if let Err(e) = file.read_to_string(&mut contents) {
-                    errors.push(format!(
-                        "{}: {}: {}",
-                        "cat",
-                        path_str,
-                        e.to_string()
-                            .split(" (os ")
-                            .next()
-                            .unwrap_or(" ")
-                            .to_string()
-                    ));
+                    errors.push(format(path_str, e));
                 } else {
                     concatenated_contents.push_str(&contents);
                 }

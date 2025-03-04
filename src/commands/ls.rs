@@ -67,66 +67,117 @@ impl LsFlags {
 }
 
 pub fn ls(input: &[String]) -> Result<String, String> {
+    validate_input(input)?;
+
+    let (sources, targets) = redirect::separate_sources_from_targets(input);
+    let is_redirect = !targets.is_empty();
+
+    let flags = LsFlags::parse(&sources)?;
+
+    // Handle current directory listing if no path is specified.
+    if flags.first_pathname_index.is_none() {
+        return handle_current_directory_listing(input, &flags, is_redirect);
+    }
+
+    let first_pathname_index = flags.first_pathname_index.unwrap();
+    let paths = &sources[first_pathname_index..];
+
+    let mut path_classification = classify_paths(paths);
+    sort_path_classification(&mut path_classification);
+
+    print_non_existent_paths(&path_classification.non_existent);
+
+    let mut running_results =
+        process_initial_results(&path_classification.files, &flags, is_redirect)?;
+
+    finalize_directory_listing(
+        input,
+        path_classification,
+        &mut running_results,
+        flags.as_u8(),
+        is_redirect,
+        targets,
+    )
+}
+
+fn validate_input(input: &[String]) -> Result<(), String> {
     debug_assert!(!input.is_empty(), "Input for `ls` should not be empty");
     debug_assert!(
         input[0] == "ls",
         "Input for `{}` should not be passed to `ls`",
         input[0]
     );
+    Ok(())
+}
 
-    let (sources, targets) = redirect::separate_sources_from_targets(input);
-    let is_redirect = !targets.is_empty();
-
-    let flags = LsFlags::parse(&sources)?;
-    let first_pathname_index;
-    match flags.first_pathname_index {
-        Some(i) => first_pathname_index = i,
-        None => match list_current_directory(&flags, is_redirect) {
-            Ok(res) => {
-                if is_redirect {
-                    redirect(targets, res);
-                    return Ok(String::new());
-                } else {
-                    return Ok(res);
-                }
+fn handle_current_directory_listing(
+    input: &[String],
+    flags: &LsFlags,
+    is_redirect: bool,
+) -> Result<String, String> {
+    match list_current_directory(flags, is_redirect) {
+        Ok(contents) => {
+            if is_redirect {
+                let targets = redirect::separate_sources_from_targets(input).1;
+                redirect(targets, contents);
+                Ok(String::new())
+            } else {
+                Ok(contents)
             }
-            Err(e) => return Err(e),
-        },
+        }
+        Err(e) => Err(e),
     }
+}
 
-    let paths = &sources[first_pathname_index..];
-    let PathClassification {
-        mut directories,
-        mut files,
-        mut non_existent,
-    } = classify_paths(paths);
+fn sort_path_classification(classification: &mut PathClassification) {
+    classification.directories.sort();
+    classification.non_existent.sort();
+    classification.files.sort();
+}
 
-    directories.sort();
-    non_existent.sort();
-    files.sort();
-
-    let mut running_results = String::new();
+fn print_non_existent_paths(non_existent: &[String]) {
     print!("{}", non_existent.join(""));
-    process_files(&files, &flags, &mut running_results, is_redirect)?;
-    running_results = running_results.trim_start().to_string();
-    if is_redirect && !running_results.is_empty() {
-        running_results.push_str("\n");
+}
+
+fn process_initial_results(
+    files: &[String],
+    flags: &LsFlags,
+    is_redirect: bool,
+) -> Result<String, String> {
+    let mut running_results = String::new();
+    process_files(files, flags, &mut running_results, is_redirect)?;
+
+    let mut trimmed_results = running_results.trim_start().to_string();
+    if is_redirect && !trimmed_results.is_empty() {
+        trimmed_results.push('\n');
     }
+
+    Ok(trimmed_results)
+}
+
+fn finalize_directory_listing(
+    input: &[String],
+    path_classification: PathClassification,
+    running_results: &mut String,
+    flags: u8,
+    is_redirect: bool,
+    targets: Vec<[&String; 2]>,
+) -> Result<String, String> {
     let results = process_directories(
         input,
-        directories,
-        running_results,
-        flags.as_u8(),
-        files,
+        path_classification.directories,
+        running_results.to_string(),
+        flags,
+        path_classification.files,
         is_redirect,
     );
 
-    return if targets.is_empty() || results.is_err() {
+    if targets.is_empty() || results.is_err() {
         results
     } else {
         redirect(targets, results.unwrap());
         Ok(String::new())
-    };
+    }
 }
 
 fn redirect(targets: Vec<[&String; 2]>, contents: String) {
@@ -201,7 +252,7 @@ fn classify_paths(paths: &[&String]) -> PathClassification {
             files.push(path_str.to_string());
         } else {
             non_existent.push(format!(
-                "\x1b[31mls: {}: No such file or directory found\x1b[0m\x1b[1m\n",
+                "\x1b[31mls: {}: No such file or directory\x1b[0m\x1b[1m\n",
                 path_str
             ));
         }
