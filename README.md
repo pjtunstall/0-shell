@@ -11,6 +11,7 @@
 - [Testing](#testing)
 - [Deviations](#deviations)
 - [Further](#further)
+- [Notes](#notes)
 
 ## What is this?
 
@@ -32,7 +33,7 @@ External:
 - mv
 - mkdir
 
-Also, `Ctrl + D` to exit the shell. We're told that these commands "need to be implemented from scratch, without calling any external binaries."
+Also, `Ctrl + D` to exit the shell.[^1] We're told that these commands "need to be implemented from scratch, without calling any external binaries."
 
 Related to the last point, but somewhat unclear to me is the following paragraph:
 
@@ -91,3 +92,7 @@ You'll likely find other examples.
 ## Further
 
 See [todo.md](todo.md) for possible further developments and topics to explore.
+
+## Notes
+
+[^1]: Note that, in my 0-shell, as in a regular shell, `Ctrl + C` exits internal business but doesn't exit the shell itself.

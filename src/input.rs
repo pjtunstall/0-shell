@@ -52,7 +52,7 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                         // Necessary, together with the error check, to prevent panic on Option + `u`.
                         continue;
                     }
-                    Key::Ctrl('c') | Key::Ctrl('d') => {
+                    Key::Ctrl('d') => {
                         // Eventually change 'c' to handle internal processes without exiting 0-shell.
                         write!(stdout, "\r\n").unwrap();
                         stdout.suspend_raw_mode().unwrap(); // Ensure terminal is reset
@@ -62,7 +62,7 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                         input.clear();
                         cursor = 0;
                     }
-                    Key::Char('\n') => {
+                    Key::Char('\n') | Key::Ctrl('c') => {
                         write!(stdout, "\r\n").unwrap();
                         stdout.flush().unwrap();
                         break;

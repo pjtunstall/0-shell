@@ -13,7 +13,6 @@
 
 Summary: Refactor echo. Check echo redirection.
 
-- Change the `get_input` input function in `cat` to use termion for greater control, of keyboard shortcuts and interrupts, especially Ctr + C.
 - Switch `echo` redirection tests to use `TempStore`.
 - Check exact behavior of `echo` with multiple redirect arguments: multiple spaces, etc. Write more tests.
 - Check errorhandling in `echo`, especially for multiple redirection targets.
@@ -44,10 +43,6 @@ Summary: Refactor echo. Check echo redirection.
 - DONE: Consider how to handle redirection if `ls` when there's an error. Gemini: "The ls command, when it encounters errors, sometimes elects to suppress or not produce standard output. This is a design choice within the ls command itself. This behavior is not universally true for all commands, and it can vary between different versions of ls." At the moment, I'm still redirecting it. I don't know if that's right; I thought redirection was the responsibility of the shell. For now I'm letting failures not abort, thus more like how `cat` does it. I think I'm happy with that.
 - Scripting.
 - RESEARCH: Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think. Make a `for_test_temp_files` directory in the project root; add it to `.gitignore`. Have all test files and directories placed in there so that they can be more easily removed if cleanup fails?
-
-## Command line
-
-- Ctr + C for interrupting internal processes. And implement some internal process that might take significant time so that Ctr + C can be seen in action.
 
 ## Parsing
 

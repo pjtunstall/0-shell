@@ -1,8 +1,10 @@
 use std::{
     fs::File,
-    io::{self, BufRead, Read, Write},
+    io::{self, Read, Write},
     path::Path,
 };
+
+use termion::{event::Key, input::TermRead, raw::IntoRawMode};
 
 use crate::redirect;
 
@@ -93,27 +95,23 @@ fn redirect(targets: Vec<[&String; 2]>, concatenated_contents: &str, errors: &mu
 
 fn get_input() -> Result<String, String> {
     let stdin = io::stdin();
-    let mut handle = stdin.lock();
-    let mut line = String::new();
+    let mut stdout = io::stdout().lock().into_raw_mode().unwrap(); // Enable raw mode
     let mut contents = String::new();
 
-    loop {
-        line.clear(); // Clear the buffer for each line.
-        match handle.read_line(&mut line) {
-            Ok(0) => {
-                // EOF (Ctrl+D) reached, exit the loop.
-                break;
+    for key in stdin.keys() {
+        match key {
+            Ok(Key::Ctrl('d')) | Ok(Key::Ctrl('c')) => break, // Ctrl+C and Ctrl+D exit the loop
+            Ok(Key::Char('\n')) => {
+                contents.push('\n');
+                write!(stdout, "\r\n").unwrap(); // Move to a new line and reset cursor position
+                stdout.flush().unwrap();
             }
-            Ok(_) => {
-                if line.ends_with('\n') {
-                    line.pop();
-                    if line.ends_with('\r') {
-                        line.pop();
-                    }
-                    contents.push_str(line.as_str());
-                }
-                println!("{}", line);
+            Ok(Key::Char(c)) => {
+                contents.push(c);
+                write!(stdout, "{}", c).unwrap(); // Print character immediately
+                stdout.flush().unwrap();
             }
+            Ok(_) => {}
             Err(e) => {
                 return Err(format!(
                     "{}: {}: {}",
