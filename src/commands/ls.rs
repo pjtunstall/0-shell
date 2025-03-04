@@ -3,7 +3,7 @@ mod system;
 
 use std::{fs::File, io::Write, path::Path};
 
-use super::redirect;
+use crate::redirect;
 
 const USAGE: &str = "Usage: ls [-F] [-a] [-l] [DIRECTORY]...";
 

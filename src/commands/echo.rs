@@ -2,7 +2,7 @@ use std::{env, fs::OpenOptions, io::Write};
 
 use serde_json::de::from_str;
 
-use super::redirect;
+use crate::redirect;
 
 pub fn echo(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `echo` should not be empty");

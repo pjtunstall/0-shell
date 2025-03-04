@@ -15,6 +15,7 @@ Summary: refactor echo, cat, and ls. Check echo redirection.
 
 - Switch `echo` redirection tests to use `TempStore`.
 - Check exact behavior of `echo` with multiple redirect arguments: multiple spaces, etc. Write more tests.
+- Check errorhandling in `echo`, especially for multiple redirection targets.
 - Remove superfluous inclusion of command in test function names.
 - Refactor `echo`.
 - Refactor `ls`.

@@ -7,6 +7,5 @@ pub mod ls;
 pub mod mkdir;
 pub mod mv;
 pub mod pwd;
-pub mod redirect;
 pub mod rm;
 pub mod touch;

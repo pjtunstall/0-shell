@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 
-use super::redirect;
+use crate::redirect;
 
 pub fn cat(input: &[String]) -> Result<String, String> {
     debug_assert!(!input.is_empty(), "Input for `cat` should not be empty");
@@ -31,51 +31,7 @@ pub fn cat(input: &[String]) -> Result<String, String> {
         };
     }
 
-    let mut concatenated_contents = String::new();
-    let mut errors = Vec::new();
-
-    for &path_str in sources.iter() {
-        let path = Path::new(path_str);
-        if path.exists() {
-            if path.is_file() {
-                let mut file = match File::open(path) {
-                    Ok(file) => file,
-                    Err(e) => {
-                        errors.push(format!(
-                            "{}: {}: {}",
-                            "cat",
-                            path_str,
-                            e.to_string()
-                                .split(" (os ")
-                                .next()
-                                .unwrap_or(" ")
-                                .to_string()
-                        ));
-                        continue;
-                    }
-                };
-                let mut contents = String::new();
-                if let Err(e) = file.read_to_string(&mut contents) {
-                    errors.push(format!(
-                        "{}: {}: {}",
-                        "cat",
-                        path_str,
-                        e.to_string()
-                            .split(" (os ")
-                            .next()
-                            .unwrap_or(" ")
-                            .to_string()
-                    ));
-                } else {
-                    concatenated_contents.push_str(&contents);
-                }
-            } else {
-                errors.push(format!("cat: {}: Is a directory", path_str));
-            }
-        } else {
-            errors.push(format!("cat: {}: No such file or directory", path_str));
-        }
-    }
+    let (concatenated_contents, mut errors) = assemble_contents(sources);
 
     if targets.is_empty() {
         println!("{}", concatenated_contents);
@@ -156,6 +112,57 @@ fn get_input() -> Result<String, String> {
     }
 
     Ok(contents)
+}
+
+fn assemble_contents(sources: Vec<&String>) -> (String, Vec<String>) {
+    let mut concatenated_contents = String::new();
+    let mut errors = Vec::new();
+
+    for &path_str in sources.iter() {
+        let path = Path::new(path_str);
+        if path.exists() {
+            if path.is_file() {
+                let mut file = match File::open(path) {
+                    Ok(file) => file,
+                    Err(e) => {
+                        errors.push(format!(
+                            "{}: {}: {}",
+                            "cat",
+                            path_str,
+                            e.to_string()
+                                .split(" (os ")
+                                .next()
+                                .unwrap_or(" ")
+                                .to_string()
+                        ));
+                        continue;
+                    }
+                };
+
+                let mut contents = String::new();
+                if let Err(e) = file.read_to_string(&mut contents) {
+                    errors.push(format!(
+                        "{}: {}: {}",
+                        "cat",
+                        path_str,
+                        e.to_string()
+                            .split(" (os ")
+                            .next()
+                            .unwrap_or(" ")
+                            .to_string()
+                    ));
+                } else {
+                    concatenated_contents.push_str(&contents);
+                }
+            } else {
+                errors.push(format!("cat: {}: Is a directory", path_str));
+            }
+        } else {
+            errors.push(format!("cat: {}: No such file or directory", path_str));
+        }
+    }
+
+    (concatenated_contents, errors)
 }
 
 #[cfg(test)]
