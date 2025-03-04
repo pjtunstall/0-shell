@@ -26,3 +26,18 @@ pub fn separate_sources_from_targets(input: &[String]) -> (Vec<&String>, Vec<[&S
 
     (sources, targets)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::string_vec;
+
+    #[test]
+    fn test_separate_sources_from_targets() {
+        let input = string_vec!["cmd", "a", "b", ">", "c", ">>", "d", ">>", "e", "f"];
+        let (sources, targets) = separate_sources_from_targets(&input);
+
+        assert_eq!(sources, vec!["a", "b", "f"]);
+        assert_eq!(targets, vec![[">", "c"], [">>", "d"], [">>", "e"]]);
+    }
+}
