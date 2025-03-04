@@ -13,11 +13,11 @@
 
 Summary: Refactor echo. Check echo redirection.
 
+- Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
 - Switch `echo` redirection tests to use `TempStore`.
 - Check exact behavior of `echo` with multiple redirect arguments: multiple spaces, etc. Write more tests.
 - Check errorhandling in `echo`, especially for multiple redirection targets.
-- Refactor `echo`.
-- Write `USAGE` messages for all commands and look at what what triggers them; check their format is consistent.
+- Refactor `echo`.=
 - Add `man` command.
 - Add `--help`.
 - Use this less verbose pattern in tests: `let result = cat(&input).expect("`cat` should be ok"); assert_eq!(result, "Hello, world!");`.
