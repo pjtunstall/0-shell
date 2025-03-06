@@ -1,5 +1,7 @@
 use std::{fs, path::Path};
 
+pub const USAGE: &str = "Usage:\tmkdir DIRECTORY...";
+
 pub fn mkdir(input: &[String]) -> Result<String, String> {
     validate_input(input)?;
 
@@ -36,17 +38,9 @@ pub fn mkdir(input: &[String]) -> Result<String, String> {
 }
 
 fn validate_input(input: &[String]) -> Result<(), String> {
-    debug_assert!(!input.is_empty(), "Input for `mkdir` should not be empty");
-    debug_assert!(
-        input[0] == "mkdir",
-        "Input for `{}` should not be passed to `mkdir`",
-        input[0]
-    );
-
     if input.len() < 2 {
-        return Err("Not enough arguments".to_string());
+        return Err(format!("Not enough arguments\n{}", USAGE));
     }
-
     Ok(())
 }
 
@@ -56,7 +50,7 @@ mod tests {
 
     use uuid::Uuid;
 
-    use super::mkdir;
+    use super::{USAGE, mkdir};
     use crate::{string_vec, test_helpers::TempStore};
 
     #[test]
@@ -82,7 +76,10 @@ mod tests {
         let result = mkdir(&input);
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Not enough arguments");
+        assert_eq!(
+            result.unwrap_err(),
+            format!("Not enough arguments\n{}", USAGE)
+        );
     }
 
     #[test]

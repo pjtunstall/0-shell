@@ -2,12 +2,10 @@ use std::env;
 
 use home;
 
+pub const USAGE: &str = "Usage:\tcd [DIRECTORY]";
+
 pub fn cd(input: &[String]) -> Result<String, String> {
     validate_input(input)?;
-
-    if input.len() > 2 {
-        return Err("Too many arguments".to_string());
-    }
 
     let path: &String = match input.get(1) {
         Some(path) => path,
@@ -38,12 +36,9 @@ pub fn cd(input: &[String]) -> Result<String, String> {
 }
 
 fn validate_input(input: &[String]) -> Result<(), String> {
-    debug_assert!(!input.is_empty(), "Input for `cd` should not be empty");
-    debug_assert!(
-        input[0] == "cd",
-        "Input for `{}` should not be passed to `cd`",
-        input[0]
-    );
+    if input.len() > 2 {
+        return Err(format!("Too many arguments\n{}", USAGE));
+    }
     Ok(())
 }
 

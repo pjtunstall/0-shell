@@ -8,9 +8,9 @@ use termion::{event::Key, input::TermRead, raw::IntoRawMode};
 
 use crate::redirect;
 
-pub fn cat(input: &[String]) -> Result<String, String> {
-    validate_input(input)?;
+pub const USAGE: &str = "Usage:\tcat [FILE]...";
 
+pub fn cat(input: &[String]) -> Result<String, String> {
     let (sources, targets) = redirect::separate_sources_from_targets(input);
 
     // Handle input from stdin.
@@ -47,16 +47,6 @@ pub fn cat(input: &[String]) -> Result<String, String> {
             Err(joined_errors)
         }
     }
-}
-
-fn validate_input(input: &[String]) -> Result<(), String> {
-    debug_assert!(!input.is_empty(), "Input for `cat` should not be empty");
-    debug_assert!(
-        input[0] == "cat",
-        "Input for `{}` should not be passed to `cat`",
-        input[0]
-    );
-    Ok(())
 }
 
 fn redirect(targets: Vec<[&String; 2]>, concatenated_contents: &str, errors: &mut Vec<String>) {

@@ -1,10 +1,7 @@
 use std::collections::VecDeque;
 
 use zero_shell::{
-    commands::{
-        cat::cat, cd::cd, cp::cp, echo::echo, exit::exit, ls::ls, mkdir::mkdir, mv::mv, pwd::pwd,
-        rm::rm, touch::touch,
-    },
+    commands::{cat, cd, cp, echo, exit, ls, man, mkdir, mv, pwd, rm, touch},
     input,
 };
 
@@ -78,17 +75,18 @@ fn main() {
 fn match_command(input_after_splitting: &[String]) -> Result<String, String> {
     let command = input_after_splitting[0].as_str();
     match command {
-        "cat" => cat(&input_after_splitting),
-        "cd" => cd(&input_after_splitting),
-        "cp" => cp(&input_after_splitting),
-        "echo" => echo(&input_after_splitting),
-        "exit" => exit(&input_after_splitting),
-        "ls" => ls(&input_after_splitting),
-        "mkdir" => mkdir(&input_after_splitting),
-        "mv" => mv(&input_after_splitting),
-        "pwd" => pwd(&input_after_splitting),
-        "rm" => rm(&input_after_splitting),
-        "touch" => touch(&input_after_splitting),
+        "cat" => cat::cat(&input_after_splitting),
+        "cd" => cd::cd(&input_after_splitting),
+        "cp" => cp::cp(&input_after_splitting),
+        "echo" => echo::echo(&input_after_splitting),
+        "exit" => exit::exit(&input_after_splitting),
+        "ls" => ls::ls(&input_after_splitting),
+        "mkdir" => mkdir::mkdir(&input_after_splitting),
+        "man" => man::man(&input_after_splitting),
+        "mv" => mv::mv(&input_after_splitting),
+        "pwd" => pwd::pwd(&input_after_splitting),
+        "rm" => rm::rm(&input_after_splitting),
+        "touch" => touch::touch(&input_after_splitting),
         _ => Err(format!("command not found: {}", command)),
     }
 }

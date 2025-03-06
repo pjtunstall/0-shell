@@ -5,7 +5,7 @@ use std::{fs::File, io::Write, path::Path};
 
 use crate::redirect;
 
-const USAGE: &str = "Usage: ls [-F] [-a] [-l] [DIRECTORY]...";
+pub const USAGE: &str = "Usage:\tls [-F] [-a] [-l] [FILE|DIRECTORY]...";
 
 pub const OPTIONS_USAGE: &str = "\r\n-F      -- append file type indicators\r\n-a      -- list entries starting with .\r\n-l      -- long listing";
 
@@ -67,8 +67,6 @@ impl LsFlags {
 }
 
 pub fn ls(input: &[String]) -> Result<String, String> {
-    validate_input(input)?;
-
     let (sources, targets) = redirect::separate_sources_from_targets(input);
     let is_redirect = !targets.is_empty();
 
@@ -98,16 +96,6 @@ pub fn ls(input: &[String]) -> Result<String, String> {
         is_redirect,
         targets,
     )
-}
-
-fn validate_input(input: &[String]) -> Result<(), String> {
-    debug_assert!(!input.is_empty(), "Input for `ls` should not be empty");
-    debug_assert!(
-        input[0] == "ls",
-        "Input for `{}` should not be passed to `ls`",
-        input[0]
-    );
-    Ok(())
 }
 
 fn handle_current_directory_listing(

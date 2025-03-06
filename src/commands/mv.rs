@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-const USAGE: &str = "USAGE: mv source_file target_directory\n\tmv source_file target_directory/new_name\n\tmv source_file new_name";
+pub const USAGE: &str = "USAGE:\tmv SOURCE_FILE TARGET_DIRECTORY\n\tmv SOURCE_FILE TARGET_DIRECTORY/NEW_NAME\n\tmv SOURCE_FILE NEW_NAME";
 
 pub fn mv(input: &[String]) -> Result<String, String> {
     validate_input(input)?;
@@ -39,17 +39,9 @@ pub fn mv(input: &[String]) -> Result<String, String> {
 }
 
 fn validate_input(input: &[String]) -> Result<(), String> {
-    debug_assert!(!input.is_empty(), "Input for `mv` should not be empty");
-    debug_assert!(
-        input[0] == "mv",
-        "Input for `{}` should not be passed to `mv`",
-        input[0]
-    );
-
     if input.len() < 3 {
         return Err(format!("Not enough arguments\n{}", USAGE).to_string());
     }
-
     Ok(())
 }
 

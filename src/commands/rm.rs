@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-const USAGE: &str = "Usage: rm [-r] FILE|DIRECTORY...";
+pub const USAGE: &str = "Usage:\trm [-r] FILE|DIRECTORY...";
 
 pub const OPTIONS_USAGE: &str = "\r\n-R  -r  -- remove directories and their contents recursively";
 
@@ -9,7 +9,7 @@ pub fn rm(input: &[String]) -> Result<String, String> {
 
     if input[1] == "-r" || input[1] == "-R" {
         if input.len() < 3 {
-            return Err(format!("Not enough arguments\n{}", USAGE).to_string());
+            return Err(format!("Not enough arguments\n{}", USAGE));
         }
 
         return process_args(&input[2..], true);
@@ -76,17 +76,9 @@ fn process_args(args: &[String], recursive: bool) -> Result<String, String> {
 }
 
 fn validate_input(input: &[String]) -> Result<(), String> {
-    debug_assert!(!input.is_empty(), "Input for `rm` should not be empty");
-    debug_assert!(
-        input[0] == "rm",
-        "Input for `{}` should not be passed to `rm`",
-        input[0]
-    );
-
     if input.len() < 2 {
         return Err(format!("Not enough arguments\n{}", USAGE).to_string());
     }
-
     Ok(())
 }
 

@@ -1,5 +1,7 @@
 use std::env;
 
+pub const USAGE: &str = "Usage: \tpwd";
+
 pub fn pwd(input: &[String]) -> Result<String, String> {
     validate_input(input)?;
 
@@ -19,17 +21,9 @@ pub fn pwd(input: &[String]) -> Result<String, String> {
 }
 
 fn validate_input(input: &[String]) -> Result<(), String> {
-    debug_assert!(!input.is_empty(), "Input for `pwd` should not be empty");
-    debug_assert!(
-        input[0] == "pwd",
-        "Input for `{}` should not be passed to `pwd`",
-        input[0]
-    );
-
     if input.len() > 1 {
-        return Err("Too many arguments".to_string());
+        return Err(format!("Too many arguments\n{}", USAGE));
     };
-
     Ok(())
 }
 
@@ -37,7 +31,7 @@ fn validate_input(input: &[String]) -> Result<(), String> {
 mod tests {
     use std::path::MAIN_SEPARATOR;
 
-    use super::pwd;
+    use super::{USAGE, pwd};
     use crate::string_vec;
 
     #[test]
@@ -52,7 +46,7 @@ mod tests {
     #[test]
     fn pwd_too_many_args_fails() {
         let input = string_vec!["pwd", "foo"];
-        let expected = Err("Too many arguments".to_string());
+        let expected = Err(format!("Too many arguments\n{}", USAGE));
         assert_eq!(
             pwd(&input),
             expected,

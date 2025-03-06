@@ -1,18 +1,9 @@
 use std::{fs, path::Path};
 
-const USAGE: &str = "USAGE: source_file target_file\n\tsource_file ... target_directory";
+pub const USAGE: &str = "Usage:\tcp SOURCE_FILE TARGET_FILE\n\tcp SOURCE_FILE... TARGET_DIRECTORY";
 
 pub fn cp(input: &[String]) -> Result<String, String> {
-    debug_assert!(!input.is_empty(), "Input for `cp` should not be empty");
-    debug_assert!(
-        input[0] == "cp",
-        "Input for `{}` should not be passed to `cp`",
-        input[0]
-    );
-
-    if input.len() < 3 {
-        return Err(format!("Not enough arguments\n{}", USAGE).to_string());
-    }
+    validate_input(input)?;
 
     let sources = &input[1..input.len() - 1];
     let destination = &input[input.len() - 1];
@@ -52,6 +43,14 @@ pub fn cp(input: &[String]) -> Result<String, String> {
     }
 
     Ok("".to_string())
+}
+
+fn validate_input(input: &[String]) -> Result<(), String> {
+    if input.len() < 3 {
+        return Err(format!("Not enough arguments\n{}", USAGE));
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

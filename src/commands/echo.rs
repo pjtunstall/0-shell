@@ -4,9 +4,9 @@ use serde_json::de::from_str;
 
 use crate::redirect;
 
-pub fn echo(input: &[String]) -> Result<String, String> {
-    validate_input(input)?;
+pub const USAGE: &str = "Usage:\techo [STRING]...";
 
+pub fn echo(input: &[String]) -> Result<String, String> {
     let (sources, targets) = redirect::separate_sources_from_targets(input);
 
     if input.len() < 2 {
@@ -46,16 +46,6 @@ pub fn echo(input: &[String]) -> Result<String, String> {
     } else {
         handle_redirection(&output, targets)
     }
-}
-
-fn validate_input(input: &[String]) -> Result<(), String> {
-    debug_assert!(!input.is_empty(), "Input for `echo` should not be empty");
-    debug_assert!(
-        input[0] == "echo",
-        "Input for `{}` should not be passed to `echo`",
-        input[0]
-    );
-    Ok(())
 }
 
 fn process_backslashes(s: &str, plus: usize) -> String {
