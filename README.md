@@ -39,13 +39,13 @@ Related to the last point, but somewhat unclear to me is the following paragraph
 
 > Through the 0-shell you will get to the core of the Unix system and explore an important part of this system’s API which is the process creation and synchronization. Executing a command inside a shell implies creating a new process, which execution and final state will be monitored by its parents processes. This set of functions will be the key to success for your project.
 
-A normal shell would itself handle `cd`, `exit`, `pwd`, `echo` (built-in commands), but call external binaries for `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir` (external commands). (To check this for a given shell, you can enter `type <command>`.) I'm guessing this paragraph is a relic of the task as it was originally conceived, before commit 9e308f2: "fix(0shell): remove mandatory use of low-level system calls and make it bonus". An alternative possibility is that the authors intended to make a distinction between internal and external binaries, and have us spawn a new process for any of the commands that I've labeled external. But the advice to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example points towards 0-shell being a single executable.
+A normal shell would itself handle `cd`, `exit`, `pwd`, `echo` (built-in commands), but call external binaries for `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir` (external commands). (To check whether a command is built-in for a given shell, you can enter `type <command>`.) I'm guessing this paragraph is a relic of the task as it was originally conceived, before commit 9e308f2: "fix(0shell): remove mandatory use of low-level system calls and make it bonus". An alternative possibility is that the authors intended to make a distinction between internal and external binaries, and have us spawn a new process for any of the commands that I've labeled external. But the advice to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example points towards 0-shell being a single executable.
 
 ## Audit
 
 ### Prompt
 
-The 01Edu instructions say, "This interpreter must display at least a simple `$`". To make my shell more distinctive, I chose to take `$` in a generic sense; I claim my "simple `$`" looks like this: `▶`. Or, to put it another way, my program displays "at least a simple `$`"--in fact, it something does better than that: it displays a `▶`.
+The 01Edu instructions say, "This interpreter must display at least a simple `$`". I chose to take `$` in a generic sense; I claim my "simple `$`" looks like this: `▶`. Or, to put it another way, my program displays "at least a simple `$`"--in fact, it something does better than that: it displays a `▶`.
 
 ### echo something
 
@@ -61,7 +61,7 @@ It then asks, "Can you confirm that the displayed message of the project is exac
 - In POSIX shell (sh), dash, and ksh, that have optional histotory expansion, the text should be entered depending on which option is currently selected. I gather the default is no history expansion with `!`.
 - It's my understanding that BusyBox's default shell (ash) does not treat `!` as special (it lacks history expansion by default, similar to dash). However, if built with hush (another shell included in BusyBox), history expansion with `!` can be optionally enabled.
 
-Since there is no requirement to implement special behavior for `!` or guidance on which shell to use as a standard (unless we can take the mention on BusyBox as a hint), I take this to be an oversight.
+Since there's no requirement to implement special behavior for `!` or guidance on which shell to use as a standard (unless we can take the mention on BusyBox as a hint), I consider this is an oversight.
 
 ### Last orders, please
 
@@ -85,7 +85,7 @@ cargo test -- --test-threads=1
 
 There are many trivial deviations from Zsh (my default shell), even among the few items that I've implemented: bold text, different prompts, use of red for error messages, ... Lack of `!` for history expansion is discussed above. In Zsh, if you try to `cat` to a directory and a file, the operation fails completely and doesn't concatenated to the file. In my shell, it does what it can and reports any failures. That's more consistent with how Zsh behaves with `rm`, say.
 
-I've not been meticulous in mimicking the wording or capitalization of error messages. We both have `cat: tests: Is a directory` when one of the sources is a directory, but, when one of the targets is a directory, I maintain capitalization with `0-shell: Is a directory: tests` versus `zsh: is a directory: tests`.
+I've not been meticulous in mimicking the wording or capitalization of error messages. Zsh and I both have `cat: tests: Is a directory` when one of the sources is a directory, but, when one of the targets is a directory, I maintain capitalization with `0-shell: Is a directory: tests` versus `zsh: is a directory: tests`.
 
 You'll likely find other examples.
 
