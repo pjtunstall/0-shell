@@ -112,8 +112,6 @@ mod tests {
     use std::path::Path;
     use std::{env, fs};
 
-    use uuid::Uuid;
-
     use super::echo;
     use crate::{string_vec, test_helpers::TempStore};
 
@@ -259,51 +257,47 @@ mod tests {
 
     #[test]
     fn echo_redirect_write() {
-        let file = Uuid::new_v4().to_string();
+        let file = &TempStore::new(1).store[0];
 
         let mut expected = "hello\n";
-        let mut input = string_vec!["echo", "hello", ">", &file];
+        let mut input = string_vec!["echo", "hello", ">", file];
         let mut output = echo(&input);
         assert!(output.unwrap().is_empty());
         let mut contents = fs::read_to_string(&file).expect("Failed to read file");
         assert_eq!(contents, expected, "Expected to write to nonexistent file");
 
         expected = "world\n";
-        input = string_vec!["echo", "world", ">", &file];
+        input = string_vec!["echo", "world", ">", file];
         output = echo(&input);
         assert!(output.unwrap().is_empty());
         contents = fs::read_to_string(&file).expect("Failed to read file");
         assert_eq!(contents, expected, "Expected to overwrite existing file");
-
-        fs::remove_file(file).ok();
     }
 
     #[test]
     fn echo_redirect_append() {
-        let file = Uuid::new_v4().to_string();
+        let file = &TempStore::new(1).store[0];
 
-        let mut input = string_vec!["echo", "hello", ">>", &file];
+        let mut input = string_vec!["echo", "hello", ">>", file];
         let mut expected = "hello\n";
         let mut output = echo(&input);
         assert!(output.is_ok());
         let mut contents = fs::read_to_string(&file).expect("Failed to read file");
         assert_eq!(contents, expected, "Expected to append to nonexistent file");
 
-        input = string_vec!["echo", "world", ">>", &file];
+        input = string_vec!["echo", "world", ">>", file];
         expected = "hello\nworld\n";
         output = echo(&input);
         assert!(output.unwrap().is_empty());
         contents = fs::read_to_string(&file).expect("Failed to read file");
         assert_eq!(contents, expected, "Expected to append to existing file");
-
-        fs::remove_file(file).ok();
     }
 
     #[test]
     fn echo_redirect_write_interpolated() {
-        let file1 = Uuid::new_v4().to_string();
+        let file1 = &TempStore::new(1).store[0];
 
-        let input = string_vec!["echo", "hello", ">", &file1, "file2"];
+        let input = string_vec!["echo", "hello", ">", file1, "file2"];
         let expected = "hello file2\n";
         let output = echo(&input);
 
@@ -314,15 +308,13 @@ mod tests {
             "Expected to write to only one file when two names appear after a single write operator"
         );
         assert_eq!(contents, expected, "Contents should include `file2`");
-
-        fs::remove_file(file1).ok();
     }
 
     #[test]
     fn echo_redirect_append_interpolated() {
-        let file1 = Uuid::new_v4().to_string();
+        let file1 = &TempStore::new(1).store[0];
 
-        let input = string_vec!["echo", "hello", ">>", &file1, "file2"];
+        let input = string_vec!["echo", "hello", ">>", file1, "file2"];
         let expected = "hello file2\n";
         let output = echo(&input);
         assert!(output.unwrap().is_empty());
@@ -332,8 +324,6 @@ mod tests {
             "Expected to write to only one file when two names appear after a single append operator"
         );
         assert_eq!(contents, expected, "Contents should include `file2`");
-
-        fs::remove_file(file1).ok();
     }
 
     #[test]

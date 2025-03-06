@@ -1,31 +1,17 @@
 # Todo
 
-- [Next](#next)
-- [Fix](#fix)
+- [Echo](#echo)
 - [General](#general)
-- [Command line](#command-line)
+- [Tests](#tests)
 - [Parsing](#parsing)
 - [Documentation](#documentation)
-- [Extras](#extras)
 - [Scope](#scope)
 
-## Next
+## Echo
 
-Refactor echo. Check echo redirection.
-
-- Switch `echo` redirection tests to use `TempStore`.
 - Check exact behavior of `echo` with multiple redirect arguments: multiple spaces, etc. Write more tests.
 - Check errorhandling in `echo`, especially for multiple redirection targets.
 - Refactor `echo`.
-
-Tests.
-
-- Use this less verbose pattern in tests: `let result = cat(&input).expect("`cat` should be ok"); assert_eq!(result, "Hello, world!");`.
-- Is there any reason to prefer one above the other: creating a file then writing to it, or creating it implicitly by writing to it?
-
-## Fix?
-
-- `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: Too many arguments. What's the rule? Maybe I want to do it my way.
 
 ## General
 
@@ -40,8 +26,12 @@ Tests.
 - Test what happens when `ls` encounters `permission denied` errors, if that even happens.
 - Look carefully at all these refs to collections to ref types in `cat` and `ls`. Examine what they all imply and what best practice is.
 - `cat`: handle mixed sequence of filenames and dashes.
-- DONE: Consider how to handle redirection if `ls` when there's an error. Gemini: "The ls command, when it encounters errors, sometimes elects to suppress or not produce standard output. This is a design choice within the ls command itself. This behavior is not universally true for all commands, and it can vary between different versions of ls." At the moment, I'm still redirecting it. I don't know if that's right; I thought redirection was the responsibility of the shell. For now I'm letting failures not abort, thus more like how `cat` does it. I think I'm happy with that.
-- Scripting.
+- `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: Too many arguments. What's the rule? Maybe I want to do it my way.
+
+## Tests.
+
+- Use this less verbose pattern in tests: `let result = cat(&input).expect("`cat` should be ok"); assert_eq!(result, "Hello, world!");`.
+- Is there any reason to prefer one above the other: creating a file then writing to it, or creating it implicitly by writing to it?
 - RESEARCH: Fix test cleanup on panic. When run sequentially, the cleanup happens only in the nonpanicking thread, I think. Make a `for_test_temp_files` directory in the project root; add it to `.gitignore`. Have all test files and directories placed in there so that they can be more easily removed if cleanup fails?
 
 ## Parsing
@@ -53,7 +43,6 @@ Tests.
 ## Documentation
 
 - Investigate mdBook for Rust documentation.
-- Write a manual of usage in a standardized form, accessible from the command line.
 
 ## Scope
 
