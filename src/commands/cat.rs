@@ -32,7 +32,7 @@ pub fn cat(input: &[String]) -> Result<String, String> {
     let (concatenated_contents, mut errors) = assemble_contents(sources);
 
     if targets.is_empty() {
-        println!("{}", concatenated_contents);
+        print!("{}", concatenated_contents);
     } else {
         redirect(targets, &concatenated_contents, &mut errors);
     }
