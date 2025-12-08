@@ -3,6 +3,7 @@
 ## Table of Contents
 
 - [What is this?](#what-is-this?)
+- [Ambiguity](#ambiguity)
 - [Audit](#audit)
   - [Prompt](#prompt)
   - [echo something](#echo-something)
@@ -15,7 +16,9 @@
 
 ## What is this?
 
-A simple shell written in Rust. `0-shell` is one of the 01-Edu projects. According to [the brief](https://github.com/01-edu/public/tree/master/subjects/0-shell), it should implement at least the following ten commands, four built-in and six external--see below regarding this distinction:
+This is my take on the [01-Founders/01-Edu project of the same name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit b0b9f3d). The instructions are [unclear](#ambiguity), but I've interpreted it as a toolbox that re-implements some of the core Unix utilities as a single Rust executable.
+
+We had to implement at least the following ten commands, four of which in a normal shell would be built-in and six external (see below regarding this distinction):
 
 Built-in:
 
@@ -33,13 +36,21 @@ External:
 - mv
 - mkdir
 
-Also, `Ctrl + D` to exit the shell.[^1] We're told that these commands "need to be implemented from scratch, without calling any external binaries."
+Also, `Ctrl + D` to exit the shell.[^1] A traditional Unix shell, such as Bash, would itself handle `cd`, `exit`, `pwd`, `echo` (built-in commands; the first two of necessity built-in), but call external binaries for `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir` (external commands). To check whether a command is built-in for a given shell, you can enter `type <command>`.
 
-Related to the last point, but somewhat unclear to me is the following paragraph:
+## Ambiguity
+
+On the one hand we're told that these commands "need to be implemented from scratch, without calling any external binaries." But we're also told:
 
 > Through the 0-shell you will get to the core of the Unix system and explore an important part of this system’s API which is the process creation and synchronization. Executing a command inside a shell implies creating a new process, which execution and final state will be monitored by its parents processes. This set of functions will be the key to success for your project.
 
-A normal shell would itself handle `cd`, `exit`, `pwd`, `echo` (built-in commands), but call external binaries for `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir` (external commands). (To check whether a command is built-in for a given shell, you can enter `type <command>`.) I'm guessing this paragraph is a relic of the task as it was originally conceived, before commit 9e308f2: "fix(0shell): remove mandatory use of low-level system calls and make it bonus". An alternative possibility is that the authors intended to make a distinction between internal and external binaries, and have us spawn a new process for any of the commands that I've labeled external. But the advice to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example points towards 0-shell being a single executable.
+On balance, especially given the advice to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example, I decided to make my 0-shell a single executable. I guessed the latter directive is a relic of another project that this one was adapted from.
+
+One alternative interpretation would be to keep the distinction between internal and external binaries, and spawn a new process for any of the commands that I've labeled external, implementing the external commands ourselves as separate Rust executables: binaries external to the main REPL process, but internal to our project. (Or we could implement the listed commands from scratch, but call other utilities.)
+
+Another alternative would be to keep everything as one executable and have the process fork itself when the user enters a command and let the man process wait while the child calls the relevant function.
+
+Yet another interpretation would be to imitate Busybox more closely: keep everything as one executable, but, when the user enters a command, have the process fork and execute itself with that command as an argument, and, on installation, make `/bin/ls` a symbolic link pointing to `/bin/0_shell`.
 
 ## Audit
 
