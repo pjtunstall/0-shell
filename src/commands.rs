@@ -3,6 +3,7 @@ pub mod cd;
 pub mod cp;
 pub mod echo;
 pub mod exit;
+pub mod fg;
 pub mod jobs;
 pub mod ls;
 pub mod man;
@@ -38,6 +39,7 @@ pub fn run_command(args: &[String], jobs: &mut Vec<Job>) {
 
         // Job control (built-in).
         "jobs" => jobs::jobs(args, jobs),
+        "fg" => fg::fg(args, jobs),
 
         // External utilities.
         // We delegate these to a child process so they can be stopped/killed without crashing the main shell.

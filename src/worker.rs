@@ -19,7 +19,7 @@ pub fn launch_worker_process(args: &[String], jobs: &mut Vec<Job>) -> Result<Str
     // Use raw `waitpid`` to detect "Stopped" state.
     let mut status = 0;
     unsafe {
-        // Blocks until the child either dies OR stops (`WUNTRACED`).
+        // Blocks until the child either dies or stops (`WUNTRACED`).
         c::waitpid(pid, &mut status, c::WUNTRACED);
     }
 

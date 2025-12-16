@@ -1,4 +1,4 @@
-const USAGE: &str = "Usage: jobs [-l]";
+pub const USAGE: &str = "Usage: jobs [-l]";
 const STATE_COL_WIDTH: usize = 24;
 
 pub fn jobs(input: &[String], jobs: &[Job]) -> Result<String, String> {

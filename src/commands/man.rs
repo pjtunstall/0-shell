@@ -21,6 +21,8 @@ pub fn man(input: &[String]) -> Result<String, String> {
             "cp" => cp::USAGE,
             "echo" => echo::USAGE,
             "exit" => exit::USAGE,
+            "fg" => fg::USAGE,
+            "jobs" => jobs::USAGE,
             "ls" => ls::USAGE,
             "man" => man::USAGE,
             "mkdir" => mkdir::USAGE,
