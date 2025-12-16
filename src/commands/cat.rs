@@ -85,7 +85,10 @@ fn redirect(targets: Vec<[&String; 2]>, concatenated_contents: &str, errors: &mu
 
 fn get_input() -> Result<String, String> {
     let stdin = io::stdin();
-    let mut stdout = io::stdout().lock().into_raw_mode().unwrap(); // Enable raw mode
+    let mut stdout = io::stdout()
+        .lock()
+        .into_raw_mode()
+        .expect("failed to enter raw mode"); // Enable raw mode
     let mut contents = String::new();
 
     for key in stdin.keys() {
@@ -93,13 +96,13 @@ fn get_input() -> Result<String, String> {
             Ok(Key::Ctrl('d')) | Ok(Key::Ctrl('c')) => break, // Ctrl+C and Ctrl+D exit the loop
             Ok(Key::Char('\n')) => {
                 contents.push('\n');
-                write!(stdout, "\r\n").unwrap(); // Move to a new line and reset cursor position
-                stdout.flush().unwrap();
+                write!(stdout, "\r\n").expect("failed to write to `stdout`"); // Move to a new line and reset cursor position
+                stdout.flush().expect("failed to flush `stdout`");
             }
             Ok(Key::Char(c)) => {
                 contents.push(c);
-                write!(stdout, "{}", c).unwrap(); // Print character immediately
-                stdout.flush().unwrap();
+                write!(stdout, "{}", c).expect("failed to write to `stdout`"); // Print character immediately
+                stdout.flush().expect("failed to flush `stdout`");
             }
             Ok(_) => {}
             Err(e) => {
@@ -176,12 +179,11 @@ mod tests {
     #[test]
     fn cat_one_source_file() {
         let file = &TempStore::new(1).store[0];
-        fs::write(file, "Howdie, world!\n").unwrap();
+        fs::write(file, "Howdie, world!\n").expect("failed to write to file");
 
         let input = string_vec!["cat", file];
-        let result = cat(&input);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "Howdie, world!\n");
+        let result = cat(&input).expect("result should be ok");
+        assert_eq!(result, "Howdie, world!\n");
     }
 
     #[test]
@@ -190,7 +192,7 @@ mod tests {
         let source = &temp_store.store[0];
         let expected = "Now then, world?\n";
 
-        fs::write(source, expected).expect("Failed to create source file");
+        fs::write(source, expected).expect("failed to create source file");
 
         redirect_helper(source, expected, ">");
         redirect_helper(source, expected, ">>");
@@ -205,14 +207,14 @@ mod tests {
         assert!(result.is_ok(), "`cat` with `{}` should be ok", op);
         assert!(
             Path::new(target).exists(),
-            "Failed to create `{}` target file",
+            "failed to create `{}` target file",
             op
         );
 
-        let contents = fs::read_to_string(target).expect("Failed to read from target file");
+        let contents = fs::read_to_string(target).expect("failed to read from target file");
         assert_eq!(
             contents, expected,
-            "Contents of new `{}` target file do should match those of source file",
+            "contents of new `{}` target file do should match those of source file",
             op
         );
     }
@@ -225,18 +227,18 @@ mod tests {
 
         let expected = "Hello, world!\n";
 
-        fs::write(source, "world!\n").expect("Failed to write to source file");
-        fs::write(target, "Hello, ").expect("Failed to write to target file");
+        fs::write(source, "world!\n").expect("failed to write to source file");
+        fs::write(target, "Hello, ").expect("failed to write to target file");
 
         let input = string_vec!["cat", source, ">>", target];
         let result = cat(&input);
 
         assert!(result.is_ok(), "`cat` with `>>` should be ok");
 
-        let contents = fs::read_to_string(target).expect("Failed to read from target file");
+        let contents = fs::read_to_string(target).expect("failed to read from target file");
         assert_eq!(
             contents, expected,
-            "Target file should have source contents appended to it"
+            "target file should have source contents appended to it"
         );
     }
 
@@ -247,16 +249,16 @@ mod tests {
         let source2_string = &temp_store.store[1];
 
         let mut source1 =
-            fs::File::create(source1_string).expect("Failed to create 1st source file");
+            fs::File::create(source1_string).expect("failed to create 1st source file");
         source1
             .write_all(b"Hello, ")
-            .expect("Failed to write to 1st source file");
+            .expect("failed to write to 1st source file");
 
         let mut source2 =
-            fs::File::create(source2_string).expect("Failed to create 2nd source file");
+            fs::File::create(source2_string).expect("failed to create 2nd source file");
         source2
             .write_all(b"world!")
-            .expect("Failed to write to 2nd source file");
+            .expect("failed to write to 2nd source file");
 
         let input = string_vec!["cat", source1_string, source2_string];
         let result = cat(&input).expect("`cat` should be ok");
@@ -273,25 +275,25 @@ mod tests {
         let target2_string = &temp_store.store[3];
 
         let mut source1 =
-            fs::File::create(source1_string).expect("Failed to create 1st source file");
+            fs::File::create(source1_string).expect("failed to create 1st source file");
         source1
             .write_all(b"Hello, ")
-            .expect("Failed to write to 1st source file");
+            .expect("failed to write to 1st source file");
 
         let mut source2 =
-            fs::File::create(source2_string).expect("Failed to create 2nd source file");
+            fs::File::create(source2_string).expect("failed to create 2nd source file");
         source2
             .write_all(b"world!")
-            .expect("Failed to write to 2nd source file");
+            .expect("failed to write to 2nd source file");
 
         let mut target1 =
-            fs::File::create(target1_string).expect("Failed to create 1st target file");
+            fs::File::create(target1_string).expect("failed to create 1st target file");
         target1
             .write_all(b"Oy! ")
-            .expect("Failed to write to 1st target file");
+            .expect("failed to write to 1st target file");
 
         let mut _target2 =
-            fs::File::create(target2_string).expect("Failed to create 2nd target file");
+            fs::File::create(target2_string).expect("failed to create 2nd target file");
 
         let input = string_vec![
             "cat",
@@ -307,14 +309,14 @@ mod tests {
         assert_eq!(result, "Hello, world!");
 
         let contents1 =
-            fs::read_to_string(target1_string).expect("Failed to read from 1st target file");
+            fs::read_to_string(target1_string).expect("failed to read from 1st target file");
         assert_eq!(
             contents1, "Oy! Hello, world!",
             "1st target should have combined contents of both sources"
         );
 
         let contents2 =
-            fs::read_to_string(target2_string).expect("Failed to read from 2nd target file");
+            fs::read_to_string(target2_string).expect("failed to read from 2nd target file");
         assert_eq!(contents2, "Hello, world!");
     }
 
@@ -323,14 +325,14 @@ mod tests {
         let input = string_vec!["cat", "nonexistent.txt"];
         let result = cat(&input);
 
-        assert!(result.is_err());
+        assert!(result.is_err(), "result should be an error");
         assert!(result.unwrap_err().contains("No such file or directory"));
     }
 
     #[test]
     fn cat_one_source_directory_fails() {
         let dir = &TempStore::new(1).store[0];
-        fs::create_dir(dir).expect("Failed to create would-be source directory");
+        fs::create_dir(dir).expect("failed to create would-be source directory");
 
         let input = string_vec!["cat", dir];
         let result = cat(&input);

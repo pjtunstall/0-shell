@@ -8,12 +8,12 @@ use zero_shell::commands::{
 fn audit_question() {
     assert!(
         mkdir(&vec!["mkdir".to_string(), "new_folder1".to_string()]).is_ok(),
-        "Result of making `new_folder1` should be ok"
+        "result of making `new_folder1` should be ok"
     );
 
     assert!(
         mkdir(&vec!["mkdir".to_string(), "new_folder2".to_string()]).is_ok(),
-        "Result of making `new_folder2` should be ok"
+        "result of making `new_folder2` should be ok"
     );
 
     let dir1 = Path::new("new_folder1");
@@ -28,12 +28,12 @@ fn audit_question() {
             format!("new_folder1{}new_doc.txt", MAIN_SEPARATOR),
         ])
         .is_ok(),
-        "Result of creating file should be ok"
+        "result of creating file should be ok"
     );
 
     assert!(
         cd(&vec!["cd".to_string(), "new_folder1".to_string()]).is_ok(),
-        "Result of cd-ing into first folder should be ok"
+        "result of cd-ing into first folder should be ok"
     );
 
     assert!(
@@ -44,7 +44,7 @@ fn audit_question() {
             "new_doc.txt".to_string(),
         ])
         .is_ok(),
-        "Result of echoing text to file should be ok"
+        "result of echoing text to file should be ok"
     );
 
     assert!(
@@ -54,22 +54,22 @@ fn audit_question() {
             "../new_folder2".to_string(),
         ])
         .is_ok(),
-        "Result of copying file should be ok"
+        "result of copying file should be ok"
     );
 
     assert!(
         cd(&vec!["cd".to_string(), "..".to_string()]).is_ok(),
-        "Result of cd-ing back out of first folder should be ok"
+        "result of cd-ing back out of first folder should be ok"
     );
 
     let concatenation = cat(&vec![
         "cat".to_string(),
         format!("new_folder2{}new_doc.txt", MAIN_SEPARATOR),
     ])
-    .unwrap();
+    .expect("concatenation failed");
     assert_eq!(
         concatenation, "hello\n",
-        "Text in copied file should match original"
+        "text in copied file should match original"
     );
 
     assert!(
@@ -79,7 +79,7 @@ fn audit_question() {
             "new_folder1".to_string(),
         ])
         .is_ok(),
-        "Result of moving `new_folder2` into `new_folder1` should be ok"
+        "result of moving `new_folder2` into `new_folder1` should be ok"
     );
 
     assert!(
@@ -94,7 +94,7 @@ fn audit_question() {
             "new_folder1".to_string(),
         ])
         .is_ok(),
-        "Should remove `new_folder1` ok"
+        "should remove `new_folder1` ok"
     );
 
     assert!(!dir1.exists(), "`new_folder1` should not exist");

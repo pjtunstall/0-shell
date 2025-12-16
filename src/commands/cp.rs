@@ -67,7 +67,7 @@ mod tests {
         let target = &temp_store.store[1];
 
         let content = "Hello, cruel world!";
-        fs::write(&source, content).expect("Failed to create test source file");
+        fs::write(&source, content).expect("failed to create test source file");
 
         let input = string_vec!["cp", source, target];
         let result = cp(&input);
@@ -75,7 +75,7 @@ mod tests {
         assert!(result.is_ok(), "`cp` should be ok: {:?}", result.err());
         assert!(Path::new(target).exists(), "File not created");
 
-        let copied_content = fs::read_to_string(&target).expect("Failed to read target file");
+        let copied_content = fs::read_to_string(&target).expect("failed to read target file");
         assert_eq!(copied_content, content, "File contents do not match");
     }
 }

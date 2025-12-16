@@ -1,16 +1,21 @@
 # Todo
 
+- [Scope](#scope)
 - [Echo](#echo)
 - [General](#general)
 - [Tests](#tests)
 - [Parsing](#parsing)
 - [Documentation](#documentation)
-- [Scope](#scope)
+
+## Scope
+
+- Consider the two optional extra projects, `0-shell-job-control` and `0-shell-scripting`. (For what it's worth, 4 weeks are assigned to the main project and 2 weeks for each of the extras. All three projects are for 4 students.)
+- There is a hint that the project should teach the difference between Unix and Posix. Consider whether it should adhere to Posix. Look up Posix specifications.
 
 ## Echo
 
 - Check exact behavior of `echo` with multiple redirect arguments: multiple spaces, etc. Write more tests.
-- Check errorhandling in `echo`, especially for multiple redirection targets.
+- Check error-handling in `echo`, especially for multiple redirection targets.
 - Refactor `echo`.
 
 ## General
@@ -23,10 +28,11 @@
 - Use a loop to insert the right number of backslashes in echo special character test.
 - Check error messages are consistently formatted. Maybe start to explore this when I've got tests in place to compare my commands directly against the standard shell commands. Include arguments where appropriate; see `rm`.
 - Feret out any remaining OS-specific error tests: e.g. ones that require a particular OS-generates error message. I think it's only custom error messages that are being compared in tests now; for system error, I think I'm just testing existence or non-existence.
+- Use enums for errors so that I can test for the correct variant instead of for specific strings, thus making these tests less brittle.
 - Test what happens when `ls` encounters `permission denied` errors, if that even happens.
 - Look carefully at all these refs to collections to ref types in `cat` and `ls`. Examine what they all imply and what best practice is.
 - `cat`: handle mixed sequence of filenames and dashes.
-- `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: Too many arguments. What's the rule? Maybe I want to do it my way.
+- `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: "Too many arguments". What's the rule? Maybe I want to do it my way.
 
 ## Tests.
 
@@ -49,8 +55,3 @@ assert_eq!(result, "Hello, world!");`
 ## Documentation
 
 - Investigate mdBook for Rust documentation.
-
-## Scope
-
-- Consider the two optional extra projects, `0-shell-job-control` and `0-shell-scripting`. (For what it's worth, 4 weeks are assigned to the main project and 2 weeks for each of the extras. All three projects are for 4 students.)
-- There is a hint that the project should teach the difference between Unix and Posix. Consider whether it should adhere to Posix. Look up Posix specifications.

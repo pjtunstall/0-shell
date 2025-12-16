@@ -100,7 +100,7 @@ mod tests {
         let invalid_path = prefix.join(dir);
         let invalid_str = invalid_path
             .to_str()
-            .expect("Failed to turn path to nonexistent directory back into &str");
+            .expect("failed to turn path to nonexistent directory back into &str");
 
         let input = string_vec!["touch", invalid_str];
         let result = touch(&input);
@@ -134,9 +134,9 @@ mod tests {
         let file_string = &temp_store.store[0];
 
         let file_path = Path::new(file_string);
-        fs::write(file_path, "").expect("Failed to create test file");
+        fs::write(file_path, "").expect("failed to create test file");
 
-        let initial_metadata = fs::metadata(file_path).expect("Failed to get initial metadata");
+        let initial_metadata = fs::metadata(file_path).expect("failed to get initial metadata");
         let initial_time = FileTime::from_last_modification_time(&initial_metadata);
 
         thread::sleep(Duration::from_millis(1024));
@@ -145,7 +145,7 @@ mod tests {
         let result = touch(&input);
         assert!(result.is_ok());
 
-        let updated_metadata = fs::metadata(file_path).expect("Failed to get final metadata");
+        let updated_metadata = fs::metadata(file_path).expect("failed to get final metadata");
         let updated_time = FileTime::from_last_modification_time(&updated_metadata);
 
         assert!(updated_time > initial_time);

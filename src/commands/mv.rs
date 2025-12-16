@@ -15,8 +15,8 @@ pub fn mv(input: &[String]) -> Result<String, String> {
         let dest_file = target_path.join(
             source_path
                 .file_name()
-                .ok_or_else(|| "Failed to join source name to target".to_string())? // Convert None to Err(String)
-                .to_owned(), // Convert &OsStr to OsString (needed for join)
+                .ok_or_else(|| "Failed to join source name to target".to_string())? // Convert `None` to `Err(String)`.
+                .to_owned(), // Convert `&OsStr` to `OsString` (needed for join).
         );
         fs::rename(source_path, dest_file).map_err(|err| {
             err.to_string()
@@ -63,10 +63,10 @@ mod tests {
 
         let source = &temp_store.store[0];
         let source_contents = "hello";
-        fs::write(&source, source_contents).expect("Failed to create test source file");
+        fs::write(&source, source_contents).expect("failed to create test source file");
 
         let target = &temp_store.store[1];
-        fs::create_dir(target).expect("Failed to create target directory");
+        fs::create_dir(target).expect("failed to create target directory");
 
         let input = string_vec!["mv", source, target];
         let result = mv(&input);
@@ -77,7 +77,7 @@ mod tests {
             Path::new(path_to_moved).exists(),
             "File should be in target directory"
         );
-        let moved_contents = fs::read_to_string(path_to_moved).expect("Failed to read moved file");
+        let moved_contents = fs::read_to_string(path_to_moved).expect("failed to read moved file");
         assert_eq!(
             moved_contents, source_contents,
             "File contents do not match"
@@ -90,10 +90,10 @@ mod tests {
 
         let source = &temp_store.store[0];
         let source_contents = "hello";
-        fs::write(&source, source_contents).expect("Failed to create test source file");
+        fs::write(&source, source_contents).expect("failed to create test source file");
 
         let target = &temp_store.store[1];
-        fs::write(&target, "world").expect("Failed to create test source file");
+        fs::write(&target, "world").expect("failed to create test source file");
 
         let input = string_vec!["mv", source, target];
         let result = mv(&input);
@@ -105,7 +105,7 @@ mod tests {
             "File should not exist still under old name"
         );
 
-        let new_target_contents = fs::read_to_string(target).expect("Failed to read moved file");
+        let new_target_contents = fs::read_to_string(target).expect("failed to read moved file");
         assert_eq!(
             new_target_contents, source_contents,
             "File contents should match"
@@ -118,10 +118,10 @@ mod tests {
         let source = &temp_store.store[0];
 
         let source_contents = "hello";
-        fs::write(source, source_contents).expect("Failed to create test source file");
+        fs::write(source, source_contents).expect("failed to create test source file");
 
         let target = &temp_store.store[1];
-        fs::write(&target, "world").expect("Failed to create test source file");
+        fs::write(&target, "world").expect("failed to create test source file");
 
         let input = string_vec!["mv", source, target];
         let result = mv(&input);
@@ -148,11 +148,11 @@ mod tests {
         let source = &temp_store.store[0];
         let source_contents = "hello";
         fs::write(&source, source_contents)
-            .expect(format!("Failed to create test source file {}", source).as_str());
+            .expect(format!("failed to create test source file {}", source).as_str());
 
         let target = Path::new(&temp_store.store[1]);
         fs::create_dir(target)
-            .expect(format!("Failed to create target directory {}", target.display()).as_str());
+            .expect(format!("failed to create target directory {}", target.display()).as_str());
 
         let binding = Uuid::new_v4().to_string();
         let new_name = Path::new(&binding);
@@ -163,16 +163,16 @@ mod tests {
         let result = mv(&input);
 
         assert!(result.is_ok(), "`mv' failed: {:?}", result.err());
-        assert!(path.exists(), "Renamed file should exist");
+        assert!(path.exists(), "renamed file should exist");
         assert!(
             !Path::new(source).exists(),
-            "File should no longer exist under old name"
+            "file should no longer exist under old name"
         );
 
-        let moved_contents = fs::read_to_string(path).expect("Failed to read moved file");
+        let moved_contents = fs::read_to_string(path).expect("failed to read moved file");
         assert_eq!(
             moved_contents, source_contents,
-            "File contents should match"
+            "file contents should match"
         );
     }
 
@@ -183,7 +183,7 @@ mod tests {
         let input = string_vec!["mv", file];
         let result = mv(&input);
 
-        assert!(!result.is_ok(), "Result should not be ok");
+        assert!(!result.is_ok(), "result should not be ok");
 
         let expected = Err(format!("Not enough arguments\n{}", USAGE).to_string());
         assert_eq!(result, expected, "Result should show correct error message");
@@ -199,8 +199,8 @@ mod tests {
             Path::new(mover).join(Path::new(subdirectory)).display()
         );
 
-        fs::create_dir(mover).expect("Failed to create directory to be moved");
-        fs::create_dir(&subdirectory).expect("Failed to create subdirectory");
+        fs::create_dir(mover).expect("failed to create directory to be moved");
+        fs::create_dir(&subdirectory).expect("failed to create subdirectory");
 
         let input = string_vec!["mv", mover, mover];
         let output = mv(&input);

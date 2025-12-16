@@ -49,8 +49,8 @@ mod tests {
                 path2_str = store.store[1].clone();
                 let path1 = Path::new(&path1_str);
                 let path2 = Path::new(&path2_str);
-                fs::write(path1, "Lorem ipsum, dude!").expect("Failed to write to file");
-                fs::create_dir(path2).expect("Failed to create temp folder");
+                fs::write(path1, "Lorem ipsum, dude!").expect("failed to write to file");
+                fs::create_dir(path2).expect("failed to create temp folder");
                 assert!(path1.exists());
                 assert!(path2.exists());
             }

@@ -41,8 +41,8 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
     let mut cursor = 0;
 
     let prompt = prompt()?;
-    write!(stdout, "\r{}{}", prompt, termion::cursor::Show).unwrap();
-    stdout.flush().unwrap();
+    write!(stdout, "\r{}{}", prompt, termion::cursor::Show).expect("failed to write to `stdout`");
+    stdout.flush().expect("failed to flush `stdout`");
 
     for byte in stdin.keys() {
         match byte {
@@ -53,9 +53,10 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                         continue;
                     }
                     Key::Ctrl('d') => {
-                        // Eventually change 'c' to handle internal processes without exiting 0-shell.
-                        write!(stdout, "\r\n").unwrap();
-                        stdout.suspend_raw_mode().unwrap(); // Ensure terminal is reset
+                        write!(stdout, "\r\n").expect("failed to write to `stdout`");
+                        stdout
+                            .suspend_raw_mode()
+                            .expect("failed to reset terminal back from raw mode");
                         process::exit(0);
                     }
                     Key::Ctrl('u') => {
@@ -63,19 +64,19 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                         cursor = 0;
                     }
                     Key::Char('\n') | Key::Ctrl('c') => {
-                        write!(stdout, "\r\n").unwrap();
-                        stdout.flush().unwrap();
+                        write!(stdout, "\r\n").expect("failed to write to `stdout`");
+                        stdout.flush().expect("failed to flush `stdout`");
                         break;
                     }
                     Key::Char('\t') => {
                         if tab_and_should_continue(&mut input, &mut cursor, &mut stdout, &prompt) {
-                            continue; // Bypass printing of prompt if something was printed that we need to avoid overwriting.
+                            continue; // Skip prompt to avoid overwriting.
                         }
                     }
                     Key::Char(c) => {
-                        debug_assert!(
+                        assert!(
                             cursor <= input.len(),
-                            "Cursor should not be greater than length of input"
+                            "cursor should not be greater than length of input"
                         );
                         input.insert(cursor, c);
                         cursor += 1;
@@ -118,15 +119,17 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                     _ => {}
                 }
 
-                write!(stdout, "\r{}{}", prompt, termion::clear::AfterCursor).unwrap();
-                write!(stdout, "{}", input).unwrap();
+                write!(stdout, "\r{}{}", prompt, termion::clear::AfterCursor)
+                    .expect("failed to write to `stdout`");
+                write!(stdout, "{}", input).expect("failed to write to `stdout`");
 
                 let move_left_by = input.len().saturating_sub(cursor);
                 if move_left_by > 0 {
-                    write!(stdout, "{}", termion::cursor::Left(move_left_by as u16)).unwrap();
+                    write!(stdout, "{}", termion::cursor::Left(move_left_by as u16))
+                        .expect("failed to write to `stdout`");
                 }
 
-                stdout.flush().unwrap();
+                stdout.flush().expect("failed to flush `stdout`");
             }
             Err(_) => {
                 continue;
@@ -134,8 +137,10 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
         }
     }
 
-    // Restore terminal mode before returning
-    stdout.suspend_raw_mode().unwrap();
+    // Restore terminal mode before returning.
+    stdout
+        .suspend_raw_mode()
+        .expect("failed to suspend raw mode");
 
     Ok(input)
 }
@@ -157,9 +162,9 @@ fn tab_and_should_continue(
     let current_input = input.clone();
     let words = current_input.split_whitespace().collect::<Vec<&str>>();
 
-    if words.len() > 1 && *words.last().unwrap() == "-" {
+    if words.len() > 1 && *words.last().expect("expected a last word") == "-" {
         check_options(stdout, prompt, input, words[0]);
-        return true; // On returning, continue
+        return true; // On returning, continue.
     }
 
     let waiting_for_cmd =
@@ -192,7 +197,7 @@ fn check_cmds(words: &Vec<&str>) -> Vec<String> {
     let partial = if words.is_empty() {
         ""
     } else {
-        words.last().unwrap()
+        words.last().expect("expected there to be a last word")
     };
     backtrack::find_matches(data, partial)
 }
@@ -205,7 +210,7 @@ fn check_options(stdout: &mut RawTerminal<Stdout>, prompt: &str, input: &str, cm
         _ => message = "",
     }
     display_usage(stdout, prompt, input, message);
-    write!(stdout, "\r{}{}", prompt, input).unwrap();
+    write!(stdout, "\r{}{}", prompt, input).expect("failed to write to `stdout`");
 }
 
 fn check_paths(last_char: Option<char>, words: &Vec<&str>) -> Option<Vec<String>> {
@@ -246,7 +251,7 @@ fn check_paths(last_char: Option<char>, words: &Vec<&str>) -> Option<Vec<String>
     let partial = if last_char.map_or(false, |c| c == ' ') {
         ""
     } else {
-        words.last().unwrap()
+        words.last().expect("expected there to be a last word")
     };
 
     Some(backtrack::find_matches(data, partial))
@@ -274,8 +279,8 @@ fn display_match(
     input.push(' ');
     *cursor = input.len();
 
-    write!(stdout, "\r\x1b[K{}{}", prompt, input).unwrap(); // Move the cursor back up.
-    stdout.flush().unwrap();
+    write!(stdout, "\r\x1b[K{}{}", prompt, input).expect("failed to write to `stdout`"); // Move the cursor back up.
+    stdout.flush().expect("failed to flush `stdout`");
 }
 
 fn display_possibilities(
@@ -299,7 +304,7 @@ fn display_possibilities(
     let num_items = matches.len();
     let num_rows = (num_items + num_cols - 1) / num_cols;
 
-    write!(stdout, "\r\n").unwrap();
+    write!(stdout, "\r\n").expect("failed to write to `stdout`");
 
     for row in 0..num_rows {
         for col in 0..num_cols {
@@ -307,18 +312,19 @@ fn display_possibilities(
             if idx < num_items {
                 let entry = &matches[idx];
                 if col * col_width + entry.len() < term_width {
-                    write!(stdout, "{:<width$}", entry, width = col_width).unwrap();
+                    write!(stdout, "{:<width$}", entry, width = col_width)
+                        .expect("failed to write to `stdout`");
                 }
             }
         }
         if row < num_rows - 1 {
-            write!(stdout, "\r\n").unwrap();
+            write!(stdout, "\r\n").expect("failed to write to `stdout`");
         }
     }
 
-    write!(stdout, "\r\x1b[{}A", num_rows).unwrap(); // Move the cursor back up.
-    write!(stdout, "\r{}{}", prompt, input).unwrap();
-    stdout.flush().unwrap();
+    write!(stdout, "\r\x1b[{}A", num_rows).expect("failed to write to `stdout`"); // Move the cursor back up.
+    write!(stdout, "\r{}{}", prompt, input).expect("failed to write to `stdout`");
+    stdout.flush().expect("failed to flush `stdout`");
 }
 
 fn display_usage(stdout: &mut RawTerminal<Stdout>, prompt: &str, input: &str, message: &str) {
@@ -326,8 +332,8 @@ fn display_usage(stdout: &mut RawTerminal<Stdout>, prompt: &str, input: &str, me
         return;
     }
     let num_rows = message.matches('\n').count();
-    write!(stdout, "{}", message).unwrap();
-    write!(stdout, "\r\x1b[{}A", num_rows).unwrap(); // Move the cursor back up.
-    write!(stdout, "\r{}{}", prompt, input).unwrap();
-    stdout.flush().unwrap();
+    write!(stdout, "{}", message).expect("failed to write to `stdout`");
+    write!(stdout, "\r\x1b[{}A", num_rows).expect("failed to write to `stdout`"); // Move the cursor back up.
+    write!(stdout, "\r{}{}", prompt, input).expect("failed to write to `stdout`");
+    stdout.flush().expect("failed to flush `stdout`");
 }

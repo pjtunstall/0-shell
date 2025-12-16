@@ -27,6 +27,7 @@ pub fn man(input: &[String]) -> Result<String, String> {
             "mv" => mv::USAGE,
             "pwd" => pwd::USAGE,
             "rm" => rm::USAGE,
+            "sleep" => sleep::USAGE,
             "touch" => touch::USAGE,
             _ => {
                 wouldbe_next = format!("\x1b[31mNo manual entry for {}\x1b[0m\x1b[1m", cmd).clone();

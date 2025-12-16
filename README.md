@@ -3,7 +3,6 @@
 ## Table of Contents
 
 - [What is this?](#what-is-this?)
-- [Ambiguity](#ambiguity)
 - [Audit](#audit)
   - [Prompt](#prompt)
   - [echo something](#echo-something)
@@ -16,11 +15,11 @@
 
 ## What is this?
 
-This is my take on the [01-Founders/01-Edu project of the same name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit b0b9f3d). The instructions are [unclear](#ambiguity), but I've interpreted it as a toolbox that re-implements some of the core Unix utilities as a single Rust executable.
+This is my take on the [01-Founders/01-Edu project of the same name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit b0b9f3d). The object of the exercise is to mimick essential shell behaviors without using external binaries or existing shell utilities.
 
-We had to implement at least the following ten commands, four of which in a normal shell would be built-in and six external (see below regarding this distinction):
+We're required to recreate at least the following ten commands:
 
-Built-in:
+Built-in:<sup id="ref-f1">[1](#f1)</sup>
 
 - echo
 - exit
@@ -36,21 +35,26 @@ External:
 - mv
 - mkdir
 
-Also, `Ctrl + D` to exit the shell.[^1] A traditional Unix shell, such as Bash, would itself handle `cd`, `exit`, `pwd`, `echo` (built-in commands; the first two of necessity built-in), but call external binaries for `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir` (external commands). To check whether a command is built-in for a given shell, you can enter `type <command>`.
+Also, `Ctrl + D` to exit our 'shell'.
 
-## Ambiguity
-
-On the one hand we're told that these commands "need to be implemented from scratch, without calling any external binaries." But we're also told:
+We're told:
 
 > Through the 0-shell you will get to the core of the Unix system and explore an important part of this system’s API which is the process creation and synchronization. Executing a command inside a shell implies creating a new process, which execution and final state will be monitored by its parents processes. This set of functions will be the key to success for your project.
 
-On balance, especially given the advice to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example, I decided to make my 0-shell a single executable. I guessed the latter directive is a relic of another project that this one was adapted from.
+Following the hint to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example, I decided to make my 0-shell a single executable and have the process fork itself with a suitable argument when the user enters a command and let the main process wait while the child calls the relevant function.<sup id="ref-f2">[2](#f2)</sup>
 
-One alternative interpretation would be to keep the distinction between internal and external binaries, and spawn a new process for any of the commands that I've labeled external, implementing the external commands ourselves as separate Rust executables: binaries external to the main REPL process, but internal to our project. (Or we could implement the listed commands from scratch, but call other utilities.)
+I've added several bonus features, including:
 
-Another alternative would be to keep everything as one executable and have the process fork itself when the user enters a command and let the man process wait while the child calls the relevant function.
-
-Yet another interpretation would be to imitate Busybox more closely: keep everything as one executable, but, when the user enters a command, have the process fork and execute itself with that command as an argument, and, on installation, make `/bin/ls` a symbolic link pointing to `/bin/0_shell`.
+- extra commands:
+  - `Ctrl+C` to exit a long-running process and return to the 'shell'
+  - `sleep MILLISECONDS`
+  - `touch FILE...`
+  - `man COMMAND`
+- color for error messages
+- auto-completion
+- command history
+- redirection
+- environment variables
 
 ## Audit
 
@@ -80,7 +84,7 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ## Regarding the name
 
-The root directory and repo are named `0-shell`, as required by the brief. Unfortunately clashing conventions have resulted in almost the maximum conceivable variants! Rust's build tool, Cargo, doesn't allow a package name to begin with a numeral, hence the package is called `zero-shell` and the lib and bin crates `zero_shell` according to Rust convention. When you build the project, either with `cargo run` (to build and run in one step) or `cargo build` (to build only) or `cargo build --release` (to build in release mode), a build script will rename the binary to `0_shell`. It insists on an underscore in place of the dash. I gather this makes the name more broadly compatible across operating systems, so I've decided not to process it further (e.g. wrapping the call to Cargo in a shell script, or using a Cargo extension or a build system like `make`).
+The root directory and repo are named `0-shell`, as required by the brief. Unfortunately clashing conventions have resulted in almost the maximum conceivable variants! Rust's build tool, Cargo, doesn't allow a package name to begin with a numeral, hence the package is called `zero-shell` and the lib and bin crates `zero_shell` according to Rust convention. When you build the project, either with `cargo run` (to build and run in one step) or `cargo build` (to build only) or `cargo build --release` (to build in release mode), a build script will rename the binary `0_shell`. It insists on an underscore in place of the dash. This makes the name more broadly compatible across operating systems, so I've decided not to process it further (e.g. wrapping the call to Cargo in a shell script, or using a Cargo extension or a build system like `make`).
 
 ## Testing
 
@@ -94,9 +98,9 @@ cargo test -- --test-threads=1
 
 ## Deviations
 
-There are many trivial deviations from Zsh (my default shell), even among the few items that I've implemented: bold text, different prompts, use of red for error messages, ... Lack of `!` for history expansion is discussed above. In Zsh, if you try to `cat` to a directory and a file, the operation fails completely and doesn't concatenated to the file. In my shell, it does what it can and reports any failures. That's more consistent with how Zsh behaves with `rm`, say.
+There are many trivial deviations from Zsh (my default shell at the time when I did the bulk of this project), even among the few items that I've implemented: bold text, different prompts, use of red for error messages, ... Lack of `!` for history expansion is discussed above. In Zsh, if you try to `cat` to a directory and a file, the operation fails completely and doesn't concatenated to the file. In my shell, it does what it can and reports any failures. That's more consistent with how Zsh behaves with `rm`, say.
 
-I've not been meticulous in mimicking the wording or capitalization of error messages. Zsh and I both have `cat: tests: Is a directory` when one of the sources is a directory, but, when one of the targets is a directory, I maintain capitalization with `0-shell: Is a directory: tests` versus `zsh: is a directory: tests`.
+I've not been meticulous in mimicking the wording or capitalization of error messages. In some cases, I've aimed for greater consistency. Thus, Zsh and I both have `cat: tests: Is a directory` when one of the sources is a directory, but I also capitalize when one of the targets is a directory--`0-shell: Is a directory: tests`--unlike Zsh: `zsh: is a directory: tests`.
 
 You'll likely find other examples.
 
@@ -106,4 +110,6 @@ See [todo.md](todo.md) for possible further developments and topics to explore.
 
 ## Notes
 
-[^1]: Note that, in my 0-shell, as in a regular shell, `Ctrl + C` exits internal business but doesn't exit the shell itself.
+<a id="f1" href="#ref-f1">1</a>: A traditional Unix shell, such as Bash, treats certain commands as built-in utilities: `cd`, `exit`, `pwd`, `echo` (the first two of necessity built-in). Other commands launch external binaries: `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir`. To check whether a command is built-in for a given shell, you can enter `type <command>`.[↩](#ref-f1)
+
+<a id="f2" href="#ref-f2">2</a>: On installation, I gather that Busybox makes, for example, `/bin/ls` a symbolic link pointing to `/bin/0_shell`, allowing it act in place of a default shell. I haven't gone this far.[↩](#ref-f2)

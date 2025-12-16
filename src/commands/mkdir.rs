@@ -58,7 +58,7 @@ mod tests {
         let test_dir = &Uuid::new_v4().to_string();
 
         if Path::new(test_dir).exists() {
-            fs::remove_dir(test_dir).unwrap();
+            fs::remove_dir(test_dir).expect("failed to remove directory");
         }
 
         let input = string_vec!["mkdir", test_dir];
@@ -67,7 +67,7 @@ mod tests {
         assert!(result.is_ok());
         assert!(Path::new(test_dir).exists());
 
-        fs::remove_dir(test_dir).unwrap();
+        fs::remove_dir(test_dir).expect("failed to remove directory");
     }
 
     #[test]
@@ -90,7 +90,7 @@ mod tests {
         let invalid_path = prefix.join(dir);
         let invalid_str = invalid_path
             .to_str()
-            .expect("Failed to get string from invalid path");
+            .expect("failed to get string from invalid path");
 
         let input = string_vec!["mkdir", invalid_str];
         let result = mkdir(&input);
@@ -103,7 +103,7 @@ mod tests {
         let temp_store = TempStore::new(1);
         let dir = temp_store.store[0].clone();
 
-        fs::create_dir(Path::new(&dir)).expect("Failed to create test directory");
+        fs::create_dir(Path::new(&dir)).expect("failed to create test directory");
 
         let input = string_vec!["mkdir", dir];
         let result = mkdir(&input);
@@ -116,7 +116,7 @@ mod tests {
         let temp_store = TempStore::new(1);
         let dir = temp_store.store[0].clone();
 
-        fs::write(Path::new(&dir), "").expect("Failed to create test file");
+        fs::write(Path::new(&dir), "").expect("failed to create test file");
 
         let input = string_vec!["mkdir", dir];
         let result = mkdir(&input);
@@ -133,7 +133,7 @@ mod tests {
 
         let new_path = Path::new(new_string);
 
-        fs::create_dir(new_path).expect("Failed to create test directory");
+        fs::create_dir(new_path).expect("failed to create test directory");
 
         let input = string_vec!["mkdir", existing_string, new_string];
         let result = mkdir(&input);

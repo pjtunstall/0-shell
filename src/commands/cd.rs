@@ -55,8 +55,8 @@ mod test {
         let temp_store = test_helpers::TempStore::new(1);
         let destination = &temp_store.store[0];
         let dest_path = Path::new(destination);
-        fs::create_dir(dest_path).expect("Failed to create temp folder");
-        let origin = env::current_dir().expect("Failed to get current directory");
+        fs::create_dir(dest_path).expect("failed to create temp folder");
+        let origin = env::current_dir().expect("failed to get current directory");
 
         let mut input = string_vec!["cd", destination];
         assert!(cd(&input).is_ok(), "`cd {}` should be ok", destination);
@@ -64,7 +64,7 @@ mod test {
         input = string_vec!["cd", ".."];
         assert!(cd(&input).is_ok(), "`cd ..` should be ok");
 
-        let current_dir = env::current_dir().expect("Failed to get current directory");
+        let current_dir = env::current_dir().expect("failed to get current directory");
         assert_eq!(origin, current_dir);
     }
 }

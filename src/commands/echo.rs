@@ -67,7 +67,7 @@ fn process_backslashes(s: &str, plus: usize) -> String {
         }
     }
 
-    // In case the string ends with backslashes
+    // In case the string ends with backslashes.
     if backslash_count > 0 {
         let keep_backslashes = (backslash_count + 1) / 2;
         result.push_str(&"\\".repeat(keep_backslashes));
@@ -219,7 +219,7 @@ mod tests {
         assert_eq!(
             echo(&string_vec!["echo", "$USER"]),
             Ok("testuser\n".to_string()),
-            "Expected `USER` to be replaced with `testuser`"
+            "expected `USER` to be replaced with `testuser`"
         );
 
         if let Some(value) = prev_user {
@@ -242,7 +242,7 @@ mod tests {
         assert_eq!(
             echo(&string_vec!["echo", "$LANG"]),
             Ok("\n".to_string()),
-            "Expected empty substitution when LANG is unset"
+            "expected empty substitution when LANG is unset"
         );
         if let Some(value) = prev_lang {
             unsafe {
@@ -262,15 +262,15 @@ mod tests {
         let mut expected = "hello\n";
         let mut input = string_vec!["echo", "hello", ">", file];
         let mut output = echo(&input);
-        assert!(output.unwrap().is_empty());
-        let mut contents = fs::read_to_string(&file).expect("Failed to read file");
+        assert!(output.unwrap().is_empty(), "output should be empty");
+        let mut contents = fs::read_to_string(&file).expect("failed to read file");
         assert_eq!(contents, expected, "Expected to write to nonexistent file");
 
         expected = "world\n";
         input = string_vec!["echo", "world", ">", file];
         output = echo(&input);
-        assert!(output.unwrap().is_empty());
-        contents = fs::read_to_string(&file).expect("Failed to read file");
+        assert!(output.unwrap().is_empty(), "output should be empty");
+        contents = fs::read_to_string(&file).expect("failed to read file");
         assert_eq!(contents, expected, "Expected to overwrite existing file");
     }
 
@@ -282,14 +282,14 @@ mod tests {
         let mut expected = "hello\n";
         let mut output = echo(&input);
         assert!(output.is_ok());
-        let mut contents = fs::read_to_string(&file).expect("Failed to read file");
+        let mut contents = fs::read_to_string(&file).expect("failed to read file");
         assert_eq!(contents, expected, "Expected to append to nonexistent file");
 
         input = string_vec!["echo", "world", ">>", file];
         expected = "hello\nworld\n";
         output = echo(&input);
-        assert!(output.unwrap().is_empty());
-        contents = fs::read_to_string(&file).expect("Failed to read file");
+        assert!(output.unwrap().is_empty(), "output should be empty");
+        contents = fs::read_to_string(&file).expect("failed to read file");
         assert_eq!(contents, expected, "Expected to append to existing file");
     }
 
@@ -301,13 +301,13 @@ mod tests {
         let expected = "hello file2\n";
         let output = echo(&input);
 
-        assert!(output.unwrap().is_empty());
-        let contents = fs::read_to_string(&file1).expect("Failed to read file");
+        assert!(output.unwrap().is_empty(), "output should be empty");
+        let contents = fs::read_to_string(&file1).expect("failed to read file");
         assert!(
             !Path::new("file2").exists(),
-            "Expected to write to only one file when two names appear after a single write operator"
+            "expected to write to only one file when two names appear after a single write operator"
         );
-        assert_eq!(contents, expected, "Contents should include `file2`");
+        assert_eq!(contents, expected, "contents should include `file2`");
     }
 
     #[test]
@@ -317,13 +317,13 @@ mod tests {
         let input = string_vec!["echo", "hello", ">>", file1, "file2"];
         let expected = "hello file2\n";
         let output = echo(&input);
-        assert!(output.unwrap().is_empty());
-        let contents = fs::read_to_string(&file1).expect("Failed to read file");
+        assert!(output.unwrap().is_empty(), "output should be empty");
+        let contents = fs::read_to_string(&file1).expect("failed to read file");
         assert!(
             !Path::new("file2").exists(),
-            "Expected to write to only one file when two names appear after a single append operator"
+            "expected to write to only one file when two names appear after a single append operator"
         );
-        assert_eq!(contents, expected, "Contents should include `file2`");
+        assert_eq!(contents, expected, "contents should include `file2`");
     }
 
     #[test]
@@ -335,7 +335,7 @@ mod tests {
         let input: Vec<String> = string_vec!["echo", "hello", ">", u_str, ">", v_str];
 
         let result = echo(&input);
-        assert!(result.is_ok(), "Result of multiple redirects should be ok");
+        assert!(result.is_ok(), "result of multiple redirects should be ok");
 
         let u = Path::new(u_str);
         let v = Path::new(v_str);
@@ -349,18 +349,18 @@ mod tests {
             "2nd redirect target file should have been created by `echo`"
         );
 
-        let contents_of_u = fs::read_to_string(u).expect("Failed to read 1st redirect target file");
-        let contents_of_v = fs::read_to_string(v).expect("Failed to read 2nd redierct target file");
+        let contents_of_u = fs::read_to_string(u).expect("failed to read 1st redirect target file");
+        let contents_of_v = fs::read_to_string(v).expect("failed to read 2nd redierct target file");
 
         let expected = "hello\n";
 
         assert_eq!(
             contents_of_u, expected,
-            "Contents of 1st redirect target file should match input text"
+            "contents of 1st redirect target file should match input text"
         );
         assert_eq!(
             contents_of_v, expected,
-            "Contents of 2nd redirect target file should match input text"
+            "contents of 2nd redirect target file should match input text"
         );
     }
 }

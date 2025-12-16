@@ -348,32 +348,32 @@ mod tests {
         let folder_1 = &root.join(Path::new("folder_1"));
         let folder_2 = &root.join(Path::new("folder_2"));
 
-        fs::create_dir_all(folder_1).expect("Failed to create temp folder");
-        fs::create_dir(folder_2).expect("Failed to create temp folder");
-        fs::write(file_1, "").expect("Failed to create temp file");
-        fs::write(file_2, "").expect("Failed to create temp file");
+        fs::create_dir_all(folder_1).expect("failed to create temp folder");
+        fs::create_dir(folder_2).expect("failed to create temp folder");
+        fs::write(file_1, "").expect("failed to create temp file");
+        fs::write(file_2, "").expect("failed to create temp file");
 
         let file_a = folder_1.join(Path::new("file_a"));
         let file_b = folder_1.join(Path::new("file_b"));
         let folder_a = folder_1.join(Path::new("folder_a"));
 
-        fs::write(file_a, "").expect("Failed to create temp file");
-        fs::write(file_b, "").expect("Failed to create temp file");
-        fs::create_dir(folder_a).expect("Failed to create temp folder");
+        fs::write(file_a, "").expect("failed to create temp file");
+        fs::write(file_b, "").expect("failed to create temp file");
+        fs::create_dir(folder_a).expect("failed to create temp folder");
 
         let file_c = folder_2.join(Path::new("file_c"));
         let folder_c = folder_2.join(Path::new("folder_c"));
         let folder_d = folder_2.join(Path::new("folder_d"));
 
-        fs::write(file_c, "").expect("Failed to create temp file");
-        fs::create_dir_all(folder_c).expect("Failed to create temp folder");
-        fs::create_dir_all(folder_d).expect("Failed to create temp folder");
+        fs::write(file_c, "").expect("failed to create temp file");
+        fs::create_dir_all(folder_c).expect("failed to create temp folder");
+        fs::create_dir_all(folder_d).expect("failed to create temp folder");
 
-        let original_dir = env::current_dir().expect("Failed to get current directory");
-        env::set_current_dir(root).expect("Failed to set current directory");
+        let original_dir = env::current_dir().expect("failed to get current directory");
+        env::set_current_dir(root).expect("failed to set current directory");
 
         let v = Path::new("v");
-        fs::write(v, "prefix").expect("Failed to write to temp file");
+        fs::write(v, "prefix").expect("failed to write to temp file");
 
         let input: Vec<String> = vec![
             "ls", "file_1", "file_2", "folder_1", ">", "u", "folder_2", ">>", "v",
@@ -392,16 +392,16 @@ mod tests {
         assert!(u.exists(), "Target file `u` should have been created");
         assert!(v.exists(), "Target file `v` should have been created");
 
-        let mut contents_of_u = fs::read_to_string(u).expect("Failed to read target file `u`");
+        let mut contents_of_u = fs::read_to_string(u).expect("failed to read target file `u`");
         contents_of_u = contents_of_u.replace("\r\n", "\n");
         let expected_u = "file_1\nfile_2\n\nfolder_1:\nfile_a\nfile_b\nfolder_a\n\nfolder_2:\nfile_c\nfolder_c\nfolder_d\n";
 
-        let mut contents_of_v = fs::read_to_string(v).expect("Failed to read target file `u`");
+        let mut contents_of_v = fs::read_to_string(v).expect("failed to read target file `u`");
         contents_of_v = contents_of_v.replace("\r\n", "\n");
         let mut expected_v = String::from("prefix");
         expected_v.push_str(expected_u);
 
-        env::set_current_dir(original_dir).expect("Failed to set current directory");
+        env::set_current_dir(original_dir).expect("failed to set current directory");
 
         assert_eq!(
             contents_of_u, expected_u,

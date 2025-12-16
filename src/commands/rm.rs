@@ -93,7 +93,7 @@ mod tests {
     fn rm_removes_one_file() {
         let temp_store = TempStore::new(1);
         let file = &temp_store.store[0];
-        fs::write(file.to_string(), "").expect("Failed to create test file");
+        fs::write(file.to_string(), "").expect("failed to create test file");
 
         let input = string_vec!["rm", file];
         let result = rm(&input);
@@ -107,8 +107,8 @@ mod tests {
         let temp_store = TempStore::new(2);
         let file1 = &temp_store.store[0];
         let file2 = &temp_store.store[1];
-        fs::write(file1.to_string(), "").expect("Failed to create test file");
-        fs::write(file2.to_string(), "").expect("Failed to create test file");
+        fs::write(file1.to_string(), "").expect("failed to create test file");
+        fs::write(file2.to_string(), "").expect("failed to create test file");
 
         let input = string_vec!["rm", file1, file2];
         let result = rm(&input);
@@ -122,7 +122,7 @@ mod tests {
     fn rm_directory_fails() {
         let temp_store = TempStore::new(1);
         let dir = &temp_store.store[0];
-        fs::create_dir(dir.to_string()).expect("Failed to create test directory");
+        fs::create_dir(dir.to_string()).expect("failed to create test directory");
 
         let input = string_vec!["rm", dir];
         let result = rm(&input);
@@ -143,10 +143,10 @@ mod tests {
         let dir1 = &temp_store.store[2];
         let dir2 = &temp_store.store[3];
 
-        fs::write(file1.to_string(), "").expect("Failed to create test file");
-        fs::write(file2.to_string(), "").expect("Failed to create test file");
-        fs::create_dir(dir1.to_string()).expect("Failed to create test directory");
-        fs::create_dir(dir2.to_string()).expect("Failed to create test directory");
+        fs::write(file1.to_string(), "").expect("failed to create test file");
+        fs::write(file2.to_string(), "").expect("failed to create test file");
+        fs::create_dir(dir1.to_string()).expect("failed to create test directory");
+        fs::create_dir(dir2.to_string()).expect("failed to create test directory");
 
         let input = string_vec!["rm", file1, dir1, file2, dir2];
         let result = rm(&input);
@@ -177,11 +177,11 @@ mod tests {
         let dir1 = Path::new(dir1_str);
         let dir2 = Path::new(&temp_store.store[3]);
 
-        fs::create_dir(dir1).expect("Failed to create test directory");
-        fs::create_dir(dir1.join(dir2)).expect("Failed to create test directory");
+        fs::create_dir(dir1).expect("failed to create test directory");
+        fs::create_dir(dir1.join(dir2)).expect("failed to create test directory");
 
-        fs::write(dir1.join(file1), "").expect("Failed to create test file");
-        fs::write(dir1.join(dir2).join(file2), "").expect("Failed to create test file");
+        fs::write(dir1.join(file1), "").expect("failed to create test file");
+        fs::write(dir1.join(dir2).join(file2), "").expect("failed to create test file");
 
         let input = string_vec!["rm", "-r", dir1_str];
         let result = rm(&input);
