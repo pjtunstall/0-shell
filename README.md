@@ -46,15 +46,20 @@ Following the hint to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as a
 I've added several bonus features, including:
 
 - extra commands:
-  - `Ctrl+C` to exit a long-running process and return to the 'shell'
-  - `sleep MILLISECONDS`
-  - `touch FILE...`
-  - `man COMMAND`
+  - man
+  - sleep
+  - touch
 - color for error messages
 - auto-completion
 - command history
 - redirection
 - environment variables
+
+I'm partway through the optional extra project [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
+
+- Ctrl+C to terminate a child process and return to the 'shell'
+- Ctrl+Z to pause a child process and return to the 'shell'
+- fg (foreground) to restart a paused child process
 
 ## Audit
 
