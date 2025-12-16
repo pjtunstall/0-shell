@@ -121,7 +121,7 @@ fn run_command(args: &[String]) {
         "pwd" => pwd::pwd(&args),
 
         // External utilities: delegate to worker process.
-        "cat" | "cp" | "ls" | "mkdir" | "man" | "mv" | "rm" | "touch" | "sleep" => {
+        "cat" | "cp" | "ls" | "mkdir" | "man" | "mv" | "rm" | "sleep" | "touch" => {
             launch_worker_process(&args)
         }
         _ => Err(format!("command not found: {}", command)),
@@ -175,7 +175,6 @@ fn run_command_as_worker(args: &[String]) {
     let clean_args = &args[2..];
 
     let result = match command {
-        "sleep" => sleep::sleep(clean_args),
         "cat" => cat::cat(clean_args),
         "cp" => cp::cp(clean_args),
         "ls" => ls::ls(clean_args),
@@ -183,6 +182,7 @@ fn run_command_as_worker(args: &[String]) {
         "man" => man::man(clean_args),
         "mv" => mv::mv(clean_args),
         "rm" => rm::rm(clean_args),
+        "sleep" => sleep::sleep(clean_args),
         "touch" => touch::touch(clean_args),
         _ => Err(format!("command not found: {}", command)),
     };
