@@ -30,6 +30,7 @@ lazy_static! {
         "mv".to_string(),
         "pwd".to_string(),
         "rm".to_string(),
+        "sleep".to_string(),
         "touch".to_string(),
     ];
 }

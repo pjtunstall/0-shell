@@ -16,10 +16,11 @@ const SIGINT: i32 = 2;
 static CURRENT_CHILD_PID: AtomicI32 = AtomicI32::new(0);
 
 unsafe extern "C" {
-    // Register the handler.
+    // Register this event handler with the OS: if we receive signal `sig` (we'll pass `SIGINT`), run `handler` instead of the default action (in this case, the default is to kill the current process). We'll pass `handle_sigint` as the `handler`.
+    // In C, signal returns a function pointer to the previous handler (so you can restore it later if you want). In Rust FFI, representing a function pointer as a usize (an integer the same size as a pointer) is a standard, convenient way to treat that address when you don't intend to call it immediately. It captures the address safely.
     fn signal(sig: i32, handler: extern "C" fn(i32)) -> usize;
 
-    // Forward the signal to the child.
+    // Forward the signal `sig` to the child process with ID `pid`.
     fn kill(pid: i32, sig: i32) -> i32;
 }
 
@@ -64,48 +65,52 @@ fn main() {
         red_println("Usage: ./0_shell");
         return;
     } else {
-        unsafe {
-            // Register the handler.
-            signal(SIGINT, handle_sigint);
-        }
+        repl();
+    }
+}
 
-        let _style = TextStyle::new();
-        let mut history = VecDeque::new();
-        history.push_back(String::new());
+fn repl() {
+    unsafe {
+        // Register the handler: tell the OS to call `handle_sigint` when a `SIGINT` sigmal is received.
+        signal(SIGINT, handle_sigint);
+    }
 
-        loop {
-            let input_string = match input::get_input(&mut history) {
-                Ok(ok_input) => ok_input,
-                Err(err) => {
-                    let text = format!("0-shell: failed to get input: {}", err);
-                    red_println(&text);
-                    continue;
-                }
-            };
+    let _style = TextStyle::new();
+    let mut history = VecDeque::new();
+    history.push_back(String::new());
 
-            if input_string.is_empty() {
-                continue;
-            };
-            history.push_back(input_string.clone());
-
-            let input_after_splitting: Vec<String>;
-            match input::split::split(&input_string) {
-                Ok(res) => {
-                    input_after_splitting = res;
-                }
-                Err(err) => {
-                    red_println(&format!("0-shell: {}", &err));
-                    continue;
-                }
-            }
-
-            if input_after_splitting.is_empty() {
-                red_println(&format!("0-shell: parse error near `\\n'"));
+    loop {
+        let input_string = match input::get_input(&mut history) {
+            Ok(ok_input) => ok_input,
+            Err(err) => {
+                let text = format!("0-shell: failed to get input: {}", err);
+                red_println(&text);
                 continue;
             }
+        };
 
-            run_command(&input_after_splitting);
+        if input_string.is_empty() {
+            continue;
+        };
+        history.push_back(input_string.clone());
+
+        let input_after_splitting: Vec<String>;
+        match input::split::split(&input_string) {
+            Ok(res) => {
+                input_after_splitting = res;
+            }
+            Err(err) => {
+                red_println(&format!("0-shell: {}", &err));
+                continue;
+            }
         }
+
+        if input_after_splitting.is_empty() {
+            red_println(&format!("0-shell: parse error near `\\n'"));
+            continue;
+        }
+
+        run_command(&input_after_splitting);
     }
 }
 
@@ -146,7 +151,7 @@ fn launch_worker_process(args: &[String]) -> Result<String, String> {
         .spawn()
         .expect("failed to spawn");
 
-    // Add worker PID to store so that we can kill it.
+    // Add worker PID to store so that we can kill it. The child received a coopy of our memory at when we launched it, but it doesn't see us adding its id later here.
     CURRENT_CHILD_PID.store(child.id() as i32, Ordering::Relaxed);
 
     // println!("Launched job with PID: {}", child.id());
