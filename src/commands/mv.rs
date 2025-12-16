@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 pub const USAGE: &str = "USAGE:\tmv SOURCE_FILE TARGET_DIRECTORY\n\tmv SOURCE_FILE TARGET_DIRECTORY/NEW_NAME\n\tmv SOURCE_FILE NEW_NAME";
 
 pub fn mv(input: &[String]) -> Result<String, String> {
-    validate_input(input)?;
+    is_input_len_at_least_two(input)?;
 
     let target = &input[2];
     let source = &input[1];
@@ -38,7 +38,7 @@ pub fn mv(input: &[String]) -> Result<String, String> {
     Ok("".to_string())
 }
 
-fn validate_input(input: &[String]) -> Result<(), String> {
+fn is_input_len_at_least_two(input: &[String]) -> Result<(), String> {
     if input.len() < 3 {
         return Err(format!("Not enough arguments\n{}", USAGE).to_string());
     }

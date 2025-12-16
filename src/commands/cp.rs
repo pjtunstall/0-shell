@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 pub const USAGE: &str = "Usage:\tcp SOURCE_FILE TARGET_FILE\n\tcp SOURCE_FILE... TARGET_DIRECTORY";
 
 pub fn cp(input: &[String]) -> Result<String, String> {
-    validate_input(input)?;
+    is_input_len_at_least_two(input)?;
 
     let sources = &input[1..input.len() - 1];
     let destination = &input[input.len() - 1];
@@ -45,7 +45,7 @@ pub fn cp(input: &[String]) -> Result<String, String> {
     Ok("".to_string())
 }
 
-fn validate_input(input: &[String]) -> Result<(), String> {
+fn is_input_len_at_least_two(input: &[String]) -> Result<(), String> {
     if input.len() < 3 {
         return Err(format!("Not enough arguments\n{}", USAGE));
     }

@@ -90,7 +90,7 @@ The root directory and repo are named `0-shell`, as required by the brief. Unfor
 
 Tests should be run in single-threaded mode ...
 
-```zsh
+```sh
 cargo test -- --test-threads=1
 ```
 

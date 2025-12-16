@@ -3,7 +3,7 @@ use std::{fs::File, path::Path};
 pub const USAGE: &str = "Usage:\ttouch FILE...";
 
 pub fn touch(input: &[String]) -> Result<String, String> {
-    validate_input(input)?;
+    is_input_len_at_least_two(input)?;
 
     let mut errors = Vec::new();
 
@@ -52,7 +52,7 @@ pub fn touch(input: &[String]) -> Result<String, String> {
     }
 }
 
-fn validate_input(input: &[String]) -> Result<(), String> {
+fn is_input_len_at_least_two(input: &[String]) -> Result<(), String> {
     if input.len() < 2 {
         return Err(format!("Not enough arguments\n{}", USAGE));
     }

@@ -5,7 +5,7 @@ use home;
 pub const USAGE: &str = "Usage:\tcd [DIRECTORY]";
 
 pub fn cd(input: &[String]) -> Result<String, String> {
-    validate_input(input)?;
+    is_input_len_at_least_two(input)?;
 
     let path: &String = match input.get(1) {
         Some(path) => path,
@@ -35,7 +35,7 @@ pub fn cd(input: &[String]) -> Result<String, String> {
     }
 }
 
-fn validate_input(input: &[String]) -> Result<(), String> {
+fn is_input_len_at_least_two(input: &[String]) -> Result<(), String> {
     if input.len() > 2 {
         return Err(format!("Too many arguments\n{}", USAGE));
     }

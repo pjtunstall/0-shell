@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 pub const USAGE: &str = "Usage:\tmkdir DIRECTORY...";
 
 pub fn mkdir(input: &[String]) -> Result<String, String> {
-    validate_input(input)?;
+    is_input_len_at_least_two(input)?;
 
     let mut errors = Vec::new();
 
@@ -37,7 +37,7 @@ pub fn mkdir(input: &[String]) -> Result<String, String> {
     }
 }
 
-fn validate_input(input: &[String]) -> Result<(), String> {
+fn is_input_len_at_least_two(input: &[String]) -> Result<(), String> {
     if input.len() < 2 {
         return Err(format!("Not enough arguments\n{}", USAGE));
     }

@@ -1,31 +1,45 @@
+use crate::c;
+use crate::commands::jobs::Job;
 use std::{env, process::Command, sync::atomic::Ordering};
 
-use crate::c;
-
-pub fn launch_worker_process(args: &[String]) -> Result<String, String> {
+pub fn launch_worker_process(args: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
     let self_path = env::current_exe().map_err(|e| format!("Unable to get own path: {}", e))?;
 
-    let mut child = Command::new(self_path)
+    let child = Command::new(self_path)
         .arg("--internal-worker")
         .args(args)
         .spawn()
         .expect("failed to spawn");
 
-    // Add worker PID to store so that we can kill it. The child received a coopy of our memory at when we launched it, but it doesn't see us adding its id later here.
-    c::CURRENT_CHILD_PID.store(child.id() as i32, Ordering::Relaxed);
+    let pid = child.id() as i32;
 
-    // println!("Launched job with PID: {}", child.id());
+    // Register this PID as target for Ctrl+C.
+    c::CURRENT_CHILD_PID.store(pid, Ordering::Relaxed);
 
-    let status = child.wait();
+    // Use raw `waitpid`` to detect "Stopped" state.
+    let mut status = 0;
+    unsafe {
+        // Blocks until the child either dies OR stops (`WUNTRACED`).
+        c::waitpid(pid, &mut status, c::WUNTRACED);
+    }
 
-    // Unregister child: stop targeting this PID.
+    // Unregister: the foreground slot is now free (either dead or moved to bg).
     c::CURRENT_CHILD_PID.store(0, Ordering::Relaxed);
 
-    let s = status.map_err(|e| format!("wait failed: {}", e))?;
-    if s.success() || s.code().is_none() {
-        // The code is `None` if the worker is terminated by SIGINT.
+    if c::w_if_stopped(status) {
+        // Case A: Ctrl+Z.
+        let id = jobs.len() + 1;
+        let command_string = args.join(" ");
+
+        let new_job = Job::new(id, pid, command_string.clone());
+        jobs.push(new_job);
+
+        println!("\n[{}]+\tStopped\t\t{}", id, command_string);
+
         Ok(String::new())
     } else {
-        Err(format!("process terminated: {}", s))
+        // CASE B: normal exit or Ctrl+C.
+        // We could check `WEXITSTATUS` here to see if the command failed (exit code > 0), but for now, we just return control to the repl.
+        Ok(String::new())
     }
 }

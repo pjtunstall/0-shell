@@ -1,28 +1,32 @@
 use std::collections::VecDeque;
 
-use crate::{c::*, commands, error, input};
+use crate::{
+    c::{self, SIGINT, SIGTSTP},
+    commands::{self, jobs::Job},
+    error, input,
+};
 
 struct TextStyle;
 
 impl TextStyle {
     fn new() -> Self {
-        print!("\x1b[1m"); // Be bold!
-
+        print!("\x1b[1m");
         TextStyle
     }
 }
 
 impl Drop for TextStyle {
     fn drop(&mut self) {
-        // Reset formatting to normal when the item is dropped,
-        print!("\x1b[0m"); // i.e. when the program ends.
+        print!("\x1b[0m");
     }
 }
 
 pub fn repl() {
+    let mut jobs: Vec<Job> = Vec::new();
+
     unsafe {
-        // Register the handler: tell the OS to call `handle_sigint` when a `SIGINT` signal is received.
-        signal(SIGINT, handle_sigint);
+        c::signal(SIGINT, c::handle_forwarding);
+        c::signal(SIGTSTP, c::handle_forwarding);
     }
 
     let _style = TextStyle::new();
@@ -60,6 +64,6 @@ pub fn repl() {
             continue;
         }
 
-        commands::run_command(&input_after_splitting);
+        commands::run_command(&input_after_splitting, &mut jobs);
     }
 }

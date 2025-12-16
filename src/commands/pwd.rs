@@ -3,7 +3,7 @@ use std::env;
 pub const USAGE: &str = "Usage: \tpwd";
 
 pub fn pwd(input: &[String]) -> Result<String, String> {
-    validate_input(input)?;
+    is_input_len_at_least_two(input)?;
 
     let cwd = match env::current_dir() {
         Ok(cwd) => format!("{}", cwd.display()),
@@ -20,7 +20,7 @@ pub fn pwd(input: &[String]) -> Result<String, String> {
     Ok(ok)
 }
 
-fn validate_input(input: &[String]) -> Result<(), String> {
+fn is_input_len_at_least_two(input: &[String]) -> Result<(), String> {
     if input.len() > 1 {
         return Err(format!("Too many arguments\n{}", USAGE));
     };

@@ -5,7 +5,7 @@ pub const USAGE: &str = "Usage:\trm [-r] FILE|DIRECTORY...";
 pub const OPTIONS_USAGE: &str = "\r\n-R  -r  -- remove directories and their contents recursively";
 
 pub fn rm(input: &[String]) -> Result<String, String> {
-    validate_input(input)?;
+    is_input_len_at_least_two(input)?;
 
     if input[1] == "-r" || input[1] == "-R" {
         if input.len() < 3 {
@@ -75,7 +75,7 @@ fn process_args(args: &[String], recursive: bool) -> Result<String, String> {
     return Ok(String::new());
 }
 
-fn validate_input(input: &[String]) -> Result<(), String> {
+fn is_input_len_at_least_two(input: &[String]) -> Result<(), String> {
     if input.len() < 2 {
         return Err(format!("Not enough arguments\n{}", USAGE).to_string());
     }
