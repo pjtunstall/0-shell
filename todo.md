@@ -7,11 +7,6 @@
 - [Parsing](#parsing)
 - [Documentation](#documentation)
 
-## Scope
-
-- Consider the two optional extra projects, `0-shell-job-control` and `0-shell-scripting`. (For what it's worth, 4 weeks are assigned to the main project and 2 weeks for each of the extras. All three projects are for 4 students.)
-- There is a hint that the project should teach the difference between Unix and Posix. Consider whether it should adhere to Posix. Look up Posix specifications.
-
 ## Echo
 
 - Check exact behavior of `echo` with multiple redirect arguments: multiple spaces, etc. Write more tests.
@@ -33,6 +28,7 @@
 - Look carefully at all these refs to collections to ref types in `cat` and `ls`. Examine what they all imply and what best practice is.
 - `cat`: handle mixed sequence of filenames and dashes.
 - `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: "Too many arguments". What's the rule? Maybe I want to do it my way.
+- There is a hint that the project should teach the difference between Unix and Posix. Consider whether to make sure it strictly adheres to Posix. Look up Posix specifications.
 
 ## Tests.
 
@@ -58,5 +54,10 @@ assert_eq!(result, "Hello, world!");`
 
 ## Job Control
 
+- Check formatting: consider spacing.
 - History stack to track 1st and 2nd most recently active jobs.
 - In `check_background_jobs`, check `status` for exit codes or signals (e.g., segfaults).
+
+## Further
+
+- Have a go at the other optional project, `scripting`.
