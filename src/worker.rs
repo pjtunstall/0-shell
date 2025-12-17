@@ -1,8 +1,12 @@
 use crate::c;
-use crate::commands::jobs::Job;
+use crate::commands::jobs::{Job, State};
 use std::{env, process::Command, sync::atomic::Ordering};
 
-pub fn launch_worker_process(args: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
+pub fn launch_worker_process(
+    args: &[String],
+    jobs: &mut Vec<Job>,
+    is_background: bool,
+) -> Result<String, String> {
     let self_path = env::current_exe().map_err(|e| format!("Unable to get own path: {}", e))?;
 
     let child = Command::new(self_path)
@@ -12,6 +16,14 @@ pub fn launch_worker_process(args: &[String], jobs: &mut Vec<Job>) -> Result<Str
         .expect("failed to spawn");
 
     let pid = child.id() as i32;
+
+    if is_background {
+        let id = jobs.len() + 1;
+        let command_string = args.join(" ");
+        jobs.push(Job::new(id, pid, command_string, State::Running));
+        let output = format!("[{}] {}\n", id, pid);
+        return Ok(output);
+    }
 
     // Register this PID as target for Ctrl+C.
     c::CURRENT_CHILD_PID.store(pid, Ordering::Relaxed);
@@ -31,7 +43,7 @@ pub fn launch_worker_process(args: &[String], jobs: &mut Vec<Job>) -> Result<Str
         let id = jobs.len() + 1;
         let command_string = args.join(" ");
 
-        let new_job = Job::new(id, pid, command_string.clone());
+        let new_job = Job::new(id, pid, command_string.clone(), State::Stopped);
         jobs.push(new_job);
 
         println!("\n[{}]+\tStopped\t\t{}", id, command_string);

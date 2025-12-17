@@ -1,27 +1,40 @@
+use std::borrow::Borrow;
+
+use crate::c;
+
 pub const USAGE: &str = "Usage: jobs [-l]";
 const STATE_COL_WIDTH: usize = 24;
 
-pub fn jobs(input: &[String], jobs: &[Job]) -> Result<String, String> {
+pub fn jobs(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
+    check_background_jobs(jobs);
+
     if input.len() > 2 {
-        return Err(format!("too many arguments\n{}", USAGE));
+        return Err(format!("Too many arguments\n{}", USAGE));
     }
 
     let is_long = if input.len() == 2 {
         if input[1] == "-l" {
             true
         } else {
-            return Err(format!("unknown option\n{}", USAGE));
+            return Err(format!("Unknown option\n{}", USAGE));
         }
     } else {
         false
     };
 
+    let output = format_jobs(jobs, is_long);
+    Ok(output)
+}
+
+pub fn format_jobs<T: Borrow<Job>>(items: &[T], is_long: bool) -> String {
     let mut output = String::new();
 
-    for (i, job) in jobs.iter().enumerate() {
-        let sign = if i == jobs.len() - 1 {
+    for (i, item) in items.iter().enumerate() {
+        let job = item.borrow();
+
+        let sign = if i == items.len() - 1 {
             "+"
-        } else if i == jobs.len().saturating_sub(2) {
+        } else if i == items.len().saturating_sub(2) {
             "-"
         } else {
             " "
@@ -32,7 +45,7 @@ pub fn jobs(input: &[String], jobs: &[Job]) -> Result<String, String> {
         output.push_str(&format!("{}\n", display));
     }
 
-    Ok(output)
+    output
 }
 
 pub struct Job {
@@ -43,14 +56,14 @@ pub struct Job {
 }
 
 impl Job {
-    pub fn new(jobs_total: usize, pid: i32, command: String) -> Self {
+    pub fn new(jobs_total: usize, pid: i32, command: String, state: State) -> Self {
         assert!(pid > 0, "`pid` must be positive");
 
         Self {
             id: jobs_total,
             pid,
             command,
-            state: State::Stopped,
+            state,
         }
     }
 }
@@ -72,10 +85,10 @@ impl std::fmt::Display for State {
     }
 }
 
-struct JobDisplay<'a> {
-    job: &'a Job,
-    sign: &'a str,
-    is_long: bool,
+pub struct JobDisplay<'a> {
+    pub job: &'a Job,
+    pub sign: &'a str,
+    pub is_long: bool,
 }
 
 impl std::fmt::Display for JobDisplay<'_> {
@@ -85,7 +98,7 @@ impl std::fmt::Display for JobDisplay<'_> {
         if self.is_long {
             write!(
                 f,
-                "[{}] {} {:<5} {:<width$} {}",
+                "[{}]{} {:<5} {:<width$} {}",
                 self.job.id,
                 self.sign,
                 self.job.pid,
@@ -96,13 +109,40 @@ impl std::fmt::Display for JobDisplay<'_> {
         } else {
             write!(
                 f,
-                "[{}] {} {:<width$} {}",
+                "[{}]{} {:<width$} {}",
                 self.job.id,
                 self.sign,
                 state_str,
                 self.job.command,
                 width = STATE_COL_WIDTH
             )
+        }
+    }
+}
+
+pub fn check_background_jobs(jobs: &mut Vec<Job>) {
+    loop {
+        let mut status = 0;
+
+        // -1: Check if ANY child job is terminated.
+        // WNOHANG: No hang: don't yield control.
+        let dead_pid = unsafe { c::waitpid(-1, &mut status, c::WNOHANG) };
+
+        // dead_pid > 0: We found a terminated job.
+        // dead_pid == 0: None found. They're all running fine.
+        // dead_pid == -1: Error. Usually means no children exist.
+        if dead_pid <= 0 {
+            return; // Stop looking. Return to the prompt.
+        }
+
+        // We found a dead job: update the list.
+        if let Some(index) = jobs.iter().position(|j| j.pid == dead_pid) {
+            let job = &jobs[index];
+
+            // TODO: check `status` to see if they segfaulted?
+            println!("[{}]+\tDone\t\t{}", job.id, job.command);
+
+            jobs.remove(index);
         }
     }
 }
@@ -127,7 +167,7 @@ mod tests {
         };
 
         let expected = format!(
-            "[2] + {:<width$} sleep 50 &",
+            "[2]+ {:<width$} sleep 50 &",
             "Running",
             width = STATE_COL_WIDTH
         );
@@ -151,7 +191,7 @@ mod tests {
         };
 
         let expected = format!(
-            "[1] - {:<5} {:<width$} ls ...",
+            "[1]- {:<5} {:<width$} ls ...",
             "8287",
             "Terminated",
             width = STATE_COL_WIDTH

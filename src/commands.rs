@@ -1,3 +1,4 @@
+pub mod bg;
 pub mod cat;
 pub mod cd;
 pub mod cp;
@@ -5,6 +6,7 @@ pub mod echo;
 pub mod exit;
 pub mod fg;
 pub mod jobs;
+pub mod kill;
 pub mod ls;
 pub mod man;
 pub mod mkdir;
@@ -14,19 +16,32 @@ pub mod rm;
 pub mod sleep;
 pub mod touch;
 
-use crate::commands::jobs::Job;
-use crate::{error, worker};
+use crate::{commands::jobs::Job, error, worker};
 
-// This is the command runner that's called by the parent process.
-// We accept the `jobs` `Vec` here to pass it down to the `jobs`
-// function for viewing or to 'worker' (for updating if a process
-// is stopped).
+// This is the command runner that's called by the parent process. We accept (a mutable reference to) the `Vec` of jobs here to pass it down to the `jobs` function for viewing or to 'worker' (so that we can update it if a process has stopped).
 pub fn run_command(args: &[String], jobs: &mut Vec<Job>) {
     if args.is_empty() {
         return;
     }
 
-    let command = args[0].as_str();
+    let (clean_args, is_background) = if let Some(last) = args.last() {
+        if last == "&" {
+            (&args[..args.len() - 1], true) // Slice off the '&'.
+        } else {
+            (args, false)
+        }
+    } else {
+        (args, false)
+    };
+
+    if clean_args.is_empty() {
+        if is_background {
+            error::red_println("0-shell: syntax error near unexpected token `&'");
+        }
+        return;
+    }
+
+    let command = clean_args[0].as_str();
 
     let result = match command {
         // State modifiers (built-in).
@@ -38,13 +53,15 @@ pub fn run_command(args: &[String], jobs: &mut Vec<Job>) {
         "pwd" => pwd::pwd(args),
 
         // Job control (built-in).
-        "jobs" => jobs::jobs(args, jobs),
+        "bg" => bg::bg(args, jobs),
         "fg" => fg::fg(args, jobs),
+        "jobs" => jobs::jobs(args, jobs),
+        "kill" => kill::kill(args, jobs),
 
         // External utilities.
         // We delegate these to a child process so they can be stopped/killed without crashing the main shell.
         "cat" | "cp" | "ls" | "mkdir" | "man" | "mv" | "rm" | "sleep" | "touch" => {
-            worker::launch_worker_process(args, jobs)
+            worker::launch_worker_process(clean_args, jobs, is_background)
         }
 
         _ => Err(format!("command not found: {}", command)),
@@ -53,8 +70,6 @@ pub fn run_command(args: &[String], jobs: &mut Vec<Job>) {
     match result {
         Ok(ok) => {
             if !ok.is_empty() {
-                // Some commands (like `ls`` or `jobs`) return a string to print.
-                // Others (like `cd`) return an empty string.
                 print!("{}", &ok);
             }
         }

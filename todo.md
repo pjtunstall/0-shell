@@ -55,3 +55,8 @@ assert_eq!(result, "Hello, world!");`
 ## Documentation
 
 - Investigate mdBook for Rust documentation.
+
+## Job Control
+
+- History stack to track 1st and 2nd most recently active jobs.
+- In `check_background_jobs`, check `status` for exit codes or signals (e.g., segfaults).

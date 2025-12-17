@@ -1,10 +1,15 @@
 use std::sync::atomic::Ordering;
 
-use crate::{c, commands::jobs::Job};
+use crate::{
+    c,
+    commands::jobs::{self, Job},
+};
 
 pub const USAGE: &str = "Usage: fg [ID]";
 
 pub fn fg(args: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
+    jobs::check_background_jobs(jobs);
+
     let job_id = if args.len() < 2 {
         // Default to the last job if no ID provided (the "+" job).
         if let Some(last) = jobs.last() {

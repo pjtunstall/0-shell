@@ -2,7 +2,10 @@ use std::collections::VecDeque;
 
 use crate::{
     c::{self, SIGINT, SIGTSTP},
-    commands::{self, jobs::Job},
+    commands::{
+        self,
+        jobs::{self, Job},
+    },
     error, input,
 };
 
@@ -34,6 +37,8 @@ pub fn repl() {
     history.push_back(String::new());
 
     loop {
+        jobs::check_background_jobs(&mut jobs);
+
         let input_string = match input::get_input(&mut history) {
             Ok(ok_input) => ok_input,
             Err(err) => {

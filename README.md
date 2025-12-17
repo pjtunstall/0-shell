@@ -15,7 +15,7 @@
 
 ## What is this?
 
-This is my take on the [01-Founders/01-Edu project of the same name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit b0b9f3d). The object of the exercise is to mimick essential shell behaviors without using external binaries or existing shell utilities.
+This is my take on the [01-Founders/01-Edu project of the same name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit b0b9f3d). The object of the exercise is to learn about shells and job-control by mimicking essential Unix shell behaviors without using external binaries or existing shell utilities.
 
 We're required to recreate at least the following ten commands:
 
@@ -55,11 +55,16 @@ I've added several bonus features, including:
 - redirection
 - environment variables
 
-I'm partway through the optional extra project [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
+I've also done the optional extra project [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
 
-- Ctrl+C to terminate a child process and return to the 'shell'
-- Ctrl+Z to pause a child process and return to the 'shell'
-- fg (foreground) to restart a paused child process
+- Ctrl+C: terminate a child process and return to the 'shell'
+- Ctrl+Z: pause a child process and return to the 'shell'
+- jobs: list background processes
+- fg: restart a paused child process in the foreground
+- bg: restart one or more child processes in the background
+- kill: terminate a process
+
+As in a traditional Unix shell, the arguments to `fg` and `bg` are job ids (1, 2, ...) while `kill` expects a system-wide PID (process ID), such as `1881893`.<sup id="ref-f3">[3](#f3)</sup>
 
 ## Audit
 
@@ -118,3 +123,5 @@ See [todo.md](todo.md) for possible further developments and topics to explore.
 <a id="f1" href="#ref-f1">1</a>: A traditional Unix shell, such as Bash, treats certain commands as built-in utilities: `cd`, `exit`, `pwd`, `echo` (the first two of necessity built-in). Other commands launch external binaries: `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir`. To check whether a command is built-in for a given shell, you can enter `type <command>`.[↩](#ref-f1)
 
 <a id="f2" href="#ref-f2">2</a>: On installation, I gather that Busybox makes, for example, `/bin/ls` a symbolic link pointing to `/bin/0_shell`, allowing it act in place of a default shell. I haven't gone this far.[↩](#ref-f2)
+
+<a id="f3" href="#ref-f3">3</a>: As a safety measure, I chose to restrict `kill` to jobs created by my 0-shell. The check, in `kill.rs`, is commented and can be removed if so desired.[↩](#ref-f3)
