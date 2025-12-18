@@ -124,8 +124,10 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>) {
     loop {
         let mut status = 0;
 
-        // -1: Check if ANY child job is terminated.
-        // WNOHANG: No hang: don't yield control.
+        // Check if a child job is terminated (`WNOHANG`). It only waits if no options are passed here, i.e. `0` in the options slot; we don't want to call this from the parent or 0-shell will freeze.
+        // -1: is a wildcard; it means check for any pid.
+        // 0: any child in the same process group as the shell.
+        // < -1: for any child in the group number with the number specified.
         let dead_pid = unsafe { c::waitpid(-1, &mut status, c::WNOHANG) };
 
         // dead_pid > 0: We found a terminated job.

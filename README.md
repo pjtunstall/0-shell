@@ -7,6 +7,7 @@
   - [Prompt](#prompt)
   - [echo something](#echo-something)
   - [Last orders, please](#last-orders-please)
+  - [Job control](#job-control)
 - [Regarding the name](#regarding-the-name)
 - [Testing](#testing)
 - [Deviations](#deviations)
@@ -55,7 +56,7 @@ I've added several bonus features, including:
 - redirection
 - environment variables
 
-I've also done the optional extra project [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
+I've also included some features from the optional extra project [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
 
 - Ctrl+C: terminate a child process and return to the 'shell'
 - Ctrl+Z: pause a child process and return to the 'shell'
@@ -65,6 +66,8 @@ I've also done the optional extra project [job-control](https://github.com/01-ed
 - kill: terminate a process
 
 As in a traditional Unix shell, the arguments to `fg` and `bg` are job ids (1, 2, ...) while `kill` expects a system-wide PID (process ID), such as `1881893`.<sup id="ref-f3">[3](#f3)</sup>
+
+For the remaining tasks, see [Audit: Job control](#job-control).
 
 ## Audit
 
@@ -91,6 +94,16 @@ Since there's no requirement to implement special behavior for `!` or guidance o
 ### Last orders, please
 
 See `integration.rs` for an integration test that covers the last section of the audit (before the bonus questions). I've assumed that the omission of `txt` extension from `new_doc.txt` on the third mention is accidental.
+
+### Job control
+
+While it can be argued that my 0-shell meets the stated requirements for job-control, I've yet to implement all of the additional requirements implied by the audit questions for this optional extra, namely
+
+- the flags `-r`, `-p`, `-r`, and `-s` (as well as the explicit requirement `-l`) for `jobs`
+- `%` before an id number to convert from job id to process id (in the case of `bg` and `fg`) and vice versa (in the case of `kill`)
+- execution of arbitrary external binaries
+  - also via the system `PATH` by typing e.g. `tar` or `python`
+- `check_background_jobs` to check for stopped (`WUNTRACED`) as well as dead (`WNOHANG`) jobs
 
 ## Regarding the name
 
