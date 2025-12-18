@@ -18,8 +18,7 @@ pub fn cat(input: &[String]) -> Result<String, String> {
         return match get_input() {
             Ok(contents) => Ok(contents),
             Err(e) => Err(format!(
-                "{}: {}",
-                "cat",
+                "Stdin error: {}",
                 e.to_string()
                     .split(" (os ")
                     .next()
@@ -40,12 +39,7 @@ pub fn cat(input: &[String]) -> Result<String, String> {
     if errors.is_empty() {
         Ok(concatenated_contents)
     } else {
-        let joined_errors = errors.join("\n");
-        if let Some(suffix) = joined_errors.strip_prefix("cat: ") {
-            Err(suffix.to_string())
-        } else {
-            Err(joined_errors)
-        }
+        Err(errors.join("\n"))
     }
 }
 
@@ -61,22 +55,22 @@ fn redirect(targets: Vec<[&String; 2]>, concatenated_contents: &str, errors: &mu
             match File::create(target_path) {
                 Ok(mut file) => {
                     if let Err(_) = file.write_all(concatenated_contents.as_bytes()) {
-                        errors.push(format!("Failed to write to file: {}", target[1]));
+                        errors.push(format!("0-shell: Failed to write to file: {}", target[1]));
                     }
                 }
                 Err(_) => {
-                    errors.push(format!("Failed to create file: {}", target[1]));
+                    errors.push(format!("0-shell: Failed to create file: {}", target[1]));
                 }
             }
         } else {
             match File::options().append(true).create(true).open(target_path) {
                 Ok(mut file) => {
                     if let Err(_) = file.write_all(concatenated_contents.as_bytes()) {
-                        errors.push(format!("Failed to append to file: {}", target[1]));
+                        errors.push(format!("0-shell: Failed to append to file: {}", target[1]));
                     }
                 }
                 Err(_) => {
-                    errors.push(format!("Failed to open file: {}", target[1]));
+                    errors.push(format!("0-shell: Failed to open file: {}", target[1]));
                 }
             }
         }
@@ -107,9 +101,7 @@ fn get_input() -> Result<String, String> {
             Ok(_) => {}
             Err(e) => {
                 return Err(format!(
-                    "{}: {}: {}",
-                    "cat",
-                    "-",
+                    "Stdin error: {}",
                     e.to_string()
                         .split(" (os ")
                         .next()
@@ -125,8 +117,7 @@ fn get_input() -> Result<String, String> {
 
 fn format(s: &str, e: io::Error) -> String {
     format!(
-        "{}: {}: {}",
-        "cat",
+        "Failed to read {}: {}",
         s,
         e.to_string()
             .split(" (os ")
@@ -159,10 +150,10 @@ fn assemble_contents(sources: Vec<&String>) -> (String, Vec<String>) {
                     concatenated_contents.push_str(&contents);
                 }
             } else {
-                errors.push(format!("cat: {}: Is a directory", path_str));
+                errors.push(format!("Is a directory: {}", path_str));
             }
         } else {
-            errors.push(format!("cat: {}: No such file or directory", path_str));
+            errors.push(format!("No such file or directory: {}", path_str));
         }
     }
 
@@ -339,5 +330,26 @@ mod tests {
 
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Is a directory"));
+    }
+
+    #[test]
+    fn cat_redirect_target_directory_fails_with_shell_prefix() {
+        let temp_store = TempStore::new(2);
+        let source = &temp_store.store[0];
+        let target_dir = &temp_store.store[1];
+
+        fs::write(source, "hello").expect("failed to write source file");
+        fs::create_dir(target_dir).expect("failed to create target directory");
+
+        let input = string_vec!["cat", source, ">", target_dir];
+        let result = cat(&input);
+
+        assert!(result.is_err(), "redirecting to directory should fail");
+        let err = result.unwrap_err();
+        assert!(
+            err.contains("0-shell: Is a directory"),
+            "error should include shell-prefixed directory message, got: {}",
+            err
+        );
     }
 }

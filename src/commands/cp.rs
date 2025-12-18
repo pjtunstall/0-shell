@@ -1,6 +1,7 @@
 use std::{fs, path::Path};
 
-pub const USAGE: &str = "Usage:\tcp SOURCE_FILE TARGET_FILE\n\tcp SOURCE_FILE... TARGET_DIRECTORY";
+pub const USAGE: &str =
+    "Usage:\tcp <SOURCE_FILE> <TARGET_FILE>\n\tcp <SOURCE_FILE>... <TARGET_DIRECTORY>";
 
 pub fn cp(input: &[String]) -> Result<String, String> {
     is_input_len_at_least_two(input)?;

@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-pub const USAGE: &str = "Usage:\tmkdir DIRECTORY...";
+pub const USAGE: &str = "Usage:\tmkdir <DIRECTORY>...";
 
 pub fn mkdir(input: &[String]) -> Result<String, String> {
     is_input_len_at_least_two(input)?;
@@ -11,29 +11,24 @@ pub fn mkdir(input: &[String]) -> Result<String, String> {
         let path = Path::new(path_str);
 
         if path.exists() {
-            errors.push(format!("mkdir: {}: File exists", path.display()));
-        } else {
-            if let Err(err) = fs::create_dir(path) {
-                errors.push(
-                    err.to_string()
-                        .split(" (os ")
-                        .next()
-                        .unwrap_or(" ")
-                        .to_string(),
-                );
-            }
+            errors.push(format!("File exists: {}", path.display()));
+        } else if let Err(err) = fs::create_dir(path) {
+            errors.push(format!(
+                "Failed to create {}: {}",
+                path.display(),
+                err.to_string()
+                    .split(" (os ")
+                    .next()
+                    .unwrap_or(" ")
+                    .to_string()
+            ));
         }
     }
 
     if errors.is_empty() {
         Ok(String::new())
     } else {
-        let joined_errors = errors.join("\n");
-        if let Some(suffix) = joined_errors.strip_prefix("mkdir: ") {
-            Err(suffix.to_string())
-        } else {
-            Err(joined_errors)
-        }
+        Err(errors.join("\n"))
     }
 }
 

@@ -1,9 +1,11 @@
+use std::time::Duration;
+
 use crate::{
-    c::{self, SIGTERM},
-    commands::jobs::{self, Job},
+    c::{self, SIGCONT, SIGTERM},
+    commands::jobs::{self, Job, State},
 };
 
-pub const USAGE: &str = "Usage: kill PID";
+pub const USAGE: &str = "Usage:\tkill <PID>|%<JOB_ID>";
 
 pub fn kill(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
     jobs::check_background_jobs(jobs);
@@ -16,24 +18,60 @@ pub fn kill(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
         return Err(format!("Not enough arguments\n{}", USAGE));
     }
 
-    let pid: i32 = input[1]
-        .parse()
-        .map_err(|e| format!("Failed to parse PID: {}\n{}", e, input.last().unwrap()))?;
-    if pid < 0 {
-        return Err(format!("PID must be positive"));
-    }
-    if pid == 0 {
-        return Err(format!(""));
-    }
+    let arg = &input[1];
+    let pid_to_kill: i32;
+    let mut is_stopped = false;
 
-    // As a safety measure, I've chosen to only let it kill jobs in the jobs list. Remove this check to allow it to kill any process.
-    let job_exists = jobs.iter().any(|j| j.pid == pid);
-    if !job_exists {
-        return Err(format!("No job with PID: {}", pid));
+    if arg.starts_with('%') {
+        let id_str = &arg[1..];
+        let job_id = id_str
+            .parse::<usize>()
+            .map_err(|_| format!("Invalid job ID: {}", arg))?;
+
+        if let Some(job) = jobs.iter().find(|j| j.id == job_id) {
+            pid_to_kill = job.pid;
+            if matches!(job.state, State::Stopped) {
+                is_stopped = true;
+            }
+        } else {
+            return Err(format!("No such job ID: {}", arg));
+        }
+    } else {
+        pid_to_kill = arg
+            .parse::<i32>()
+            .map_err(|e| format!("Failed to parse PID: {}\n{}", e, arg))?;
+
+        if pid_to_kill <= 0 {
+            return Err("PID must be positive".to_string());
+        }
+
+        // Note if it's one of our tracked jobs (to wake stopped jobs).
+        if let Some(job) = jobs.iter().find(|j| j.pid == pid_to_kill) {
+            if matches!(job.state, State::Stopped) {
+                is_stopped = true;
+            }
+        }
     }
 
     unsafe {
-        c::kill(pid, SIGTERM);
+        // If the job is running, this kills it immediately.
+        // If the job is stopped, the signal is queued.
+        c::kill(pid_to_kill, SIGTERM);
+
+        // Restart a stopped job so that it can received the queued signal to terminate.
+        if is_stopped {
+            c::kill(pid_to_kill, SIGCONT);
+        }
+    }
+
+    // Surface termination promptly instead of waiting for the next builtin call.
+    // Poll briefly so we don't block indefinitely if the process ignores SIGTERM.
+    for _ in 0..5 {
+        jobs::check_background_jobs(jobs);
+        if jobs.iter().all(|j| j.pid != pid_to_kill) {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(1));
     }
 
     Ok(String::new())

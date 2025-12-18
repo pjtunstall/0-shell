@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-pub const USAGE: &str = "Usage:\trm [-r] FILE|DIRECTORY...";
+pub const USAGE: &str = "Usage:\trm [-r] <FILE|DIRECTORY>...";
 
 pub const OPTIONS_USAGE: &str = "\r\n-R  -r  -- remove directories and their contents recursively";
 
@@ -20,45 +20,48 @@ pub fn rm(input: &[String]) -> Result<String, String> {
 
 fn process_args(args: &[String], recursive: bool) -> Result<String, String> {
     let mut errors: Vec<Result<(), String>> = Vec::new();
-    let mut i: u32 = 0;
     for arg in args.iter() {
         let path = Path::new(&arg);
 
         if recursive {
             if path.is_dir() {
                 _ = fs::remove_dir_all(path).map_err(|err| {
-                    let cmd = if i == 0 { "" } else { "rm: " };
-                    i += 1;
-                    errors.push(Err(format!("{}{}: {}", cmd, arg, err)
-                        .split(" (os")
-                        .next()
-                        .unwrap_or(" ")
-                        .to_string()));
+                    errors.push(Err(format!(
+                        "Failed to remove directory {}: {}",
+                        arg,
+                        err.to_string()
+                            .split(" (os")
+                            .next()
+                            .unwrap_or(" ")
+                            .to_string()
+                    )));
                 });
             } else {
                 _ = fs::remove_file(path).map_err(|err| {
-                    let cmd = if i == 0 { "" } else { "rm: " };
-                    i += 1;
-                    errors.push(Err(format!("{}{}: {}", cmd, arg, err)
-                        .split(" (os ")
-                        .next()
-                        .unwrap_or(" ")
-                        .to_string()));
+                    errors.push(Err(format!(
+                        "Failed to remove file {}: {}",
+                        arg,
+                        err.to_string()
+                            .split(" (os ")
+                            .next()
+                            .unwrap_or(" ")
+                            .to_string()
+                    )));
                 });
             }
         } else {
             if path.is_dir() {
-                let cmd = if i == 0 { "" } else { "rm: " };
-                i += 1;
-                errors.push(Err(format!("{}{}: is a directory", cmd, arg)));
+                errors.push(Err(format!("Is a directory: {}", arg)));
             } else if let Err(err) = fs::remove_file(path) {
-                let cmd = if i == 0 { "" } else { "rm: " };
-                i += 1;
-                errors.push(Err(format!("{}{}: {}", cmd, arg, err)
-                    .split(" (os ")
-                    .next()
-                    .unwrap_or(" ")
-                    .to_string()));
+                errors.push(Err(format!(
+                    "Failed to remove file {}: {}",
+                    arg,
+                    err.to_string()
+                        .split(" (os ")
+                        .next()
+                        .unwrap_or(" ")
+                        .to_string()
+                )));
             }
         }
     }
@@ -128,7 +131,7 @@ mod tests {
         let result = rm(&input);
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), format!("{}: is a directory", dir));
+        assert_eq!(result.unwrap_err(), format!("Is a directory: {}", dir));
         assert!(
             Path::new(dir).exists(),
             "Directory should not have been removed"
@@ -154,7 +157,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err(),
-            format!("{}: is a directory\nrm: {}: is a directory", dir1, dir2)
+            format!("Is a directory: {}\nIs a directory: {}", dir1, dir2)
         );
         assert!(!Path::new(file1).exists(), "File should have been removed");
         assert!(!Path::new(file2).exists(), "File should have been removed");

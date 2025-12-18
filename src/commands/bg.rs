@@ -6,7 +6,7 @@ use crate::{
     error,
 };
 
-pub const USAGE: &str = "bg [JOB...]";
+pub const USAGE: &str = "Usage:\tbg [%]<JOB_ID>...";
 
 pub fn bg(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
     jobs::check_background_jobs(jobs);
@@ -24,12 +24,19 @@ pub fn bg(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
     let mut target_ids = HashSet::new();
 
     for item in &input[1..] {
-        match item.parse::<usize>() {
+        let clean_item = if item.starts_with('%') {
+            &item[1..]
+        } else {
+            item
+        };
+
+        match clean_item.parse::<usize>() {
             Ok(id) => {
                 target_ids.insert(id);
             }
             Err(e) => {
-                failures.push_str(&format!("bg: Failed to parse job ID: {}\n", e));
+                // Command prefix removed
+                failures.push_str(&format!("Failed to parse job ID: {}\n", e));
                 failure_count += 1
             }
         }
@@ -43,30 +50,30 @@ pub fn bg(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
                 }
                 job.state = State::Running;
                 success_count += 1;
-
-                // Reborrow; fine, thanks to NLL, as long as we don't use the current mutable reference to a job again after this iteration.
                 successes.push(&*job);
             } else {
-                failures.push_str(&format!("bg: Job {} is not stopped\n", job.id));
+                // Command prefix removed
+                failures.push_str(&format!("Job {} is not stopped\n", job.id));
                 failure_count += 1;
             }
             target_ids.remove(&job.id);
         }
     }
 
-    // Report any requested job IDs that weren't found
     for id in target_ids {
-        failures.push_str(&format!("bg: No job with ID: {}\n", id));
+        // Command prefix removed
+        failures.push_str(&format!("No such job ID: {}\n", id));
         failure_count += 1;
     }
 
-    let output = jobs::format_jobs(&successes, false);
-    print!("{}", output);
+    for job in successes {
+        println!("[{}]+\t{} &", job.id, job.command);
+    }
+
     if !failures.is_empty() {
         error::red_println(&failures.trim_end_matches('\n'));
     }
 
-    // As a stopgap till I have time to restructure so that `bg` (and `ls`) can return multiple ok-like and error-like items, I'm repurposing this `Ok` return value to allow me to test the number of successes and failures.
     Ok(format!("{}:{}", success_count, failure_count))
 }
 
@@ -98,11 +105,31 @@ mod tests {
         assert!(result.is_ok());
         assert!(
             matches!(jobs[0].state, State::Running),
-            "Job ID 1 should move to Running"
+            "job id 1 should move to running"
         );
         assert!(
             matches!(jobs[1].state, State::Running),
-            "Job ID 2 should stay Running"
+            "job id 2 should stay running"
+        );
+    }
+
+    #[test]
+    fn test_bg_supports_percent_syntax() {
+        let mut jobs = vec![Job {
+            id: 1,
+            pid: 101,
+            state: State::Stopped,
+            command: "sleep 100".to_string(),
+        }];
+
+        let input = vec!["bg".to_string(), "%1".to_string()];
+
+        let result = bg(&input, &mut jobs);
+
+        assert!(result.is_ok());
+        assert!(
+            matches!(jobs[0].state, State::Running),
+            "job id 1 should move to running with % syntax"
         );
     }
 
@@ -120,7 +147,7 @@ mod tests {
 
         assert!(
             matches!(jobs[0].state, State::Stopped),
-            "Should not have changed"
+            "state should not have changed"
         );
     }
 
@@ -154,7 +181,7 @@ mod tests {
         let success_count: usize = parts[0].parse().expect("parsing success count failed");
         let failure_count: usize = parts[1].parse().expect("parsing failure count failed");
 
-        assert_eq!(success_count, 1, "Should have 1 successful bg");
-        assert_eq!(failure_count, 3, "Should have 3 failed bg attempts"); // Two parsing failures and one job already running.
+        assert_eq!(success_count, 1, "should have 1 successful bg");
+        assert_eq!(failure_count, 3, "should have 3 failed bg attempts");
     }
 }

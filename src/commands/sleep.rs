@@ -1,4 +1,4 @@
-pub const USAGE: &str = "Usage:\tsleep SECONDS";
+pub const USAGE: &str = "Usage:\tsleep <SECONDS>";
 
 pub fn sleep(input: &[String]) -> Result<String, String> {
     if input.len() < 2 {

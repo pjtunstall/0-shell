@@ -1,6 +1,6 @@
 use std::{fs::File, path::Path};
 
-pub const USAGE: &str = "Usage:\ttouch FILE...";
+pub const USAGE: &str = "Usage:\ttouch <FILE>...";
 
 pub fn touch(input: &[String]) -> Result<String, String> {
     is_input_len_at_least_two(input)?;
@@ -14,8 +14,7 @@ pub fn touch(input: &[String]) -> Result<String, String> {
                 filetime::set_file_times(path, filetime::FileTime::now(), filetime::FileTime::now())
             {
                 errors.push(format!(
-                    "{}: {}: {}",
-                    "touch",
+                    "Failed to update timestamps for {}: {}",
                     path_str,
                     e.to_string()
                         .split(" (os ")
@@ -27,8 +26,7 @@ pub fn touch(input: &[String]) -> Result<String, String> {
         } else {
             if let Err(e) = File::create(path) {
                 errors.push(format!(
-                    "{}: {}: {}",
-                    "touch",
+                    "Failed to create file {}: {}",
                     path_str,
                     e.to_string()
                         .split(" (os ")
@@ -43,12 +41,7 @@ pub fn touch(input: &[String]) -> Result<String, String> {
     if errors.is_empty() {
         Ok(String::new())
     } else {
-        let joined_errors = errors.join("\n");
-        if let Some(suffix) = joined_errors.strip_prefix("touch: ") {
-            Err(suffix.to_string())
-        } else {
-            Err(joined_errors)
-        }
+        Err(errors.join("\n"))
     }
 }
 

@@ -11,6 +11,11 @@ use terminal_size::{Width, terminal_size};
 
 use super::system;
 
+fn blue(text: &str) -> String {
+    // Use foreground reset (39m) so we don't clear other active attributes (e.g., bold).
+    format!("\x1b[34m{}\x1b[39m", text)
+}
+
 struct FileInfo {
     file_type: String,
     permissions: String,
@@ -61,7 +66,13 @@ pub fn get_short_list(flags: u8, path: &Path, is_redirect: bool) -> Result<Strin
                         String::new()
                     };
 
-                    Some(format!("{}{}", name, suffix))
+                    let display_name = if !is_redirect && e.path().is_dir() {
+                        blue(&name)
+                    } else {
+                        name
+                    };
+
+                    Some(format!("{}{}", display_name, suffix))
                 }
                 Err(e) => Some(format!("Error reading entry: {}", e)),
             })
@@ -121,7 +132,7 @@ fn get_terminal_width() -> usize {
     }
 }
 
-pub fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
+pub fn get_long_list(flags: u8, path: &Path, colorize: bool) -> Result<String, String> {
     let metadata = match fs::metadata(path) {
         Ok(meta) => meta,
         Err(_) => return Ok(String::new()),
@@ -130,7 +141,7 @@ pub fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
     let mut entries: VecDeque<String> = if metadata.is_dir() {
         match fs::read_dir(path) {
             Ok(entries) => entries
-                .filter_map(|entry| format_entry_from_direntry(entry.ok()?, flags))
+                .filter_map(|entry| format_entry_from_direntry(entry.ok()?, flags, colorize))
                 .filter(|entry_str| {
                     let name = entry_str.split_whitespace().last().unwrap_or("");
                     flags & 1 == 1 || !system::is_hidden(Path::new(name))
@@ -144,7 +155,7 @@ pub fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
             .map(|name| name.to_string_lossy().into_owned())
             .unwrap_or_else(|| path.to_string_lossy().into_owned());
 
-        match format_entry_from_path(path, &file_name, flags) {
+        match format_entry_from_path(path, &file_name, flags, colorize) {
             Some(entry_str) => VecDeque::from([entry_str]),
             None => return Ok(String::new()),
         }
@@ -155,12 +166,12 @@ pub fn get_long_list(flags: u8, path: &Path) -> Result<String, String> {
             let parent_path = absolute_path
                 .parent()
                 .unwrap_or(Path::new(MAIN_SEPARATOR_STR));
-            if let Some(entry) = format_entry_from_path(parent_path, "..", flags) {
+            if let Some(entry) = format_entry_from_path(parent_path, "..", flags, colorize) {
                 entries.push_front(entry);
             }
         }
 
-        if let Some(entry) = format_entry_from_path(path, ".", flags) {
+        if let Some(entry) = format_entry_from_path(path, ".", flags, colorize) {
             entries.push_front(entry);
         }
     }
@@ -260,13 +271,19 @@ fn format_entry<T: AsRef<Path>>(
     name: Option<String>,
     metadata: Metadata,
     flags: u8,
+    colorize: bool,
 ) -> Option<String> {
     let path = path.as_ref();
-    let name = name.unwrap_or_else(|| {
+    let name_raw = name.unwrap_or_else(|| {
         path.file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default()
     });
+    let name = if colorize && metadata.is_dir() {
+        blue(&name_raw)
+    } else {
+        name_raw
+    };
 
     let file_type = if metadata.is_dir() { "d" } else { "-" };
     let (permissions, hard_links, user_name, group_name) =
@@ -295,19 +312,20 @@ fn format_entry<T: AsRef<Path>>(
     Some(info.format())
 }
 
-fn format_entry_from_direntry(e: DirEntry, flags: u8) -> Option<String> {
+fn format_entry_from_direntry(e: DirEntry, flags: u8, colorize: bool) -> Option<String> {
     let metadata = e.metadata().ok()?;
     format_entry(
         e.path(),
         Some(e.file_name().to_string_lossy().into_owned()),
         metadata,
         flags,
+        colorize,
     )
 }
 
-fn format_entry_from_path(path: &Path, name: &str, flags: u8) -> Option<String> {
+fn format_entry_from_path(path: &Path, name: &str, flags: u8, colorize: bool) -> Option<String> {
     let metadata = fs::metadata(path).ok()?;
-    format_entry(path, Some(name.to_string()), metadata, flags)
+    format_entry(path, Some(name.to_string()), metadata, flags, colorize)
 }
 
 fn format_time(modified: SystemTime) -> String {

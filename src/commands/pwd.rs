@@ -1,6 +1,6 @@
 use std::env;
 
-pub const USAGE: &str = "Usage: \tpwd";
+pub const USAGE: &str = "Usage:\tpwd";
 
 pub fn pwd(input: &[String]) -> Result<String, String> {
     is_input_len_at_least_two(input)?;

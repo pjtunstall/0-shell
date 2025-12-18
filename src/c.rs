@@ -1,11 +1,16 @@
 use std::sync::atomic::{AtomicI32, Ordering};
 
+// Flags.
 pub const WNOHANG: i32 = 1;
 pub const WUNTRACED: i32 = 2;
+
+// Signals.
 pub const SIGINT: i32 = 2;
-pub const SIGTSTP: i32 = 20;
-pub const SIGCONT: i32 = 18;
+pub const SIGKILL: i32 = 9;
 pub const SIGTERM: i32 = 15;
+pub const SIGCONT: i32 = 18;
+pub const SIGSTOP: i32 = 19;
+pub const SIGTSTP: i32 = 20;
 
 // Store the PID of the currently running foreground job.
 // 0 means "no job running" (we're at the prompt).
@@ -20,7 +25,7 @@ unsafe extern "C" {
 // Forward the signal received by the shell to the current foreground child.
 // The OS passes the signal number (e.g., 2 or 20) as the `sig` argument.
 pub extern "C" fn handle_forwarding(sig: i32) {
-    let pid = CURRENT_CHILD_PID.load(Ordering::Relaxed);
+    let pid = CURRENT_CHILD_PID.load(Ordering::SeqCst);
     if pid > 0 {
         unsafe {
             kill(pid, sig);
@@ -28,8 +33,21 @@ pub extern "C" fn handle_forwarding(sig: i32) {
     }
 }
 
-// Check if the process was suspended (Ctrl+Z).
-// Bitwise logic: in Linux, a stopped process has 0x7F in the lower 8 bits.
+// A stopped process has 0x7f in the lower 8 bits.
 pub fn w_if_stopped(status: i32) -> bool {
     (status & 0xff) == 0x7f
+}
+
+// Check if killed by a signal.
+pub fn w_if_signaled(status: i32) -> bool {
+    // If low 7 bits are 0, it exited normally (WIFEXITED).
+    // If low 7 bits are 0x7f, it is stopped (WIFSTOPPED).
+    // Anything in between (1..126) is a signal (WIFSIGNALED).
+    let term_sig = status & 0x7f;
+    term_sig > 0 && term_sig < 0x7f
+}
+
+// The exit code lives in the high byte (bits 8-15). Shift it down to read it.
+pub fn w_exitstatus(status: i32) -> i32 {
+    (status >> 8) & 0xff
 }

@@ -1,6 +1,6 @@
 use super::*;
 
-const USAGE: &str = "Usage:\tman COMMAND";
+const USAGE: &str = "Usage:\tman <COMMAND>";
 
 pub fn man(input: &[String]) -> Result<String, String> {
     if input.len() < 2 {
@@ -16,6 +16,7 @@ pub fn man(input: &[String]) -> Result<String, String> {
         }
 
         let next = match cmd.as_str() {
+            "bg" => bg::USAGE,
             "cat" => cat::USAGE,
             "cd" => cd::USAGE,
             "cp" => cp::USAGE,
@@ -23,6 +24,7 @@ pub fn man(input: &[String]) -> Result<String, String> {
             "exit" => exit::USAGE,
             "fg" => fg::USAGE,
             "jobs" => jobs::USAGE,
+            "kill" => kill::USAGE,
             "ls" => ls::USAGE,
             "man" => man::USAGE,
             "mkdir" => mkdir::USAGE,

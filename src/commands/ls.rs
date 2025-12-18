@@ -219,7 +219,7 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
 fn list_current_directory(flags: &LsFlags, is_redirect: bool) -> Result<String, String> {
     let path = Path::new(".");
     if flags.long_format {
-        format::get_long_list(flags.as_u8(), path)
+        format::get_long_list(flags.as_u8(), path, !is_redirect)
     } else {
         format::get_short_list(flags.as_u8(), path, is_redirect)
     }
@@ -238,7 +238,7 @@ fn process_files(
     if flags.long_format {
         for file in files {
             let file_path = Path::new(file);
-            results.push_str(&format::get_long_list(flags.as_u8(), file_path)?);
+            results.push_str(&format::get_long_list(flags.as_u8(), file_path, !is_redirect)?);
         }
     } else {
         if is_redirect {
@@ -300,7 +300,7 @@ fn process_directories(
         }
 
         let dir_listing = if flags & 2 != 0 {
-            format::get_long_list(flags, path)?
+            format::get_long_list(flags, path, !is_redirect)?
         } else {
             format::get_short_list(flags, path, is_redirect)?
         };

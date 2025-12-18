@@ -65,9 +65,9 @@ I'm also implementing some features from the optional extra project [job-control
 - bg: restart one or more child processes in the background
 - kill: terminate a process
 
-As in a traditional Unix shell, the arguments to `fg` and `bg` are job ids (1, 2, ...) while `kill` expects a system-wide PID (process ID), such as `1881893`.<sup id="ref-f3">[3](#f3)</sup>
+As in Bash, the arguments to `fg` and `bg` are job numbers (1, 2, ...) while `kill` expects a system-wide PID (process ID), such as `1881893`; the convention can be reversed, for any of these commands, by prefixing the number with `%`, thus: `kill %` or `fg %1881893`.
 
-For the remaining tasks, see [Audit: Job control](#job-control).
+For the remaining tasks on this optional, see [Audit: Job control](#job-control).
 
 ## Audit
 
@@ -97,13 +97,10 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ### Job control
 
-While it might be argued that my 0-shell will meet the stated requirements for job-control (once the recently implemented features are verified and corrected as necessary), I've yet to tackle all of the additional requirements implied by the audit questions for this optional extra, namely
+While it might be argued that my 0-shell meets the stated requirements for the optional extension project job-control, I've yet to tackle some of the additional requirements implied by its audit questions, in particular:
 
-- the flags `-r`, `-p`, `-r`, and `-s` (as well as the explicit requirement `-l`) for `jobs`
-- `%` before an id number to convert from job id to process id (in the case of `bg` and `fg`) and vice versa (in the case of `kill`)
-- execution of arbitrary external binaries
-  - including execution of external binaries via the system `PATH` by typing e.g. `tar` or `python`
-- `check_background_jobs` to check for stopped (`WUNTRACED`) as well as dead (`WNOHANG`) jobs
+- execution of arbitrary external binaries apart from those we had to recreate,
+  - including via the system `PATH` by typing e.g. `tar` or `python`
 
 ## Regarding the name
 
@@ -121,9 +118,9 @@ cargo test -- --test-threads=1
 
 ## Deviations
 
-There are many trivial deviations from Zsh (my default shell at the time when I did the bulk of this project), even among the few items that I've implemented: bold text, different prompts, use of red for error messages, ... Lack of `!` for history expansion is discussed above. In Zsh, if you try to `cat` to a directory and a file, the operation fails completely and doesn't concatenated to the file. In my shell, it does what it can and reports any failures. That's more consistent with how Zsh behaves with `rm`, say.
+There are many trivial deviations from Zsh (my default shell at the time when I made my orignal version of the core project), even among the few items that I've implemented: bold text, different prompts, use of red for error messages, ... Lack of `!` for history expansion is discussed above. In Zsh, if you try to `cat` to a directory and a file, the operation fails completely and doesn't concatenated to the file. In my shell, it does what it can and reports any failures. That's more consistent with how Zsh behaves with `rm`, say.
 
-I've not been meticulous in mimicking the wording or capitalization of error messages. In some cases, I've aimed for greater consistency. Thus, Zsh and I both have `cat: tests: Is a directory` when one of the sources is a directory, but I also capitalize when one of the targets is a directory--`0-shell: Is a directory: tests`--unlike Zsh: `zsh: is a directory: tests`.
+I've not been meticulous in mimicking the wording, word order, or capitalization of error messages. In some cases, I've aimed for greater consistency than I found in Zsh. Thus, Zsh and Bash both have `cat: tests: Is a directory` when one of the sources is a directory, while I have `cat: Is a directory: tests`. But I also capitalize when one of the targets is a directory--`0-shell: Is a directory: tests`--unlike Zsh: `zsh: is a directory: tests`. In this case, Bash follows yet another pattern: `bash: line 1: tests: Is a directory`.
 
 You'll likely find other examples.
 
@@ -136,5 +133,3 @@ See [todo.md](todo.md) for possible further developments and topics to explore.
 <a id="f1" href="#ref-f1">1</a>: A traditional Unix shell, such as Bash, treats certain commands as built-in utilities: `cd`, `exit`, `pwd`, `echo` (the first two of necessity built-in). Other commands launch external binaries: `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir`. To check whether a command is built-in for a given shell, you can enter `type <command>`.[↩](#ref-f1)
 
 <a id="f2" href="#ref-f2">2</a>: On installation, I gather that Busybox makes, for example, `/bin/ls` a symbolic link pointing to `/bin/0_shell`, allowing it act in place of a default shell. I haven't gone this far.[↩](#ref-f2)
-
-<a id="f3" href="#ref-f3">3</a>: As a safety measure, I chose to restrict `kill` to jobs created by my 0-shell. The check, in `kill.rs`, is commented and can be removed if so desired.[↩](#ref-f3)

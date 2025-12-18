@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-pub const USAGE: &str = "USAGE:\tmv SOURCE_FILE TARGET_DIRECTORY\n\tmv SOURCE_FILE TARGET_DIRECTORY/NEW_NAME\n\tmv SOURCE_FILE NEW_NAME";
+pub const USAGE: &str = "Usage:\tmv <SOURCE_FILE> <TARGET_DIRECTORY>\n\tmv <SOURCE_FILE> <TARGET_DIRECTORY>/<NEW_NAME>\n\tmv <SOURCE_FILE> <NEW_NAME>";
 
 pub fn mv(input: &[String]) -> Result<String, String> {
     is_input_len_at_least_two(input)?;

@@ -363,4 +363,24 @@ mod tests {
             "contents of 2nd redirect target file should match input text"
         );
     }
+
+    #[test]
+    fn echo_redirect_to_directory_fails() {
+        let temp_store = TempStore::new(2);
+        let dir = &temp_store.store[0];
+        let file = &temp_store.store[1];
+
+        fs::create_dir(dir).expect("failed to create target directory");
+
+        let input = string_vec!["echo", "hello", ">", dir];
+        let result = echo(&input);
+        assert!(result.is_err(), "redirect to directory should fail");
+
+        // Ensure no stray file gets created alongside the directory.
+        assert!(!Path::new(file).exists(), "no extra file should be created");
+        assert!(
+            result.unwrap_err().to_lowercase().contains("is a directory"),
+            "error should mention directory"
+        );
+    }
 }

@@ -26,7 +26,7 @@ pub fn launch_job(
     }
 
     // Register this PID as target for Ctrl+C.
-    c::CURRENT_CHILD_PID.store(pid, Ordering::Relaxed);
+    c::CURRENT_CHILD_PID.store(pid, Ordering::SeqCst);
 
     // Use raw `waitpid`` to detect "Stopped" state.
     let mut status = 0;
@@ -36,7 +36,7 @@ pub fn launch_job(
     }
 
     // Unregister: the foreground slot is now free (either dead or moved to bg).
-    c::CURRENT_CHILD_PID.store(0, Ordering::Relaxed);
+    c::CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
 
     if c::w_if_stopped(status) {
         // Case A: Ctrl+Z.

@@ -20,13 +20,18 @@ use crate::commands::{ls, rm};
 
 lazy_static! {
     static ref COMMANDS: Vec<String> = vec![
+        "bg".to_string(),
         "cat".to_string(),
         "cd".to_string(),
         "cp".to_string(),
         "echo".to_string(),
         "exit".to_string(),
+        "fg".to_string(),
+        "jobs".to_string(),
+        "kill".to_string(),
         "ls".to_string(),
         "mkdir".to_string(),
+        "man".to_string(),
         "mv".to_string(),
         "pwd".to_string(),
         "rm".to_string(),
@@ -148,7 +153,8 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
 
 fn prompt() -> io::Result<String> {
     let cwd = std::env::current_dir()?.display().to_string();
-    let prompt = format!("{} ▶ ", cwd);
+    // Print cwd in blue; reset to default color afterwards.
+    let prompt = format!("\x1b[34m{}\x1b[39m ▶ ", cwd);
     Ok(prompt)
 }
 

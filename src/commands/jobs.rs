@@ -1,36 +1,96 @@
+use crate::c;
 use std::borrow::Borrow;
 
-use crate::c;
-
-pub const USAGE: &str = "Usage: jobs [-l]";
+pub const USAGE: &str = "Usage:\tjobs [-lprs] [[%]<JOB_ID>...]";
 const STATE_COL_WIDTH: usize = 24;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct JobOptions {
+    pub show_pid: bool,     // -l
+    pub pid_only: bool,     // -p
+    pub running_only: bool, // -r
+    pub stopped_only: bool, // -s
+}
+
+impl Default for JobOptions {
+    fn default() -> Self {
+        Self {
+            show_pid: false,
+            pid_only: false,
+            running_only: false,
+            stopped_only: false,
+        }
+    }
+}
 
 pub fn jobs(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
     check_background_jobs(jobs);
 
-    if input.len() > 2 {
-        return Err(format!("Too many arguments\n{}", USAGE));
+    let mut opts = JobOptions::default();
+    let mut specific_job_ids = Vec::new();
+
+    // PARSING LOOP
+    // We skip the first arg ("jobs")
+    for arg in input.iter().skip(1) {
+        if arg.starts_with('-') {
+            // Handle Flags (supports combined flags like "-lr")
+            for c in arg.chars().skip(1) {
+                match c {
+                    'l' => opts.show_pid = true,
+                    'p' => opts.pid_only = true,
+                    'r' => opts.running_only = true,
+                    's' => opts.stopped_only = true,
+                    _ => return Err(format!("Invalid option -- '{}'\n{}", c, USAGE)),
+                }
+            }
+        } else if arg.starts_with('%') {
+            // Handle Jobspecs (e.g., "%1")
+            let id_str = &arg[1..];
+            match id_str.parse::<usize>() {
+                Ok(id) => specific_job_ids.push(id),
+                Err(_) => return Err(format!("Invalid job ID: {}", arg)),
+            }
+        } else {
+            // Handle Arguments not starting with % (optional, depending on preference)
+            // Bash treats `jobs 1` same as `jobs %1` if it's a number.
+            if let Ok(id) = arg.parse::<usize>() {
+                specific_job_ids.push(id);
+            } else {
+                return Err(format!("Invalid job ID: {}", arg));
+            }
+        }
     }
 
-    let is_long = if input.len() == 2 {
-        if input[1] == "-l" {
-            true
-        } else {
-            return Err(format!("Unknown option\n{}", USAGE));
-        }
-    } else {
-        false
-    };
-
-    let output = format_jobs(jobs, is_long);
+    // Pass the specific IDs to filter the output
+    let output = format_jobs(jobs, opts, &specific_job_ids);
     Ok(output)
 }
 
-pub fn format_jobs<T: Borrow<Job>>(items: &[T], is_long: bool) -> String {
+pub fn format_jobs<T: Borrow<Job>>(items: &[T], opts: JobOptions, filter_ids: &[usize]) -> String {
     let mut output = String::new();
 
     for (i, item) in items.iter().enumerate() {
         let job = item.borrow();
+
+        // 0. Filter by specific Job IDs (if user asked for specific jobs)
+        if !filter_ids.is_empty() && !filter_ids.contains(&job.id) {
+            continue;
+        }
+
+        // 1. Filter: -r (Running only).
+        if opts.running_only && matches!(job.state, State::Stopped) {
+            continue;
+        }
+        // 2. Filter: -s (Stopped only).
+        if opts.stopped_only && matches!(job.state, State::Running) {
+            continue;
+        }
+
+        // Mode: -p (PIDs only). Early exit.
+        if opts.pid_only {
+            output.push_str(&format!("{}\n", job.pid));
+            continue;
+        }
 
         let sign = if i == items.len() - 1 {
             "+"
@@ -40,8 +100,7 @@ pub fn format_jobs<T: Borrow<Job>>(items: &[T], is_long: bool) -> String {
             " "
         };
 
-        let display = JobDisplay { job, sign, is_long };
-
+        let display = JobDisplay { job, sign, opts };
         output.push_str(&format!("{}\n", display));
     }
 
@@ -58,7 +117,6 @@ pub struct Job {
 impl Job {
     pub fn new(jobs_total: usize, pid: i32, command: String, state: State) -> Self {
         assert!(pid > 0, "`pid` must be positive");
-
         Self {
             id: jobs_total,
             pid,
@@ -68,6 +126,7 @@ impl Job {
     }
 }
 
+#[derive(Debug, PartialEq, Clone)]
 pub enum State {
     Running,
     Stopped,
@@ -79,7 +138,7 @@ impl std::fmt::Display for State {
         let s = match self {
             State::Running => "Running",
             State::Stopped => "Stopped",
-            State::Terminated => "Terminated",
+            State::Terminated => "Terminated", // Rarely seen (removed immediately)
         };
         f.write_str(s)
     }
@@ -88,32 +147,42 @@ impl std::fmt::Display for State {
 pub struct JobDisplay<'a> {
     pub job: &'a Job,
     pub sign: &'a str,
-    pub is_long: bool,
+    pub opts: JobOptions,
 }
 
 impl std::fmt::Display for JobDisplay<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let state_str = self.job.state.to_string();
 
-        if self.is_long {
+        // Append " &" only if it is currently running.
+        // Stopped jobs do not get the ampersand.
+        let ampersand = if matches!(self.job.state, State::Running) {
+            " &"
+        } else {
+            ""
+        };
+
+        if self.opts.show_pid {
             write!(
                 f,
-                "[{}]{} {:<5} {:<width$} {}",
+                "[{}]{} {:<5} {:<width$} {}{}",
                 self.job.id,
                 self.sign,
                 self.job.pid,
                 state_str,
                 self.job.command,
+                ampersand,
                 width = STATE_COL_WIDTH
             )
         } else {
             write!(
                 f,
-                "[{}]{}  {:<width$} {}",
+                "[{}]{}  {:<width$} {}{}",
                 self.job.id,
                 self.sign,
                 state_str,
                 self.job.command,
+                ampersand,
                 width = STATE_COL_WIDTH
             )
         }
@@ -124,27 +193,42 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>) {
     loop {
         let mut status = 0;
 
-        // Check if a child job is terminated (`WNOHANG`). It only waits if no options are passed here, i.e. `0` in the options slot; we don't want to call this from the parent or 0-shell will freeze.
-        // -1: is a wildcard; it means check for any pid.
-        // 0: any child in the same process group as the shell.
-        // < -1: for any child in the group number with the number specified.
-        let dead_pid = unsafe { c::waitpid(-1, &mut status, c::WNOHANG) };
+        // Check if a child job is terminated (`WNOHANG`) or paused (`WUNTRACED`).
+        // It only waits if no options are passed here, i.e. 0 as the last argument.
+        let pid = unsafe { c::waitpid(-1, &mut status, c::WNOHANG | c::WUNTRACED) };
 
-        // dead_pid > 0: We found a terminated job.
-        // dead_pid == 0: None found. They're all running fine.
-        // dead_pid == -1: Error. Usually means no children exist.
-        if dead_pid <= 0 {
-            return; // Stop looking. Return to the prompt.
+        if pid <= 0 {
+            return;
         }
 
-        // We found a terminated job: update the list.
-        if let Some(index) = jobs.iter().position(|j| j.pid == dead_pid) {
-            let job = &jobs[index];
+        if let Some(index) = jobs.iter().position(|j| j.pid == pid) {
+            // Case 1: Stopped (Ctrl+Z).
+            if c::w_if_stopped(status) {
+                let job = &mut jobs[index];
+                job.state = State::Stopped;
+                println!("[{}]+\tStopped\t\t{}", job.id, job.command);
+            }
+            // Case 2: Killed by signal (`kill` command or Ctrl+C).
+            else if c::w_if_signaled(status) {
+                let job = &jobs[index];
+                println!("[{}]+\tTerminated\t{}", job.id, job.command);
+                jobs.remove(index);
+            }
+            // Case 3: Finished of its own accord.
+            else {
+                let job = &jobs[index];
+                let code = c::w_exitstatus(status);
 
-            // TODO: check `status` to see if they segfaulted?
-            println!("[{}]+  Done\t\t{}", job.id, job.command);
+                if code == 0 {
+                    // Success.
+                    println!("[{}]+\tDone\t\t{}", job.id, job.command);
+                } else {
+                    // Failure.
+                    println!("[{}]+\tExit {}\t\t{}", job.id, code, job.command);
+                }
 
-            jobs.remove(index);
+                jobs.remove(index);
+            }
         }
     }
 }
@@ -154,27 +238,59 @@ mod tests {
     use super::*;
 
     #[test]
-    fn short_form_pads_state_column() {
+    fn short_form_pads_state_column_and_adds_ampersand() {
         let job = Job {
             id: 2,
             pid: 9999,
-            command: "sleep 50 &".to_string(),
+            command: "sleep 50".to_string(),
             state: State::Running,
         };
 
         let display = JobDisplay {
             job: &job,
             sign: "+",
-            is_long: false,
+            opts: JobOptions::default(),
         };
 
         let expected = format!(
-            "[2]+ {:<width$} sleep 50 &",
+            "[2]+  {:<width$} sleep 50 &",
             "Running",
             width = STATE_COL_WIDTH
         );
 
-        assert_eq!(display.to_string(), expected);
+        assert_eq!(
+            display.to_string(),
+            expected,
+            "short form running job should include state padding and ampersand"
+        );
+    }
+
+    #[test]
+    fn stopped_job_has_no_ampersand() {
+        let job = Job {
+            id: 2,
+            pid: 9999,
+            command: "sleep 50".to_string(),
+            state: State::Stopped,
+        };
+
+        let display = JobDisplay {
+            job: &job,
+            sign: "+",
+            opts: JobOptions::default(),
+        };
+
+        let expected = format!(
+            "[2]+  {:<width$} sleep 50",
+            "Stopped",
+            width = STATE_COL_WIDTH
+        );
+
+        assert_eq!(
+            display.to_string(),
+            expected,
+            "stopped job should include state padding but no ampersand"
+        );
     }
 
     #[test]
@@ -186,10 +302,13 @@ mod tests {
             state: State::Terminated,
         };
 
+        let mut opts = JobOptions::default();
+        opts.show_pid = true; // -l flag.
+
         let display = JobDisplay {
             job: &job,
             sign: "-",
-            is_long: true,
+            opts,
         };
 
         let expected = format!(
@@ -199,6 +318,54 @@ mod tests {
             width = STATE_COL_WIDTH
         );
 
-        assert_eq!(display.to_string(), expected);
+        assert_eq!(
+            display.to_string(),
+            expected,
+            "long form should include pid column and correct padding"
+        );
+    }
+
+    #[test]
+    fn format_jobs_filters_by_running_only() {
+        let jobs = vec![
+            Job::new(1, 100, "run".into(), State::Running),
+            Job::new(2, 101, "stop".into(), State::Stopped),
+        ];
+
+        let mut opts = JobOptions::default();
+        opts.running_only = true; // -r
+
+        let output = format_jobs(&jobs, opts, &[]);
+
+        assert!(
+            output.contains("Running"),
+            "output should contain running job when -r is used"
+        );
+        assert!(
+            !output.contains("Stopped"),
+            "output should not contain stopped job when -r is used"
+        );
+    }
+
+    #[test]
+    fn format_jobs_filters_by_specific_id() {
+        let jobs = vec![
+            Job::new(1, 100, "run".into(), State::Running),
+            Job::new(2, 101, "stop".into(), State::Stopped),
+        ];
+
+        let opts = JobOptions::default();
+        let filter = vec![2]; // Filter for Job ID 2 only.
+
+        let output = format_jobs(&jobs, opts, &filter);
+
+        assert!(
+            !output.contains("run"),
+            "output should not contain job id 1 when filtering for job id 2"
+        );
+        assert!(
+            output.contains("stop"),
+            "output should contain job id 2 when filtering for job id 2"
+        );
     }
 }
