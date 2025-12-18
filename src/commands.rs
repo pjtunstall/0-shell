@@ -61,7 +61,7 @@ pub fn run_command(args: &[String], jobs: &mut Vec<Job>) {
         // External utilities.
         // We delegate these to a child process so they can be stopped/killed without crashing the main shell.
         "cat" | "cp" | "ls" | "mkdir" | "man" | "mv" | "rm" | "sleep" | "touch" => {
-            worker::launch_worker_process(clean_args, jobs, is_background)
+            worker::launch_job(clean_args, jobs, is_background)
         }
 
         _ => Err(format!("command not found: {}", command)),

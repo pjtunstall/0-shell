@@ -2,7 +2,7 @@ use crate::c;
 use crate::commands::jobs::{Job, State};
 use std::{env, process::Command, sync::atomic::Ordering};
 
-pub fn launch_worker_process(
+pub fn launch_job(
     args: &[String],
     jobs: &mut Vec<Job>,
     is_background: bool,
@@ -31,7 +31,7 @@ pub fn launch_worker_process(
     // Use raw `waitpid`` to detect "Stopped" state.
     let mut status = 0;
     unsafe {
-        // Blocks until the child either dies or stops (`WUNTRACED`).
+        // Blocks until the child process either dies or stops (`WUNTRACED`).
         c::waitpid(pid, &mut status, c::WUNTRACED);
     }
 
