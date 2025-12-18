@@ -97,12 +97,12 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ### Job control
 
-While it can be argued that my 0-shell meets the stated requirements for job-control, I've yet to implement all of the additional requirements implied by the audit questions for this optional extra, namely
+While it might be argued that my 0-shell meets the stated requirements for job-control, I've yet to implement all of the additional requirements implied by the audit questions for this optional extra, namely
 
 - the flags `-r`, `-p`, `-r`, and `-s` (as well as the explicit requirement `-l`) for `jobs`
 - `%` before an id number to convert from job id to process id (in the case of `bg` and `fg`) and vice versa (in the case of `kill`)
 - execution of arbitrary external binaries
-  - also via the system `PATH` by typing e.g. `tar` or `python`
+  - including execution of external binaries via the system `PATH` by typing e.g. `tar` or `python`
 - `check_background_jobs` to check for stopped (`WUNTRACED`) as well as dead (`WNOHANG`) jobs
 
 ## Regarding the name
