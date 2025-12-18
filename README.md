@@ -56,7 +56,7 @@ I've added several bonus features, including:
 - redirection
 - environment variables
 
-I've also included some features from the optional extra project [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
+I'm also implementing some features from the optional extra project [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
 
 - Ctrl+C: terminate a child process and return to the 'shell'
 - Ctrl+Z: pause a child process and return to the 'shell'
@@ -97,7 +97,7 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ### Job control
 
-While it might be argued that my 0-shell meets the stated requirements for job-control, I've yet to implement all of the additional requirements implied by the audit questions for this optional extra, namely
+While it might be argued that my 0-shell will meet the stated requirements for job-control (once the recently implemented features are verified and corrected as necessary), I've yet to tackle all of the additional requirements implied by the audit questions for this optional extra, namely
 
 - the flags `-r`, `-p`, `-r`, and `-s` (as well as the explicit requirement `-l`) for `jobs`
 - `%` before an id number to convert from job id to process id (in the case of `bg` and `fg`) and vice versa (in the case of `kill`)
