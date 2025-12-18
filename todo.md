@@ -17,7 +17,7 @@
 - Check behavior of redirection around `echo` and `cat` in comjunction with `jobs`.
 - Check on different platforms; for now, only tried on Linux.
 - Complete the optional extra project job-control in the light of the extra requirements implied by the audit questions.
-- Check formatting: consider spacing.
+- Check formatting: sort out spacing and alignment.
 - History stack to track 1st and 2nd most recently active jobs.
 - In `check_background_jobs`, check `status` for exit codes or signals (e.g., segfaults).
 - Decide whether to make job-control a separate project that relies exclusively on external binaries (as the audit might suggest) versus the core 0-shell, that is required not to use external binaries!

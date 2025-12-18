@@ -109,7 +109,7 @@ impl std::fmt::Display for JobDisplay<'_> {
         } else {
             write!(
                 f,
-                "[{}]{} {:<width$} {}",
+                "[{}]{}  {:<width$} {}",
                 self.job.id,
                 self.sign,
                 state_str,
@@ -137,12 +137,12 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>) {
             return; // Stop looking. Return to the prompt.
         }
 
-        // We found a dead job: update the list.
+        // We found a terminated job: update the list.
         if let Some(index) = jobs.iter().position(|j| j.pid == dead_pid) {
             let job = &jobs[index];
 
             // TODO: check `status` to see if they segfaulted?
-            println!("[{}]+\tDone\t\t{}", job.id, job.command);
+            println!("[{}]+  Done\t\t{}", job.id, job.command);
 
             jobs.remove(index);
         }
