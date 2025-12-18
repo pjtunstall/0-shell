@@ -5,7 +5,7 @@ pub const WUNTRACED: i32 = 2;
 pub const SIGINT: i32 = 2;
 pub const SIGTSTP: i32 = 20;
 pub const SIGCONT: i32 = 18;
-pub const SIGTERM: i32 = 143;
+pub const SIGTERM: i32 = 15;
 
 // Store the PID of the currently running foreground job.
 // 0 means "no job running" (we're at the prompt).
