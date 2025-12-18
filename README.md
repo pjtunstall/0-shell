@@ -81,11 +81,12 @@ One of the audit instructions is:
 
 **Try to run the command "echo "something!"". Do the same in your computer terminal.**
 
-It then asks, "Can you confirm that the displayed message of the project is exactly the same as the computer terminal?" I've made the following assumptions about the text to be entered, besides the obvious one that "your computer terminal" is not also running 0-shell!
+It then asks, "Can you confirm that the displayed message of the project is exactly the same as the computer terminal?" I've made the following assumptions about the text to be entered, besides the obvious one that "your computer terminal" is not also running 0-shell! (Basically, your milage may vary, depending on your shell and how it's configured.)
 
 - The outer quotes are to be omitted, as in the instruction for the next item.
 - The text inside those outer quotes is to be entered unchanged in shells which don't use `!` as a special character for history expension, such as PowerShell and fish.
-- In shells with default history expension (such as Bash, Zsh, csh, and tcsh), the `!` is to be escaped with a preceding `\`. Otherwise, Bash and Zsh will display `dquote>` in response to any input till you close the inner quotes.
+- In shells with default history expension (such as Zsh, csh, and tcsh), the `!` is to be escaped with a preceding `\`. Otherwise, these shells will display `dquote>` in response to any input till you close the inner quotes. In Bash, history expansion is disabled in non-interactive mode (e.g. `bash -c 'echo "something!"'`), so the bang works unescaped; in interactive Bash it only needs escaping if `histexpand` is enabled (the usual default), otherwise `echo "something!"` works as-is.
+  - It works as is with the default settings for Bash in my current version of VS Code, for what that's worth ...
 - In POSIX shell (sh), dash, and ksh, that have optional history expansion, the text should be entered depending on which option is currently selected. I gather the default is no history expansion with `!`.
 - It's my understanding that BusyBox's default shell (ash) does not treat `!` as special (it lacks history expansion by default, similar to dash). However, if built with hush (another shell included in BusyBox), history expansion with `!` can be optionally enabled.
 
