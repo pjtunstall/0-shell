@@ -30,7 +30,7 @@
 - Decide whether to make job-control a separate project that relies exclusively on external binaries (as the audit might suggest) versus the core 0-shell, that is required not to use external binaries!
 - Handle groups of jobs so as to allow jobs to spawn their own groups of jobs.
   - Meanwhile, ensure suitable error messages if someone tries to run a builtin fron a job.
-- What should happen if `&` is the final argument for builtins.
+- What should happen if `&` is the final argument for builtins?
 - Remove `Terminated` state from `jobs::State` enum?
 - Decide whether to remove safety catch and allow arbitrary PID kill.
 - Write more tests for job control as I go along.
