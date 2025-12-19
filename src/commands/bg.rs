@@ -56,7 +56,9 @@ pub fn bg(
         if target_ids.contains(&job.id) {
             if matches!(job.state, State::Stopped) {
                 unsafe {
-                    c::kill(job.pid, SIGCONT);
+                    // Send SIGCONT to the process group (negative PID)
+                    // so that all members of a pipeline resume together.
+                    c::kill(-job.pid, SIGCONT);
                 }
                 job.state = State::Running;
                 if job.id != *current {
@@ -66,7 +68,7 @@ pub fn bg(
                 success_count += 1;
                 successes.push(&*job);
             } else {
-                failures.push_str(&format!("Job {} is not stopped\n", job.id));
+                failures.push_str(&format!("Job is not stopped: {}\n", job.id));
                 failure_count += 1;
             }
             target_ids.remove(&job.id);
@@ -116,17 +118,11 @@ mod tests {
         let mut previous = 0;
         let result = bg(&input, &mut jobs, &mut current, &mut previous);
 
-        assert!(result.is_ok(), "`bg 1` should resume stopped job");
-        assert!(
-            matches!(jobs[0].state, State::Running),
-            "job id 1 should move to running"
-        );
-        assert!(
-            matches!(jobs[1].state, State::Running),
-            "job id 2 should stay running"
-        );
-        assert_eq!(current, 1, "current should point to resumed job");
-        assert_eq!(previous, 0, "previous should be unset initially");
+        assert!(result.is_ok());
+        assert!(matches!(jobs[0].state, State::Running));
+        assert!(matches!(jobs[1].state, State::Running));
+        assert_eq!(current, 1);
+        assert_eq!(previous, 0);
     }
 
     #[test]
@@ -152,16 +148,10 @@ mod tests {
 
         let result = bg(&input, &mut jobs, &mut current, &mut previous);
 
-        assert!(
-            result.is_ok(),
-            "`bg` with no args should resume current job"
-        );
-        assert!(
-            matches!(jobs[1].state, State::Running),
-            "current job should be resumed"
-        );
-        assert_eq!(current, 2, "current should remain the resumed job");
-        assert_eq!(previous, 1, "previous should remain unchanged");
+        assert!(result.is_ok());
+        assert!(matches!(jobs[1].state, State::Running));
+        assert_eq!(current, 2);
+        assert_eq!(previous, 1);
     }
 
     #[test]
@@ -179,12 +169,9 @@ mod tests {
         let mut previous = 0;
         let result = bg(&input, &mut jobs, &mut current, &mut previous);
 
-        assert!(result.is_ok(), "`bg %1` should resume stopped job");
-        assert!(
-            matches!(jobs[0].state, State::Running),
-            "job id 1 should move to running with `%` syntax"
-        );
-        assert_eq!(current, 1, "current should point to resumed job");
+        assert!(result.is_ok());
+        assert!(matches!(jobs[0].state, State::Running));
+        assert_eq!(current, 1);
     }
 
     #[test]
@@ -201,12 +188,9 @@ mod tests {
         let mut previous = 0;
         let _ = bg(&input, &mut jobs, &mut current, &mut previous);
 
-        assert!(
-            matches!(jobs[0].state, State::Stopped),
-            "state should not have changed"
-        );
-        assert_eq!(current, 0, "current should remain unset");
-        assert_eq!(previous, 0, "previous should remain unset");
+        assert!(matches!(jobs[0].state, State::Stopped));
+        assert_eq!(current, 0);
+        assert_eq!(previous, 0);
     }
 
     #[test]
@@ -236,12 +220,12 @@ mod tests {
         let mut current = 0;
         let mut previous = 0;
         let result = bg(&input, &mut jobs, &mut current, &mut previous);
-        let output = result.expect("`bg` command failed");
+        let output = result.expect("bg command failed");
         let parts: Vec<&str> = output.split(':').collect();
         let success_count: usize = parts[0].parse().expect("parsing success count failed");
         let failure_count: usize = parts[1].parse().expect("parsing failure count failed");
 
-        assert_eq!(success_count, 1, "should have 1 successful `bg`");
-        assert_eq!(failure_count, 3, "should have 3 failed `bg` attempts");
+        assert_eq!(success_count, 1);
+        assert_eq!(failure_count, 3);
     }
 }

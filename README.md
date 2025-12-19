@@ -42,7 +42,7 @@ We're told:
 
 > Through the 0-shell you will get to the core of the Unix system and explore an important part of this system’s API which is the process creation and synchronization. Executing a command inside a shell implies creating a new process, which execution and final state will be monitored by its parents processes. This set of functions will be the key to success for your project.
 
-Following the hint to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example, I decided to make my 0-shell a single executable and have the process fork itself with a suitable argument when the user enters a command and let the main process wait while the child calls the relevant function.<sup id="ref-f2">[2](#f2)</sup>
+For these commands implemented from scratch, I following the hint to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example. When a command is entered, the shell forks and the child re-executes the 0-shell binary with command-line arguments to identify it as the child, and pass it the command. The child then calls the relevant function.<sup id="ref-f2">[2](#f2)</sup>
 
 I've added several bonus features, including:
 

@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use crate::{
-    c::{self, SIGINT, SIGTSTP},
+    c::{self, *},
     commands::{
         self,
         jobs::{self, Job},
@@ -20,7 +20,7 @@ impl TtyGuard {
     fn new() -> Self {
         unsafe {
             let mut tio = std::mem::zeroed::<c::Termios>();
-            if c::tcgetattr(c::STDIN_FILENO, &mut tio) == 0 {
+            if c::tcgetattr(STDIN_FILENO, &mut tio) == 0 {
                 Self { saved: Some(tio) }
             } else {
                 Self { saved: None }
@@ -34,7 +34,7 @@ impl Drop for TtyGuard {
     fn drop(&mut self) {
         if let Some(saved) = self.saved {
             unsafe {
-                c::tcsetattr(c::STDIN_FILENO, c::TCSANOW, &saved);
+                c::tcsetattr(STDIN_FILENO, TCSANOW, &saved);
             }
         }
     }
@@ -72,10 +72,18 @@ pub fn repl() {
     let mut jobs: Vec<Job> = Vec::new();
     let mut current: usize = 0;
     let mut previous: usize = 0;
+    let mut exit_attempted = false;
 
     unsafe {
-        c::signal(SIGINT, c::handle_forwarding);
-        c::signal(SIGTSTP, c::handle_forwarding);
+        let handler_ptr = c::handle_forwarding as usize;
+
+        // Listen for interrupt (Ctrl+C) and terminal stop (Ctrl+Z).
+        c::signal(SIGINT, handler_ptr);
+        c::signal(SIGTSTP, handler_ptr);
+
+        // Ignore so 0-shell doesn't stop itself when background jobs try to access the terminal.
+        c::signal(SIGTTIN, SIG_IGN);
+        c::signal(SIGTTOU, SIG_IGN);
     }
 
     let _style = TextStyle::new();
@@ -87,8 +95,19 @@ pub fn repl() {
         jobs::check_background_jobs(&mut jobs, &mut current, &mut previous);
 
         let input_string = match input::get_input(&mut history) {
-            Ok(Some(ok_input)) => ok_input,
-            Ok(None) => break,
+            Ok(Some(ok_input)) => {
+                exit_attempted = false;
+                ok_input
+            }
+            Ok(None) => {
+                let has_stopped = jobs.iter().any(|j| j.state == jobs::State::Stopped);
+                if has_stopped && !exit_attempted {
+                    println!("\r\nThere are stopped jobs.");
+                    exit_attempted = true;
+                    continue;
+                }
+                break;
+            }
             Err(err) => {
                 let text = format!("0-shell: Failed to get input: {}", err);
                 error::red_println(&text);
@@ -96,7 +115,7 @@ pub fn repl() {
             }
         };
 
-        if input_string.is_empty() {
+        if input_string.trim().is_empty() {
             continue;
         }
 
@@ -114,7 +133,6 @@ pub fn repl() {
         }
 
         if input_after_splitting.is_empty() {
-            error::red_println(&format!("0-shell: Parse error near `\\n'"));
             continue;
         }
 
@@ -124,5 +142,12 @@ pub fn repl() {
             &mut current,
             &mut previous,
         );
+    }
+
+    for job in jobs {
+        unsafe {
+            c::kill(-job.pid, c::SIGHUP);
+            c::kill(-job.pid, c::SIGCONT);
+        }
     }
 }

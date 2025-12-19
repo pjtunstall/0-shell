@@ -1,5 +1,6 @@
-use crate::c;
 use std::borrow::Borrow;
+
+use crate::c::{self, *};
 
 pub const USAGE: &str = "Usage:\tjobs [-lprs] [%[+|-|%%|<JOB_ID>]...]";
 const STATE_COL_WIDTH: usize = 24;
@@ -215,51 +216,45 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>, current: &mut usize, previous:
     loop {
         let mut status = 0;
 
-        // Check if a child job is terminated (`WNOHANG`) or paused (`WUNTRACED`).
-        // It only waits if no options are passed here, i.e. 0 as the last argument.
-        let pid = unsafe { c::waitpid(-1, &mut status, c::WNOHANG | c::WUNTRACED) };
+        // WNOHANG: Poll once but don't wait.
+        // WUNTRACED: Report stopped processes too. (By default `waitpid` only reports terminated processes.)
+        let pid = unsafe { c::waitpid(-1, &mut status, WNOHANG | WUNTRACED | WCONTINUED) };
 
         if pid <= 0 {
-            return;
+            break; // No more children have changed state.
         }
 
         if let Some(index) = jobs.iter().position(|j| j.pid == pid) {
-            // Case 1: Stopped (Ctrl+Z).
             if c::w_if_stopped(status) {
-                let job = &mut jobs[index];
-                job.state = State::Stopped;
-                *previous = *current;
-                *current = job.id;
-                println!("[{}]+\tStopped\t\t{}", job.id, job.command);
-            }
-            // Case 2: Killed by signal (`kill` command or Ctrl+C).
-            else if c::w_if_signaled(status) {
-                let job = &jobs[index];
-                println!("[{}]+\tTerminated\t{}", job.id, job.command);
-                let removed_id = job.id;
-                jobs.remove(index);
-                if removed_id == *current {
-                    *current = *previous;
-                    *previous = 0;
-                } else if removed_id == *previous {
-                    *previous = 0;
+                // The kernel stopped the process (e.g. Python background input).
+                if jobs[index].state != State::Stopped {
+                    jobs[index].state = State::Stopped;
+                    *previous = *current;
+                    *current = jobs[index].id;
+                    println!(
+                        "\n[{}]+\tStopped\t\t{}",
+                        jobs[index].id, jobs[index].command
+                    );
                 }
-            }
-            // Case 3: Finished of its own accord.
-            else {
+            } else if c::w_if_exited(status) || c::w_if_signaled(status) {
+                // The process is dead.
                 let job = &jobs[index];
-                let code = c::w_exitstatus(status);
 
-                if code == 0 {
-                    // Success.
-                    println!("[{}]+\tDone\t\t{}", job.id, job.command);
+                if c::w_if_signaled(status) {
+                    println!("\n[{}]+\tTerminated\t{}", job.id, job.command);
                 } else {
-                    // Failure.
-                    println!("[{}]+\tExit {}\t\t{}", job.id, code, job.command);
+                    let code = c::w_exitstatus(status);
+                    if code == 0 {
+                        println!("\n[{}]+\tDone\t\t{}", job.id, job.command);
+                    } else {
+                        println!("\n[{}]+\tExit {}\t\t{}", job.id, code, job.command);
+                    }
                 }
 
                 let removed_id = job.id;
                 jobs.remove(index);
+
+                // Update pointers if the removed job was the current or previous one.
                 if removed_id == *current {
                     *current = *previous;
                     *previous = 0;

@@ -1,7 +1,7 @@
 use std::sync::atomic::Ordering;
 
 use crate::{
-    c,
+    c::{self, *},
     commands::jobs::{self, Job},
 };
 
@@ -16,7 +16,6 @@ pub fn fg(
     jobs::check_background_jobs(jobs, current, previous);
 
     let job_id = if args.len() < 2 {
-        // Default to the last job if no ID provided.
         if let Some(last) = jobs.last() {
             last.id
         } else {
@@ -27,7 +26,6 @@ pub fn fg(
         jobs::resolve_jobspec(arg, *current, *previous)?
     };
 
-    // We need the index so we can remove it later if it finishes.
     let index = jobs
         .iter()
         .position(|j| j.id == job_id)
@@ -35,37 +33,30 @@ pub fn fg(
 
     let pid = jobs[index].pid;
     let command_text = jobs[index].command.clone();
+
     *previous = *current;
     *current = job_id;
 
     println!("{}", command_text);
 
-    // Setup signal forwarding.
-    c::CURRENT_CHILD_PID.store(pid, Ordering::SeqCst);
+    let mut status: i32 = 0;
 
-    // Send SIGCONT in case the job was stopped.
     unsafe {
-        c::kill(pid, c::SIGCONT);
+        c::tcsetpgrp(STDIN_FILENO, pid);
+        CURRENT_CHILD_PID.store(pid, Ordering::SeqCst);
+        c::kill(pid, SIGCONT);
+        c::waitpid(pid, &mut status, WUNTRACED);
+        c::tcsetpgrp(STDIN_FILENO, c::getpgrp());
+        CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
     }
-
-    // Wait (blocking).
-    let mut status = 0;
-    unsafe {
-        c::waitpid(pid, &mut status, c::WUNTRACED);
-    }
-
-    // Teardown signal forwarding.
-    c::CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
 
     if c::w_if_stopped(status) {
-        // CASE A: Paused again (Ctrl+Z).
         if let Some(job) = jobs.get_mut(index) {
             job.state = crate::commands::jobs::State::Stopped;
         }
 
         println!("\n[{}]+\tStopped\t\t{}", job_id, command_text);
     } else {
-        // CASE B: Finished or killed.
         jobs.remove(index);
         if job_id == *current {
             *current = *previous;
@@ -91,7 +82,7 @@ mod tests {
         let input = string_vec!["fg"];
 
         let result = fg(&input, &mut jobs, &mut current, &mut previous);
-        assert!(result.is_err(), "`fg` with no jobs should error");
+        assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Current: no such job");
     }
 
@@ -103,7 +94,7 @@ mod tests {
         let input = string_vec!["fg", "5"];
 
         let result = fg(&input, &mut jobs, &mut current, &mut previous);
-        assert!(result.is_err(), "`fg` with unknown job ID should error");
+        assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "No such job ID: 5");
     }
 }

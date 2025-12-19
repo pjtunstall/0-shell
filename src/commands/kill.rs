@@ -7,7 +7,12 @@ use crate::{
 
 pub const USAGE: &str = "Usage:\tkill <PID>|%[+|-|%%|<JOB_ID>]";
 
-pub fn kill(input: &[String], jobs: &mut Vec<Job>, current: &mut usize, previous: &mut usize) -> Result<String, String> {
+pub fn kill(
+    input: &[String],
+    jobs: &mut Vec<Job>,
+    current: &mut usize,
+    previous: &mut usize,
+) -> Result<String, String> {
     jobs::check_background_jobs(jobs, current, previous);
 
     if input.len() > 2 {
@@ -42,7 +47,6 @@ pub fn kill(input: &[String], jobs: &mut Vec<Job>, current: &mut usize, previous
             return Err("PID must be positive".to_string());
         }
 
-        // Note if it's one of our tracked jobs (to wake stopped jobs).
         if let Some(job) = jobs.iter().find(|j| j.pid == pid_to_kill) {
             if matches!(job.state, State::Stopped) {
                 is_stopped = true;
@@ -51,13 +55,14 @@ pub fn kill(input: &[String], jobs: &mut Vec<Job>, current: &mut usize, previous
     }
 
     unsafe {
+        // Use negative PID to target the process group leader and all its children.
         // If the job is running, this kills it immediately.
         // If the job is stopped, the signal is queued.
-        c::kill(pid_to_kill, SIGTERM);
+        c::kill(-pid_to_kill, SIGTERM);
 
-        // Restart a stopped job so that it can received the queued signal to terminate.
+        // Restart a stopped job so that it can receive the queued signal to terminate.
         if is_stopped {
-            c::kill(pid_to_kill, SIGCONT);
+            c::kill(-pid_to_kill, SIGCONT);
         }
     }
 

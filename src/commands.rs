@@ -16,17 +16,18 @@ pub mod rm;
 pub mod sleep;
 pub mod touch;
 
+use std::env;
+use std::ffi::CString;
+use std::ptr;
 #[cfg(unix)]
-use std::{process::Command, sync::atomic::Ordering};
+use std::sync::atomic::Ordering;
 
 use crate::{
     c::{self, *},
-    commands::jobs::Job,
-    error, worker,
+    commands::jobs::{Job, State},
+    error,
 };
 
-// This is the command runner that's called by the parent process. We accept (a mutable reference to) the `Vec` of jobs here to pass it down to the `jobs` function for viewing or to 'worker' (so that we can update it if a process has stopped).
-// By contrast, `run_command_as_worker` below is the command runner launched by child processes (jobs).
 pub fn run_command(
     args: &[String],
     jobs: &mut Vec<Job>,
@@ -39,7 +40,7 @@ pub fn run_command(
 
     let (clean_args, is_background) = if let Some(last) = args.last() {
         if last == "&" {
-            (&args[..args.len() - 1], true) // Slice off the '&'.
+            (&args[..args.len() - 1], true)
         } else {
             (args, false)
         }
@@ -57,27 +58,19 @@ pub fn run_command(
     let command = clean_args[0].as_str();
 
     let result = match command {
-        // State modifiers (built-in).
         "cd" => cd::cd(args),
         "exit" => exit::exit(args),
-
-        // Lightweight utilities (built-in).
         "echo" => echo::echo(args),
         "pwd" => pwd::pwd(args),
-
-        // Job control (built-in).
         "bg" => bg::bg(args, jobs, current, previous),
         "fg" => fg::fg(args, jobs, current, previous),
         "jobs" => jobs::jobs(args, jobs, current, previous),
         "kill" => kill::kill(args, jobs, current, previous),
 
-        // Re-implemented utilities, launched as child processes so they can be stopped/killed without crashing the main shell.
         "cat" | "cp" | "ls" | "mkdir" | "man" | "mv" | "rm" | "sleep" | "touch" => {
-            worker::launch_job(clean_args, jobs, is_background, current, previous)
+            spawn_job(clean_args, jobs, is_background, true, current, previous)
         }
-
-        // External utilities, likewise spawned as children.
-        _ => launch_external(clean_args, jobs, is_background, current, previous),
+        _ => spawn_job(clean_args, jobs, is_background, false, current, previous),
     };
 
     match result {
@@ -90,68 +83,14 @@ pub fn run_command(
     }
 }
 
-fn launch_external(
-    args: &[String],
-    jobs: &mut Vec<Job>,
-    is_background: bool,
-    current: &mut usize,
-    previous: &mut usize,
-) -> Result<String, String> {
-    let (program, prog_args) = args
-        .split_first()
-        .ok_or_else(|| "Missing command".to_string())?;
-
-    let mut cmd = Command::new(program);
-    cmd.args(prog_args);
-
-    if is_background {
-        let child = cmd.spawn().map_err(|e| e.to_string())?;
-        let pid = child.id() as i32;
-        let id = jobs.len() + 1;
-        let command_string = args.join(" ");
-        jobs.push(Job::new(id, pid, command_string, jobs::State::Running));
-        *previous = *current;
-        *current = id;
-        println!("[{}] {}", id, pid);
-        Ok(String::new())
-    } else {
-        let child = cmd.spawn().map_err(|e| e.to_string())?;
-        let pid = child.id() as i32;
-
-        unsafe {
-            CURRENT_CHILD_PID.store(pid, Ordering::SeqCst);
-            let mut status = 0;
-
-            // Blocks until the child process either dies or stops (`WUNTRACED`).
-            c::waitpid(pid, &mut status, WUNTRACED);
-            CURRENT_CHILD_PID.store(0, std::sync::atomic::Ordering::SeqCst);
-
-            if c::w_if_stopped(status) {
-                let id = jobs.len() + 1;
-                let command_string = args.join(" ");
-                let new_job = Job::new(id, pid, command_string.clone(), jobs::State::Stopped);
-                jobs.push(new_job);
-                *previous = *current;
-                *current = id;
-                println!("\n[{}]+\tStopped\t\t{}", id, command_string);
-            }
-        }
-        Ok(String::new())
-    }
-}
-
-// This function runs inside the child process spawned by `launch_worker_process`.
 pub fn run_command_as_worker(args: &[String]) {
-    // args[0] is the executable path
-    // args[1] is "--internal-worker"
-    // args[2] is the actual command (e.g. "ls")
     if args.len() < 3 {
         error::red_println("0-shell: Internal worker error: missing command argument");
         return;
     }
 
     let command = args[2].as_str();
-    let clean_args = &args[2..]; // Slice starting from the command name.
+    let clean_args = &args[2..];
 
     let result = match command {
         "cat" => cat::cat(clean_args),
@@ -174,4 +113,92 @@ pub fn run_command_as_worker(args: &[String]) {
         }
         Err(err) => error::handle_error(command, err),
     }
+}
+
+fn spawn_job(
+    args: &[String],
+    jobs: &mut Vec<Job>,
+    is_background: bool,
+    is_worker: bool,
+    current: &mut usize,
+    previous: &mut usize,
+) -> Result<String, String> {
+    let pid = unsafe { c::fork() };
+
+    if pid < 0 {
+        return Err("Fork failed".to_string());
+    }
+
+    if pid == 0 {
+        unsafe {
+            let child_pid = c::getpid();
+            c::setpgid(0, 0);
+
+            if !is_background {
+                c::tcsetpgrp(c::STDIN_FILENO, child_pid);
+            }
+
+            // Reset signal handlers to default behavior.
+            c::signal(SIGINT, SIG_DFL);
+            c::signal(SIGQUIT, SIG_DFL);
+            c::signal(SIGTSTP, SIG_DFL);
+            c::signal(SIGTTIN, SIG_DFL);
+            c::signal(SIGTTOU, SIG_DFL);
+            c::signal(SIGCHLD, SIG_DFL);
+
+            let exec_args: Vec<String> = if is_worker {
+                let self_path = env::current_exe()
+                    .unwrap_or_else(|_| std::path::PathBuf::from("./0-shell"))
+                    .to_string_lossy()
+                    .into_owned();
+                let mut v = vec![self_path, "--internal-worker".to_string()];
+                v.extend_from_slice(args);
+                v
+            } else {
+                args.to_vec()
+            };
+
+            let c_strings: Vec<CString> = exec_args
+                .into_iter()
+                .map(|s| CString::new(s).unwrap())
+                .collect();
+            let mut ptrs: Vec<*const i8> = c_strings.iter().map(|s| s.as_ptr()).collect();
+            ptrs.push(ptr::null());
+
+            c::execvp(ptrs[0], ptrs.as_ptr());
+            std::process::exit(1);
+        }
+    } else {
+        unsafe {
+            c::setpgid(pid, pid);
+
+            if is_background {
+                let id = jobs.len() + 1;
+                let cmd_str = args.join(" ");
+                jobs.push(Job::new(id, pid, cmd_str, State::Running));
+                *previous = *current;
+                *current = id;
+                return Ok(format!("[{}] {}\n", id, pid));
+            } else {
+                c::tcsetpgrp(c::STDIN_FILENO, pid);
+                c::CURRENT_CHILD_PID.store(pid, Ordering::SeqCst);
+
+                let mut status = 0;
+                c::waitpid(pid, &mut status, c::WUNTRACED);
+
+                c::tcsetpgrp(c::STDIN_FILENO, c::getpgrp());
+                c::CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
+
+                if c::w_if_stopped(status) {
+                    let id = jobs.len() + 1;
+                    let cmd_str = args.join(" ");
+                    jobs.push(Job::new(id, pid, cmd_str.clone(), State::Stopped));
+                    *previous = *current;
+                    *current = id;
+                    println!("\n[{}]+\tStopped\t\t{}", id, cmd_str);
+                }
+            }
+        }
+    }
+    Ok(String::new())
 }

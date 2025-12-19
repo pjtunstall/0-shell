@@ -53,16 +53,16 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
         match byte {
             Ok(key) => {
                 match key {
-                    Key::Char('¨') => {
-                        // Necessary, together with the error check, to prevent panic on Option + `u`.
+                    Key::Ctrl('d') => {
+                        if input.is_empty() {
+                            write!(stdout, "\r\n").expect("failed to write to `stdout`");
+                            stdout.suspend_raw_mode().expect("failed to reset terminal");
+                            return Ok(None);
+                        }
                         continue;
                     }
-                    Key::Ctrl('d') => {
-                        write!(stdout, "\r\n").expect("failed to write to `stdout`");
-                        stdout
-                            .suspend_raw_mode()
-                            .expect("failed to reset terminal back from raw mode");
-                        return Ok(None);
+                    Key::Char('¨') => {
+                        continue;
                     }
                     Key::Ctrl('u') => {
                         input.clear();
@@ -75,14 +75,10 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
                     }
                     Key::Char('\t') => {
                         if tab_and_should_continue(&mut input, &mut cursor, &mut stdout, &prompt) {
-                            continue; // Skip prompt to avoid overwriting.
+                            continue;
                         }
                     }
                     Key::Char(c) => {
-                        assert!(
-                            cursor <= input.len(),
-                            "cursor should not be greater than length of input"
-                        );
                         input.insert(cursor, c);
                         cursor += 1;
                     }
@@ -142,7 +138,6 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
         }
     }
 
-    // Restore terminal mode before returning.
     stdout
         .suspend_raw_mode()
         .expect("failed to suspend raw mode");
