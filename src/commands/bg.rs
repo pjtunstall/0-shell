@@ -8,8 +8,13 @@ use crate::{
 
 pub const USAGE: &str = "Usage:\tbg [%]<JOB_ID>...";
 
-pub fn bg(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
-    jobs::check_background_jobs(jobs);
+pub fn bg(
+    input: &[String],
+    jobs: &mut Vec<Job>,
+    current: &mut usize,
+    previous: &mut usize,
+) -> Result<String, String> {
+    jobs::check_background_jobs(jobs, current, previous);
 
     if input.len() < 2 {
         return Err(format!("Not enough arguments\n{}", USAGE));
@@ -24,18 +29,17 @@ pub fn bg(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
     let mut target_ids = HashSet::new();
 
     for item in &input[1..] {
-        let clean_item = if item.starts_with('%') {
+        let id_str = if item.starts_with('%') {
             &item[1..]
         } else {
             item
         };
 
-        match clean_item.parse::<usize>() {
+        match id_str.parse::<usize>() {
             Ok(id) => {
                 target_ids.insert(id);
             }
             Err(e) => {
-                // Command prefix removed
                 failures.push_str(&format!("Failed to parse job ID: {}\n", e));
                 failure_count += 1
             }
@@ -49,10 +53,11 @@ pub fn bg(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
                     c::kill(job.pid, SIGCONT);
                 }
                 job.state = State::Running;
+                *previous = *current;
+                *current = job.id;
                 success_count += 1;
                 successes.push(&*job);
             } else {
-                // Command prefix removed
                 failures.push_str(&format!("Job {} is not stopped\n", job.id));
                 failure_count += 1;
             }
@@ -61,7 +66,6 @@ pub fn bg(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
     }
 
     for id in target_ids {
-        // Command prefix removed
         failures.push_str(&format!("No such job ID: {}\n", id));
         failure_count += 1;
     }
@@ -100,7 +104,9 @@ mod tests {
 
         let input = vec!["bg".to_string(), "1".to_string()];
 
-        let result = bg(&input, &mut jobs);
+        let mut current = 0;
+        let mut previous = 0;
+        let result = bg(&input, &mut jobs, &mut current, &mut previous);
 
         assert!(result.is_ok());
         assert!(
@@ -111,6 +117,8 @@ mod tests {
             matches!(jobs[1].state, State::Running),
             "job id 2 should stay running"
         );
+        assert_eq!(current, 1, "current should point to resumed job");
+        assert_eq!(previous, 0, "previous should be unset initially");
     }
 
     #[test]
@@ -124,13 +132,16 @@ mod tests {
 
         let input = vec!["bg".to_string(), "%1".to_string()];
 
-        let result = bg(&input, &mut jobs);
+        let mut current = 0;
+        let mut previous = 0;
+        let result = bg(&input, &mut jobs, &mut current, &mut previous);
 
         assert!(result.is_ok());
         assert!(
             matches!(jobs[0].state, State::Running),
             "job id 1 should move to running with % syntax"
         );
+        assert_eq!(current, 1, "current should point to resumed job");
     }
 
     #[test]
@@ -143,12 +154,16 @@ mod tests {
         }];
         let input = vec!["bg".to_string(), "999".to_string()];
 
-        let _ = bg(&input, &mut jobs);
+        let mut current = 0;
+        let mut previous = 0;
+        let _ = bg(&input, &mut jobs, &mut current, &mut previous);
 
         assert!(
             matches!(jobs[0].state, State::Stopped),
             "state should not have changed"
         );
+        assert_eq!(current, 0, "current should remain unset");
+        assert_eq!(previous, 0, "previous should remain unset");
     }
 
     #[test]
@@ -175,7 +190,9 @@ mod tests {
             "also_not_a_job_id".to_string(),
         ];
 
-        let result = bg(&input, &mut jobs);
+        let mut current = 0;
+        let mut previous = 0;
+        let result = bg(&input, &mut jobs, &mut current, &mut previous);
         let output = result.expect("bg command failed");
         let parts: Vec<&str> = output.split(':').collect();
         let success_count: usize = parts[0].parse().expect("parsing success count failed");

@@ -26,6 +26,8 @@ impl Drop for TextStyle {
 
 pub fn repl() {
     let mut jobs: Vec<Job> = Vec::new();
+    let mut current: usize = 0;
+    let mut previous: usize = 0;
 
     unsafe {
         c::signal(SIGINT, c::handle_forwarding);
@@ -37,7 +39,7 @@ pub fn repl() {
     history.push_back(String::new());
 
     loop {
-        jobs::check_background_jobs(&mut jobs);
+        jobs::check_background_jobs(&mut jobs, &mut current, &mut previous);
 
         let input_string = match input::get_input(&mut history) {
             Ok(ok_input) => ok_input,
@@ -69,6 +71,11 @@ pub fn repl() {
             continue;
         }
 
-        commands::run_command(&input_after_splitting, &mut jobs);
+        commands::run_command(
+            &input_after_splitting,
+            &mut jobs,
+            &mut current,
+            &mut previous,
+        );
     }
 }

@@ -7,8 +7,8 @@ use crate::{
 
 pub const USAGE: &str = "Usage:\tfg [[%]<JOB_ID>]";
 
-pub fn fg(args: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
-    jobs::check_background_jobs(jobs);
+pub fn fg(args: &[String], jobs: &mut Vec<Job>, current: &mut usize, previous: &mut usize) -> Result<String, String> {
+    jobs::check_background_jobs(jobs, current, previous);
 
     let job_id = if args.len() < 2 {
         // Default to the last job if no ID provided.
@@ -19,16 +19,10 @@ pub fn fg(args: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
         }
     } else {
         let arg = &args[1];
-        if arg.starts_with('%') {
-            let id_str = &arg[1..];
-            id_str
-                .parse::<usize>()
-                .map_err(|_| format!("Invalid job ID: {}", arg))?
-        } else {
-            // Support "1" syntax
-            arg.parse::<usize>()
-                .map_err(|_| format!("Invalid job ID: {}", arg))?
-        }
+        let id_str = if arg.starts_with('%') { &arg[1..] } else { arg };
+        id_str
+            .parse::<usize>()
+            .map_err(|_| format!("Invalid job ID: {}", arg))?
     };
 
     // We need the index so we can remove it later if it finishes.
@@ -39,6 +33,8 @@ pub fn fg(args: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
 
     let pid = jobs[index].pid;
     let command_text = jobs[index].command.clone();
+    *previous = *current;
+    *current = job_id;
 
     // Print the command being brought to foreground
     println!("{}", command_text);
@@ -70,6 +66,12 @@ pub fn fg(args: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
     } else {
         // CASE B: Finished or killed.
         jobs.remove(index);
+        if job_id == *current {
+            *current = *previous;
+            *previous = 0;
+        } else if job_id == *previous {
+            *previous = 0;
+        }
     }
 
     Ok(String::new())

@@ -23,17 +23,19 @@ impl Default for JobOptions {
     }
 }
 
-pub fn jobs(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
-    check_background_jobs(jobs);
+pub fn jobs(
+    input: &[String],
+    jobs: &mut Vec<Job>,
+    current: &mut usize,
+    previous: &mut usize,
+) -> Result<String, String> {
+    check_background_jobs(jobs, current, previous);
 
     let mut opts = JobOptions::default();
     let mut specific_job_ids = Vec::new();
 
-    // PARSING LOOP
-    // We skip the first arg ("jobs")
     for arg in input.iter().skip(1) {
         if arg.starts_with('-') {
-            // Handle Flags (supports combined flags like "-lr")
             for c in arg.chars().skip(1) {
                 match c {
                     'l' => opts.show_pid = true,
@@ -43,33 +45,29 @@ pub fn jobs(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
                     _ => return Err(format!("Invalid option -- '{}'\n{}", c, USAGE)),
                 }
             }
-        } else if arg.starts_with('%') {
-            // Handle Jobspecs (e.g., "%1")
-            let id_str = &arg[1..];
+        } else {
+            let id_str = if arg.starts_with('%') { &arg[1..] } else { arg };
             match id_str.parse::<usize>() {
                 Ok(id) => specific_job_ids.push(id),
                 Err(_) => return Err(format!("Invalid job ID: {}", arg)),
             }
-        } else {
-            // Handle Arguments not starting with % (optional, depending on preference)
-            // Bash treats `jobs 1` same as `jobs %1` if it's a number.
-            if let Ok(id) = arg.parse::<usize>() {
-                specific_job_ids.push(id);
-            } else {
-                return Err(format!("Invalid job ID: {}", arg));
-            }
         }
     }
 
-    // Pass the specific IDs to filter the output
-    let output = format_jobs(jobs, opts, &specific_job_ids);
+    let output = format_jobs(jobs, opts, &specific_job_ids, *current, *previous);
     Ok(output)
 }
 
-pub fn format_jobs<T: Borrow<Job>>(items: &[T], opts: JobOptions, filter_ids: &[usize]) -> String {
+pub fn format_jobs<T: Borrow<Job>>(
+    items: &[T],
+    opts: JobOptions,
+    filter_ids: &[usize],
+    current: usize,
+    previous: usize,
+) -> String {
     let mut output = String::new();
 
-    for (i, item) in items.iter().enumerate() {
+    for item in items.iter() {
         let job = item.borrow();
 
         // 0. Filter by specific Job IDs (if user asked for specific jobs)
@@ -92,9 +90,9 @@ pub fn format_jobs<T: Borrow<Job>>(items: &[T], opts: JobOptions, filter_ids: &[
             continue;
         }
 
-        let sign = if i == items.len() - 1 {
+        let sign = if job.id == current {
             "+"
-        } else if i == items.len().saturating_sub(2) {
+        } else if job.id == previous {
             "-"
         } else {
             " "
@@ -189,7 +187,7 @@ impl std::fmt::Display for JobDisplay<'_> {
     }
 }
 
-pub fn check_background_jobs(jobs: &mut Vec<Job>) {
+pub fn check_background_jobs(jobs: &mut Vec<Job>, current: &mut usize, previous: &mut usize) {
     loop {
         let mut status = 0;
 
@@ -206,13 +204,22 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>) {
             if c::w_if_stopped(status) {
                 let job = &mut jobs[index];
                 job.state = State::Stopped;
+                *previous = *current;
+                *current = job.id;
                 println!("[{}]+\tStopped\t\t{}", job.id, job.command);
             }
             // Case 2: Killed by signal (`kill` command or Ctrl+C).
             else if c::w_if_signaled(status) {
                 let job = &jobs[index];
                 println!("[{}]+\tTerminated\t{}", job.id, job.command);
+                let removed_id = job.id;
                 jobs.remove(index);
+                if removed_id == *current {
+                    *current = *previous;
+                    *previous = 0;
+                } else if removed_id == *previous {
+                    *previous = 0;
+                }
             }
             // Case 3: Finished of its own accord.
             else {
@@ -227,7 +234,14 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>) {
                     println!("[{}]+\tExit {}\t\t{}", job.id, code, job.command);
                 }
 
+                let removed_id = job.id;
                 jobs.remove(index);
+                if removed_id == *current {
+                    *current = *previous;
+                    *previous = 0;
+                } else if removed_id == *previous {
+                    *previous = 0;
+                }
             }
         }
     }
@@ -335,7 +349,7 @@ mod tests {
         let mut opts = JobOptions::default();
         opts.running_only = true; // -r
 
-        let output = format_jobs(&jobs, opts, &[]);
+        let output = format_jobs(&jobs, opts, &[], 0, 0);
 
         assert!(
             output.contains("Running"),
@@ -357,7 +371,7 @@ mod tests {
         let opts = JobOptions::default();
         let filter = vec![2]; // Filter for Job ID 2 only.
 
-        let output = format_jobs(&jobs, opts, &filter);
+        let output = format_jobs(&jobs, opts, &filter, 0, 0);
 
         assert!(
             !output.contains("run"),
@@ -367,5 +381,27 @@ mod tests {
             output.contains("stop"),
             "output should contain job id 2 when filtering for job id 2"
         );
+    }
+
+    #[test]
+    fn format_jobs_marks_current_and_previous() {
+        let jobs = vec![
+            Job::new(1, 100, "first".into(), State::Running),
+            Job::new(2, 101, "second".into(), State::Running),
+            Job::new(3, 102, "third".into(), State::Running),
+        ];
+
+        let opts = JobOptions::default();
+        let output = format_jobs(&jobs, opts, &[], 2, 1);
+
+        assert!(
+            output.contains("[2]+"),
+            "job 2 should be marked current with '+'"
+        );
+        assert!(
+            output.contains("[1]-"),
+            "job 1 should be marked previous with '-'"
+        );
+        assert!(output.contains("[3] "), "job 3 should have no sign");
     }
 }

@@ -7,8 +7,8 @@ use crate::{
 
 pub const USAGE: &str = "Usage:\tkill <PID>|%<JOB_ID>";
 
-pub fn kill(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
-    jobs::check_background_jobs(jobs);
+pub fn kill(input: &[String], jobs: &mut Vec<Job>, current: &mut usize, previous: &mut usize) -> Result<String, String> {
+    jobs::check_background_jobs(jobs, current, previous);
 
     if input.len() > 2 {
         return Err(format!("Too many arguments\n{}", USAGE));
@@ -67,7 +67,7 @@ pub fn kill(input: &[String], jobs: &mut Vec<Job>) -> Result<String, String> {
     // Surface termination promptly instead of waiting for the next builtin call.
     // Poll briefly so we don't block indefinitely if the process ignores SIGTERM.
     for _ in 0..5 {
-        jobs::check_background_jobs(jobs);
+        jobs::check_background_jobs(jobs, current, previous);
         if jobs.iter().all(|j| j.pid != pid_to_kill) {
             break;
         }

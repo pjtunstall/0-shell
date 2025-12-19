@@ -6,6 +6,8 @@ pub fn launch_job(
     args: &[String],
     jobs: &mut Vec<Job>,
     is_background: bool,
+    current: &mut usize,
+    previous: &mut usize,
 ) -> Result<String, String> {
     let self_path = env::current_exe().map_err(|e| format!("Unable to get own path: {}", e))?;
 
@@ -21,6 +23,8 @@ pub fn launch_job(
         let id = jobs.len() + 1;
         let command_string = args.join(" ");
         jobs.push(Job::new(id, pid, command_string, State::Running));
+        *previous = *current;
+        *current = id;
         let output = format!("[{}] {}\n", id, pid);
         return Ok(output);
     }
@@ -45,6 +49,8 @@ pub fn launch_job(
 
         let new_job = Job::new(id, pid, command_string.clone(), State::Stopped);
         jobs.push(new_job);
+        *previous = *current;
+        *current = id;
 
         println!("\n[{}]+\tStopped\t\t{}", id, command_string);
 
