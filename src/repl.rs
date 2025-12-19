@@ -9,6 +9,51 @@ use crate::{
     error, input,
 };
 
+// When this struct is instantiated at the start of `repl`, it saves the terminal attributes so that it can restore them on drop to prevent lingering no-echo/cbreak states if an interactive child leaves the TTY altered. The non-Unix version below is a no-op placeholder.
+#[cfg(unix)]
+struct TtyGuard {
+    saved: Option<libc::termios>,
+}
+
+#[cfg(unix)]
+impl TtyGuard {
+    fn new() -> Self {
+        let mut tio = std::mem::MaybeUninit::<libc::termios>::uninit();
+        let saved = unsafe {
+            if libc::tcgetattr(libc::STDIN_FILENO, tio.as_mut_ptr()) == 0 {
+                Some(tio.assume_init())
+            } else {
+                None
+            }
+        };
+        TtyGuard { saved }
+    }
+}
+
+#[cfg(unix)]
+impl Drop for TtyGuard {
+    fn drop(&mut self) {
+        if let Some(saved) = self.saved {
+            unsafe {
+                let _ = libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &saved);
+            }
+        }
+    }
+}
+
+#[cfg(not(unix))]
+struct TtyGuard;
+#[cfg(not(unix))]
+impl TtyGuard {
+    fn new() -> Self {
+        TtyGuard
+    }
+}
+#[cfg(not(unix))]
+impl Drop for TtyGuard {
+    fn drop(&mut self) {}
+}
+
 struct TextStyle;
 
 impl TextStyle {
@@ -35,6 +80,7 @@ pub fn repl() {
     }
 
     let _style = TextStyle::new();
+    let _tty_guard = TtyGuard::new();
     let mut history = VecDeque::new();
     history.push_back(String::new());
 
@@ -42,7 +88,8 @@ pub fn repl() {
         jobs::check_background_jobs(&mut jobs, &mut current, &mut previous);
 
         let input_string = match input::get_input(&mut history) {
-            Ok(ok_input) => ok_input,
+            Ok(Some(ok_input)) => ok_input,
+            Ok(None) => break,
             Err(err) => {
                 let text = format!("0-shell: Failed to get input: {}", err);
                 error::red_println(&text);
@@ -52,7 +99,8 @@ pub fn repl() {
 
         if input_string.is_empty() {
             continue;
-        };
+        }
+
         history.push_back(input_string.clone());
 
         let input_after_splitting: Vec<String>;

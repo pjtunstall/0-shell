@@ -6,7 +6,6 @@ use std::{
     env, fs,
     io::{self, Stdout, Write},
     path::MAIN_SEPARATOR,
-    process,
 };
 
 use lazy_static::lazy_static;
@@ -40,7 +39,7 @@ lazy_static! {
     ];
 }
 
-pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
+pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
     let stdin = io::stdin();
     let mut stdout = io::stdout().into_raw_mode()?;
     let mut input = String::new();
@@ -63,7 +62,7 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
                         stdout
                             .suspend_raw_mode()
                             .expect("failed to reset terminal back from raw mode");
-                        process::exit(0);
+                        return Ok(None);
                     }
                     Key::Ctrl('u') => {
                         input.clear();
@@ -148,7 +147,7 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<String> {
         .suspend_raw_mode()
         .expect("failed to suspend raw mode");
 
-    Ok(input)
+    Ok(Some(input))
 }
 
 fn prompt() -> io::Result<String> {

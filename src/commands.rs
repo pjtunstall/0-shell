@@ -16,7 +16,14 @@ pub mod rm;
 pub mod sleep;
 pub mod touch;
 
-use crate::{commands::jobs::Job, error, worker};
+#[cfg(unix)]
+use std::{process::Command, sync::atomic::Ordering};
+
+use crate::{
+    c::{self, *},
+    commands::jobs::Job,
+    error, worker,
+};
 
 // This is the command runner that's called by the parent process. We accept (a mutable reference to) the `Vec` of jobs here to pass it down to the `jobs` function for viewing or to 'worker' (so that we can update it if a process has stopped).
 // By contrast, `run_command_as_worker` below is the command runner launched by child processes (jobs).
@@ -64,13 +71,13 @@ pub fn run_command(
         "jobs" => jobs::jobs(args, jobs, current, previous),
         "kill" => kill::kill(args, jobs, current, previous),
 
-        // External utilities.
-        // We delegate these to a child process so they can be stopped/killed without crashing the main shell.
+        // Re-implemented utilities, launched as child processes so they can be stopped/killed without crashing the main shell.
         "cat" | "cp" | "ls" | "mkdir" | "man" | "mv" | "rm" | "sleep" | "touch" => {
             worker::launch_job(clean_args, jobs, is_background, current, previous)
         }
 
-        _ => Err(format!("Command not found: {}", command)),
+        // External utilities, likewise spawned as children.
+        _ => launch_external(clean_args, jobs, is_background, current, previous),
     };
 
     match result {
@@ -80,6 +87,56 @@ pub fn run_command(
             }
         }
         Err(err) => error::handle_error(command, err),
+    }
+}
+
+fn launch_external(
+    args: &[String],
+    jobs: &mut Vec<Job>,
+    is_background: bool,
+    current: &mut usize,
+    previous: &mut usize,
+) -> Result<String, String> {
+    let (program, prog_args) = args
+        .split_first()
+        .ok_or_else(|| "Missing command".to_string())?;
+
+    let mut cmd = Command::new(program);
+    cmd.args(prog_args);
+
+    if is_background {
+        let child = cmd.spawn().map_err(|e| e.to_string())?;
+        let pid = child.id() as i32;
+        let id = jobs.len() + 1;
+        let command_string = args.join(" ");
+        jobs.push(Job::new(id, pid, command_string, jobs::State::Running));
+        *previous = *current;
+        *current = id;
+        println!("[{}] {}", id, pid);
+        Ok(String::new())
+    } else {
+        let child = cmd.spawn().map_err(|e| e.to_string())?;
+        let pid = child.id() as i32;
+
+        unsafe {
+            CURRENT_CHILD_PID.store(pid, Ordering::SeqCst);
+            let mut status = 0;
+
+            // Blocks until the child process either dies or stops (`WUNTRACED`).
+            c::waitpid(pid, &mut status, WUNTRACED);
+            CURRENT_CHILD_PID.store(0, std::sync::atomic::Ordering::SeqCst);
+
+            if c::w_if_stopped(status) {
+                let id = jobs.len() + 1;
+                let command_string = args.join(" ");
+                let new_job = Job::new(id, pid, command_string.clone(), jobs::State::Stopped);
+                jobs.push(new_job);
+                *previous = *current;
+                *current = id;
+                println!("\n[{}]+\tStopped\t\t{}", id, command_string);
+            }
+        }
+        Ok(String::new())
     }
 }
 

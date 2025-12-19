@@ -50,6 +50,26 @@ _fg job-spec coverage is partial (src/commands/fg.rs): No terminal control (tcse
 
 _Process groups/terminal control: Without process groups you can’t fully mimic Bash job control (no proper foreground ownership, Ctrl+C handling, or kill to a job’s PGID). If “mimic Bash” is the goal, adding process groups and tcsetpgrp would be necessary later._
 
+### Python
+
+In particular:
+
+_In Bash, `python3 &` still shares your terminal for stdout/stderr, so you see the banner. But because Bash runs background jobs in their own process group and keeps the terminal foregrounded for the shell, any attempt by the backgrounded Python to read from stdin triggers SIGTTIN and it stops. That’s why after you hit Enter you see it stop instead of getting an interactive prompt._
+
+_In 0‑shell right now:_
+
+- _External jobs are spawned in the same process group as the shell._
+- _There’s no tcsetpgrp to hand the TTY to the foreground job or keep it from background jobs._
+- _The REPL runs in raw mode while waiting for input._
+- _So a backgrounded python3 can still read/write the controlling TTY; it grabs stdin, prints its prompt, and collides with your raw-mode input._
+
+_To mimic Bash’s behavior, you’d need to add real job control:_
+
+- _Put each spawned job in its own process group (setpgid before exec)._
+- _Keep the shell’s process group as the TTY foreground; background jobs reading stdin will get SIGTTIN and stop automatically._
+- _When fg brings a job to the foreground, tcsetpgrp the TTY to that job’s pgid, and restore it to the shell when it stops/exits._
+- _Without those pieces, background interactives like Python will continue to fight for your TTY._
+
 ### Naming
 
 - Assess for consistency, especially: job, process, child.
@@ -66,6 +86,7 @@ _Process groups/terminal control: Without process groups you can’t fully mimic
   - Make a `Jobs` struct with methods for its various functionality and possibly other fields besides the the `Vec<Job>`, such as as stack to track the last two foregrounded jobs.
 - Command chaining with `;`.
 - Running it now on Linux, I notice that `ls` with no options formats differently to Mac. You can't please all of the people all of the time.
+- Pick a consistent style of creating `String` from `&str`: either `String::from` or `to_string` or `into`.
 
 ## Error handling
 
