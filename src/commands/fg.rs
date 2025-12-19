@@ -77,3 +77,33 @@ pub fn fg(
 
     Ok(String::new())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::fg;
+    use crate::{commands::jobs::Job, string_vec};
+
+    #[test]
+    fn fg_errors_when_no_jobs_and_no_args() {
+        let mut jobs = Vec::<Job>::new();
+        let mut current = 0;
+        let mut previous = 0;
+        let input = string_vec!["fg"];
+
+        let result = fg(&input, &mut jobs, &mut current, &mut previous);
+        assert!(result.is_err(), "`fg` with no jobs should error");
+        assert_eq!(result.unwrap_err(), "Current: no such job");
+    }
+
+    #[test]
+    fn fg_errors_when_job_not_found() {
+        let mut jobs = Vec::<Job>::new();
+        let mut current = 0;
+        let mut previous = 0;
+        let input = string_vec!["fg", "5"];
+
+        let result = fg(&input, &mut jobs, &mut current, &mut previous);
+        assert!(result.is_err(), "`fg` with unknown job ID should error");
+        assert_eq!(result.unwrap_err(), "No such job ID: 5");
+    }
+}

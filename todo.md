@@ -35,25 +35,15 @@ A more detailed review of the job-control commands follows:
 
 ### Kill
 
-_kill deviates from Bash (src/commands/kill.rs): only supports SIGTERM; no -SIGNAL/-l/-s flags; rejects PIDs not tracked as jobs (Bash happily kills arbitrary PIDs); forbids PID 0/negative (Bash allows -n for process groups). If you plan to mimic Bash, broaden to arbitrary PIDs and signals, and don’t gate on the jobs table._
-
-Preventing the killing of processes not created from within 0-shell was an intentional safety measure during development; now removed.
-
-### bg
-
-_bg default-job behavior missing (src/commands/bg.rs): Bash bg with no args resumes the “current” stopped job; here it errors for missing args. Also doesn’t recognize job specs like %%, %-, +/-, or command-prefix matches_
+_kill deviates from Bash (src/commands/kill.rs): only supports SIGTERM; no -SIGNAL/-l/-s flags; forbids PID 0/negative (Bash allows -n for process groups). If you plan to mimic Bash, broaden to arbitrary PIDs and signals, and don’t gate on the jobs table._
 
 ### Jobs
 
-_jobs output/signs differ (src/commands/jobs.rs): plus/minus markers are assigned by position in the vector, not recency; filtering (jobs 2) still uses the original index, so signs can be wrong vs Bash’s %+/%-. Job specs are limited to numeric (no %%, %-, +/-, or name matching). Options partially match: -p is pid-only (ok), -l adds PID (ok), but combinations are Bash-like only by accident and there’s no support for -n (new only) or -x (replace and execute)._
-
-### Job table updates
-
-_Job table updates:_ **check_background_jobs** _runs on entry to each command and cleans up with waitpid(WNOHANG|WUNTRACED), which is fine for the current design. It prints status lines directly; Bash writes to the terminal too, so that’s acceptable._
+_jobs output/signs differ (src/commands/jobs.rs): Options partially match: -p is pid-only (ok), -l adds PID (ok), and there’s no support for -n (new only) or -x (replace and execute)._
 
 ### fg
 
-_fg job-spec coverage is partial (src/commands/fg.rs): falls back to last job if none given (good), but only accepts numeric IDs (with optional %). Bash accepts %%, %-, +/-, and job-name prefixes._ _No terminal control (tcsetpgrp), so it doesn’t truly foreground in the Bash sense (though you forward signals via_ **CURRENT_CHILD_PID**).
+_fg job-spec coverage is partial (src/commands/fg.rs): No terminal control (tcsetpgrp), so it doesn’t truly foreground in the Bash sense (though you forward signals via_ **CURRENT_CHILD_PID**).
 
 ### Groups
 

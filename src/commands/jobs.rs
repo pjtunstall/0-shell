@@ -377,11 +377,11 @@ mod tests {
 
         assert!(
             output.contains("Running"),
-            "output should contain running job when -r is used"
+            "output should contain running job when `-r` is used"
         );
         assert!(
             !output.contains("Stopped"),
-            "output should not contain stopped job when -r is used"
+            "output should not contain stopped job when `-r` is used"
         );
     }
 
@@ -420,11 +420,11 @@ mod tests {
 
         assert!(
             output.contains("[2]+"),
-            "job 2 should be marked current with '+'"
+            "job 2 should be marked current with `+`"
         );
         assert!(
             output.contains("[1]-"),
-            "job 1 should be marked previous with '-'"
+            "job 1 should be marked previous with `-`"
         );
         assert!(output.contains("[3] "), "job 3 should have no sign");
     }
