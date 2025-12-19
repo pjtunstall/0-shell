@@ -65,7 +65,7 @@ I'm also implementing some features from the optional extra project [job-control
 - bg: restart one or more child processes in the background
 - kill: terminate a process
 
-As in Bash, the arguments to `fg` and `bg` are job numbers (1, 2, ...) while `kill` expects a system-wide PID (process ID), such as `1881893`; the convention can be reversed, for any of these commands, by prefixing the number with `%`, thus: `kill %` or `fg %1881893`.
+As in Bash, the arguments to `fg` and `bg` are job numbers (1, 2, ...) while `kill` expects a system-wide PID (process ID), such as `1881893`; the convention can be reversed, for any of these commands, by prefixing the number with `%`, thus: `kill %1` or `fg %1881893`.
 
 For the remaining tasks on this optional, see [Audit: Job control](#job-control).
 
@@ -86,7 +86,7 @@ It then asks, "Can you confirm that the displayed message of the project is exac
 - The outer quotes are to be omitted, as in the instruction for the next item.
 - The text inside those outer quotes is to be entered unchanged in shells which don't use `!` as a special character for history expension, such as PowerShell and fish.
 - In shells with default history expension (such as Zsh, csh, and tcsh), the `!` is to be escaped with a preceding `\`. Otherwise, these shells will display `dquote>` in response to any input till you close the inner quotes. In Bash, history expansion is disabled in non-interactive mode (e.g. `bash -c 'echo "something!"'`), so the bang works unescaped; in interactive Bash it only needs escaping if `histexpand` is enabled (the usual default), otherwise `echo "something!"` works as-is.
-  - It works as is with the default settings for Bash in my current version of VS Code, for what that's worth...
+  - It works as is with the default settings for Bash in my current version of VS Code, for example.
 - In POSIX shell (sh), dash, and ksh, that have optional history expansion, the text should be entered depending on which option is currently selected. I gather the default is no history expansion with `!`.
 - It's my understanding that BusyBox's default shell (ash) does not treat `!` as special (it lacks history expansion by default, similar to dash). However, if built with hush (another shell included in BusyBox), history expansion with `!` can be optionally enabled.
 
@@ -98,10 +98,12 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ### Job control
 
-While it might be argued that my 0-shell meets the stated requirements for the optional extension project job-control, I've yet to tackle some of the additional requirements implied by its audit questions, in particular:
+While my 0-shell more-or-less meets the stated requirements for the optional extension project job-control (subject to making `+` and `-` track the last two foreground jobs even when jobs move back and forth between states), I've yet to tackle some of the additional requirements implied by its audit questions, in particular:
 
 - execution of arbitrary external binaries apart from those we had to recreate,
   - including via the system `PATH` by typing e.g. `tar` or `python`
+
+I assume we're not being asked to re-implement Python.
 
 ## Regarding the name
 
