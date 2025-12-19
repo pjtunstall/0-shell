@@ -14,6 +14,7 @@
 
 There's a lot to read here, but to pass the audit for job-control, it needs to launch arbitrary external binaries (apart from those we had to re-implement).
 
+- Fix the Python banner staircase effect.
 - Investigate behavior of `ls -lRr / 2>1 >/dev/null  &`.
 - Rename `JOB_ID` and consider name of `job.id`. Should it be `job_number` or simply `number`?
 - Bash `bg` with no args stops the current job.
@@ -31,44 +32,22 @@ There's a lot to read here, but to pass the audit for job-control, it needs to l
   - Meanwhile, ensure suitable error messages if someone tries to run a builtin fron a job.
 - What should happen if `&` is the final argument for builtins?
 - Write more tests for job control as I go along.
+- Refactor again.
+- Bring together the `has_stopped` (jobs) check into one function that can be called from `repl` and `exit`. Maybe make it a method of a `Jobs` struct.
 
 A more detailed review of the job-control commands follows:
 
 ### Kill
 
-_kill deviates from Bash (src/commands/kill.rs): only supports SIGTERM; no -SIGNAL/-l/-s flags; forbids PID 0/negative (Bash allows -n for process groups). If you plan to mimic Bash, broaden to arbitrary PIDs and signals, and don’t gate on the jobs table._
+_kill deviates from Bash (src/commands/kill.rs): only supports SIGTERM; no -SIGNAL/-l/-s flags; forbids PID 0/negative (Bash allows -n for process groups)._
 
 ### Jobs
 
-_jobs output/signs differ (src/commands/jobs.rs): Options partially match: -p is pid-only (ok), -l adds PID (ok), and there’s no support for -n (new only) or -x (replace and execute)._
+_jobs output/signs differ (src/commands/jobs.rs): no support for -n (new only) or -x (replace and execute)._
 
 ### fg
 
 _fg job-spec coverage is partial (src/commands/fg.rs): No terminal control (tcsetpgrp), so it doesn’t truly foreground in the Bash sense (though you forward signals via_ **CURRENT_CHILD_PID**).
-
-### Groups
-
-_Process groups/terminal control: Without process groups you can’t fully mimic Bash job control (no proper foreground ownership, Ctrl+C handling, or kill to a job’s PGID). If “mimic Bash” is the goal, adding process groups and tcsetpgrp would be necessary later._
-
-### Python
-
-In particular:
-
-_In Bash, `python3 &` still shares your terminal for stdout/stderr, so you see the banner. But because Bash runs background jobs in their own process group and keeps the terminal foregrounded for the shell, any attempt by the backgrounded Python to read from stdin triggers SIGTTIN and it stops. That’s why after you hit Enter you see it stop instead of getting an interactive prompt._
-
-_In 0‑shell right now:_
-
-- _External jobs are spawned in the same process group as the shell._
-- _There’s no tcsetpgrp to hand the TTY to the foreground job or keep it from background jobs._
-- _The REPL runs in raw mode while waiting for input._
-- _So a backgrounded python3 can still read/write the controlling TTY; it grabs stdin, prints its prompt, and collides with your raw-mode input._
-
-_To mimic Bash’s behavior, you’d need to add real job control:_
-
-- _Put each spawned job in its own process group (setpgid before exec)._
-- _Keep the shell’s process group as the TTY foreground; background jobs reading stdin will get SIGTTIN and stop automatically._
-- _When fg brings a job to the foreground, tcsetpgrp the TTY to that job’s pgid, and restore it to the shell when it stops/exits._
-- _Without those pieces, background interactives like Python will continue to fight for your TTY._
 
 ### Naming
 
@@ -87,6 +66,7 @@ _To mimic Bash’s behavior, you’d need to add real job control:_
 - Command chaining with `;`.
 - Running it now on Linux, I notice that `ls` with no options formats differently to Mac. You can't please all of the people all of the time.
 - Pick a consistent style of creating `String` from `&str`: either `String::from` or `to_string` or `into`.
+- Get computer and username and print in green?
 
 ## Error handling
 
