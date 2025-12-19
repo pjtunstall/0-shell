@@ -103,8 +103,8 @@ pub fn short_format_list(entries: Vec<String>, is_redirect: bool) -> Result<Stri
         output.push_str("\n");
     } else {
         let term_width = get_terminal_width();
-        let max_len = entries.iter().map(|s| s.len()).max().unwrap_or(0);
-        let col_width = max_len + 6;
+        let max_visible_len = entries.iter().map(|s| visible_width(s)).max().unwrap_or(0);
+        let col_width = max_visible_len + 6;
 
         let num_cols = term_width / col_width;
         let num_rows = (entries.len() + num_cols - 1) / num_cols;
@@ -112,7 +112,9 @@ pub fn short_format_list(entries: Vec<String>, is_redirect: bool) -> Result<Stri
         for row in 0..num_rows {
             for col in 0..num_cols {
                 if let Some(entry) = entries.get(row + col * num_rows) {
-                    output.push_str(&format!("{:<width$}", entry, width = col_width));
+                    let pad = col_width.saturating_sub(visible_width(entry));
+                    output.push_str(entry);
+                    output.push_str(&" ".repeat(pad));
                 } else {
                     output.push_str(&" ".repeat(col_width));
                 }
@@ -122,6 +124,24 @@ pub fn short_format_list(entries: Vec<String>, is_redirect: bool) -> Result<Stri
     }
 
     Ok(output)
+}
+
+fn visible_width(s: &str) -> usize {
+    let mut width = 0;
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '\x1b' {
+            // Skip ANSI escape sequences.
+            while let Some(next) = chars.next() {
+                if next == 'm' {
+                    break;
+                }
+            }
+            continue;
+        }
+        width += 1;
+    }
+    width
 }
 
 fn get_terminal_width() -> usize {

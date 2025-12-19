@@ -12,21 +12,20 @@ use crate::{
 // When this struct is instantiated at the start of `repl`, it saves the terminal attributes so that it can restore them on drop to prevent lingering no-echo/cbreak states if an interactive child leaves the TTY altered. The non-Unix version below is a no-op placeholder.
 #[cfg(unix)]
 struct TtyGuard {
-    saved: Option<libc::termios>,
+    saved: Option<c::Termios>,
 }
 
 #[cfg(unix)]
 impl TtyGuard {
     fn new() -> Self {
-        let mut tio = std::mem::MaybeUninit::<libc::termios>::uninit();
-        let saved = unsafe {
-            if libc::tcgetattr(libc::STDIN_FILENO, tio.as_mut_ptr()) == 0 {
-                Some(tio.assume_init())
+        unsafe {
+            let mut tio = std::mem::zeroed::<c::Termios>();
+            if c::tcgetattr(c::STDIN_FILENO, &mut tio) == 0 {
+                Self { saved: Some(tio) }
             } else {
-                None
+                Self { saved: None }
             }
-        };
-        TtyGuard { saved }
+        }
     }
 }
 
@@ -35,7 +34,7 @@ impl Drop for TtyGuard {
     fn drop(&mut self) {
         if let Some(saved) = self.saved {
             unsafe {
-                let _ = libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &saved);
+                c::tcsetattr(c::STDIN_FILENO, c::TCSANOW, &saved);
             }
         }
     }

@@ -12,14 +12,42 @@ pub const SIGCONT: i32 = 18;
 pub const SIGSTOP: i32 = 19;
 pub const SIGTSTP: i32 = 20;
 
+// Constants for `tcsetattr`.
+pub const STDIN_FILENO: i32 = 0;
+pub const TCSANOW: i32 = 0;
+
 // Store the PID of the currently running foreground job.
 // 0 means "no job running" (we're at the prompt).
 pub static CURRENT_CHILD_PID: AtomicI32 = AtomicI32::new(0);
+
+// The termios struct (standard x86_64 layout)
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct Termios {
+    pub c_iflag: u32,
+    pub c_oflag: u32,
+    pub c_cflag: u32,
+    pub c_lflag: u32,
+    pub c_line: u8,
+    pub c_cc: [u8; 32],
+    pub c_ispeed: u32,
+    pub c_ospeed: u32,
+}
 
 unsafe extern "C" {
     pub fn signal(sig: i32, handler: extern "C" fn(i32)) -> usize;
     pub fn kill(pid: i32, sig: i32) -> i32;
     pub fn waitpid(pid: i32, status: *mut i32, options: i32) -> i32;
+
+    // Terminal attribute functions.
+    pub fn tcgetattr(fd: i32, termptr: *mut Termios) -> i32;
+    pub fn tcsetattr(fd: i32, optional_actions: i32, termptr: *const Termios) -> i32;
+
+    // Group management.
+    pub fn setpgid(pid: i32, pgid: i32) -> i32;
+    pub fn tcsetpgrp(fd: i32, pgrp: i32) -> i32;
+    pub fn getpgrp() -> i32;
+    pub fn getpid() -> i32;
 }
 
 // Forward the signal received by the shell to the current foreground child.
