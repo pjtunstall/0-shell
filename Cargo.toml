@@ -6,6 +6,7 @@ build = "build.rs"
 
 [dependencies]
 chrono = "0.4.39"
+dirs = "6.0.0"
 filetime = "0.2.25"
 home = "0.5.11"
 lazy_static = "1.5.0"
@@ -15,6 +16,7 @@ tempfile = "3.16.0"
 terminal_size = "0.4.1"
 termion = "4.0.3"
 uzers = "0.12.1"
+whoami = "1.6.1"
 xattr = "1.4.0"
 
 [dependencies.uuid]

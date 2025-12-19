@@ -8,12 +8,14 @@ use std::{
     path::MAIN_SEPARATOR,
 };
 
+use dirs;
 use lazy_static::lazy_static;
 use termion::{
     event::Key,
     input::TermRead,
     raw::{IntoRawMode, RawTerminal},
 };
+use whoami;
 
 use crate::commands::{ls, rm};
 
@@ -146,9 +148,21 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
 }
 
 fn prompt() -> io::Result<String> {
-    let cwd = std::env::current_dir()?.display().to_string();
-    // Print cwd in blue; reset to default color afterwards.
-    let prompt = format!("\x1b[34m{}\x1b[39m ▶ ", cwd);
+    let mut cwd = std::env::current_dir()?.display().to_string();
+    let username = whoami::username();
+    let hostname = whoami::devicename();
+
+    if let Some(home_dir) = dirs::home_dir() {
+        let home_str = home_dir.display().to_string();
+        if cwd.starts_with(&home_str) {
+            cwd = cwd.replacen(&home_str, "~", 1);
+        }
+    }
+
+    let prompt = format!(
+        "\x1b[92m{}@{}\x1b[39m:\x1b[34m{}\x1b[39m ▶ ",
+        username, hostname, cwd
+    );
     Ok(prompt)
 }
 
