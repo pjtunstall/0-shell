@@ -36,7 +36,7 @@ pub fn run_command(args: &[String], jobs: &mut Vec<Job>) {
 
     if clean_args.is_empty() {
         if is_background {
-            error::red_println("0-shell: syntax error near unexpected token `&'");
+            error::red_println("0-shell: Syntax error near unexpected token `&'");
         }
         return;
     }
@@ -83,7 +83,7 @@ pub fn run_command_as_worker(args: &[String]) {
     // args[1] is "--internal-worker"
     // args[2] is the actual command (e.g. "ls")
     if args.len() < 3 {
-        error::red_println("0-shell: internal worker error: missing command argument");
+        error::red_println("0-shell: Internal worker error: missing command argument");
         return;
     }
 

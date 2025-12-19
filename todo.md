@@ -12,6 +12,8 @@
 
 ## Job Control
 
+There's a lot to read here, but to pass the audit for job-control, it needs to launch arbitrary external binaries (apart from those we had to re-implement). I also need to handle + and - properly; the current program takes a short cut and just defines them as the last two items entered into the jobs list.
+
 - History stack to track 1st (+) and 2nd (-) most recently active jobs.
 - Rename `JOB_ID` and consider name of `job.id`. Should it be `job_number` or simply `number`?
   - Allow other sorts of `jobspec`: %%, %-, +/i for `bg` and `fg`.
@@ -27,12 +29,10 @@
 - Complete the optional extra project job-control in the light of the extra requirements implied by the audit questions.
 - Check formatting: sort out spacing and alignment.
 - In `check_background_jobs`, check `status` for exit codes or signals (e.g., segfaults).
-- Decide whether to make job-control a separate project that relies exclusively on external binaries (as the audit might suggest) versus the core 0-shell, that is required not to use external binaries!
 - Handle groups of jobs so as to allow jobs to spawn their own groups of jobs.
   - Meanwhile, ensure suitable error messages if someone tries to run a builtin fron a job.
 - What should happen if `&` is the final argument for builtins?
 - Remove `Terminated` state from `jobs::State` enum?
-- Decide whether to remove safety catch and allow arbitrary PID kill.
 - Write more tests for job control as I go along.
 
 A more detailed review of the job-control commands follows:

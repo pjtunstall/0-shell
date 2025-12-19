@@ -98,7 +98,7 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ### Job control
 
-While my 0-shell more-or-less meets the stated requirements for the optional extension project job-control (subject to making `+` and `-` track the last two foreground jobs even when jobs move back and forth between states), I've yet to tackle some of the additional requirements implied by its audit questions, in particular:
+My 0-shell more-or-less meets the stated requirements for the optional extension project job-control (subject to tracking `+` and `-` properly; the current program takes a short cut and just defines them as the last two items entered into the jobs list). But I've yet to tackle one key additional requirements implied by its audit questions:
 
 - execution of arbitrary external binaries apart from those we had to recreate,
   - including via the system `PATH` by typing e.g. `tar` or `python`

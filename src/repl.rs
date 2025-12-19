@@ -42,7 +42,7 @@ pub fn repl() {
         let input_string = match input::get_input(&mut history) {
             Ok(ok_input) => ok_input,
             Err(err) => {
-                let text = format!("0-shell: failed to get input: {}", err);
+                let text = format!("0-shell: Failed to get input: {}", err);
                 error::red_println(&text);
                 continue;
             }
@@ -65,7 +65,7 @@ pub fn repl() {
         }
 
         if input_after_splitting.is_empty() {
-            error::red_println(&format!("0-shell: parse error near `\\n'"));
+            error::red_println(&format!("0-shell: Parse error near `\\n'"));
             continue;
         }
 
