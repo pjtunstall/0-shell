@@ -12,9 +12,8 @@
 
 ## Job Control
 
-There's a lot to read here, but to pass the audit for job-control, it needs to launch arbitrary external binaries (apart from those we had to re-implement). I also need to handle + and - properly; the current program takes a short cut and just defines them as the last two items entered into the jobs list.
+There's a lot to read here, but to pass the audit for job-control, it needs to launch arbitrary external binaries (apart from those we had to re-implement).
 
-- History stack to track 1st (+) and 2nd (-) most recently active jobs.
 - Rename `JOB_ID` and consider name of `job.id`. Should it be `job_number` or simply `number`?
   - Allow other sorts of `jobspec`: %%, %-, +/i for `bg` and `fg`.
     - When those are implemented, change usage messages to have the more general `jobspec` in place of `JOB_ID`.
