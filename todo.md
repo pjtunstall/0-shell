@@ -14,6 +14,7 @@
 
 There's a lot to read here, but to pass the audit for job-control, it needs to launch arbitrary external binaries (apart from those we had to re-implement).
 
+- Investigate behavior of `ls -lRr / 2>1 >/dev/null  &`.
 - Rename `JOB_ID` and consider name of `job.id`. Should it be `job_number` or simply `number`?
 - Bash `bg` with no args stops the current job.
 - Add -l and -s flags for `kill`.
