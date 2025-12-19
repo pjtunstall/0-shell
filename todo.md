@@ -41,7 +41,7 @@ A more detailed review of the job-control commands follows:
 
 _kill deviates from Bash (src/commands/kill.rs): only supports SIGTERM; no -SIGNAL/-l/-s flags; rejects PIDs not tracked as jobs (Bash happily kills arbitrary PIDs); forbids PID 0/negative (Bash allows -n for process groups). If you plan to mimic Bash, broaden to arbitrary PIDs and signals, and don’t gate on the jobs table._
 
-Intentional safety measure. Can be removed.
+Preventing the killing of processes not created from within 0-shell was an intentional safety measure during development; now removed.
 
 ### bg
 
