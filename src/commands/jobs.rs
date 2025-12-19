@@ -1,7 +1,7 @@
 use crate::c;
 use std::borrow::Borrow;
 
-pub const USAGE: &str = "Usage:\tjobs [-lprs] [[%]<JOB_ID>...]";
+pub const USAGE: &str = "Usage:\tjobs [-lprs] [%[+|-|%%|<JOB_ID>]...]";
 const STATE_COL_WIDTH: usize = 24;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -46,11 +46,8 @@ pub fn jobs(
                 }
             }
         } else {
-            let id_str = if arg.starts_with('%') { &arg[1..] } else { arg };
-            match id_str.parse::<usize>() {
-                Ok(id) => specific_job_ids.push(id),
-                Err(_) => return Err(format!("Invalid job ID: {}", arg)),
-            }
+            let id = resolve_jobspec(arg, *current, *previous)?;
+            specific_job_ids.push(id);
         }
     }
 
@@ -70,21 +67,21 @@ pub fn format_jobs<T: Borrow<Job>>(
     for item in items.iter() {
         let job = item.borrow();
 
-        // 0. Filter by specific Job IDs (if user asked for specific jobs)
+        // Filter by specific Job IDs (if user asked for specific jobs).
         if !filter_ids.is_empty() && !filter_ids.contains(&job.id) {
             continue;
         }
 
-        // 1. Filter: -r (Running only).
+        // Filter: -r (Running only).
         if opts.running_only && matches!(job.state, State::Stopped) {
             continue;
         }
-        // 2. Filter: -s (Stopped only).
+        // Filter: -s (Stopped only).
         if opts.stopped_only && matches!(job.state, State::Running) {
             continue;
         }
 
-        // Mode: -p (PIDs only). Early exit.
+        // Mode: -p (PIDs only).
         if opts.pid_only {
             output.push_str(&format!("{}\n", job.pid));
             continue;
@@ -128,7 +125,6 @@ impl Job {
 pub enum State {
     Running,
     Stopped,
-    Terminated,
 }
 
 impl std::fmt::Display for State {
@@ -136,7 +132,6 @@ impl std::fmt::Display for State {
         let s = match self {
             State::Running => "Running",
             State::Stopped => "Stopped",
-            State::Terminated => "Terminated", // Rarely seen (removed immediately)
         };
         f.write_str(s)
     }
@@ -146,6 +141,35 @@ pub struct JobDisplay<'a> {
     pub job: &'a Job,
     pub sign: &'a str,
     pub opts: JobOptions,
+}
+
+pub fn resolve_jobspec(spec: &str, current: usize, previous: usize) -> Result<usize, String> {
+    let raw = if spec == "%" || spec == "%+" || spec == "%%" {
+        if current > 0 {
+            return Ok(current);
+        } else if previous > 0 {
+            // No explicit current; fall back to previous.
+            return Ok(previous);
+        } else {
+            return Err("Current: no such job".to_string());
+        }
+    } else if spec == "%-" {
+        if previous > 0 {
+            return Ok(previous);
+        } else if current > 0 {
+            // Single-job case: %- maps to current.
+            return Ok(current);
+        } else {
+            return Err("Current: no such job".to_string());
+        }
+    } else if let Some(rest) = spec.strip_prefix('%') {
+        rest
+    } else {
+        spec
+    };
+
+    raw.parse::<usize>()
+        .map_err(|_| format!("Invalid job ID: {}", spec))
 }
 
 impl std::fmt::Display for JobDisplay<'_> {
@@ -313,7 +337,7 @@ mod tests {
             id: 1,
             pid: 8287,
             command: "ls ...".to_string(),
-            state: State::Terminated,
+            state: State::Stopped,
         };
 
         let mut opts = JobOptions::default();
@@ -328,7 +352,7 @@ mod tests {
         let expected = format!(
             "[1]- {:<5} {:<width$} ls ...",
             "8287",
-            "Terminated",
+            "Stopped",
             width = STATE_COL_WIDTH
         );
 
@@ -403,5 +427,16 @@ mod tests {
             "job 1 should be marked previous with '-'"
         );
         assert!(output.contains("[3] "), "job 3 should have no sign");
+    }
+
+    #[test]
+    fn resolve_jobspec_handles_current_and_previous_aliases() {
+        assert_eq!(resolve_jobspec("%+", 2, 1).unwrap(), 2);
+        assert_eq!(resolve_jobspec("%%", 2, 1).unwrap(), 2);
+        assert_eq!(resolve_jobspec("%", 2, 1).unwrap(), 2);
+        assert_eq!(resolve_jobspec("%-", 2, 1).unwrap(), 1);
+
+        // Single-job case: %- falls back to current.
+        assert_eq!(resolve_jobspec("%-", 3, 0).unwrap(), 3);
     }
 }

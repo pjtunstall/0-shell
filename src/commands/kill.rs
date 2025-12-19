@@ -5,7 +5,7 @@ use crate::{
     commands::jobs::{self, Job, State},
 };
 
-pub const USAGE: &str = "Usage:\tkill <PID>|%<JOB_ID>";
+pub const USAGE: &str = "Usage:\tkill <PID>|%[+|-|%%|<JOB_ID>]";
 
 pub fn kill(input: &[String], jobs: &mut Vec<Job>, current: &mut usize, previous: &mut usize) -> Result<String, String> {
     jobs::check_background_jobs(jobs, current, previous);
@@ -23,10 +23,7 @@ pub fn kill(input: &[String], jobs: &mut Vec<Job>, current: &mut usize, previous
     let mut is_stopped = false;
 
     if arg.starts_with('%') {
-        let id_str = &arg[1..];
-        let job_id = id_str
-            .parse::<usize>()
-            .map_err(|_| format!("Invalid job ID: {}", arg))?;
+        let job_id = jobs::resolve_jobspec(arg, *current, *previous)?;
 
         if let Some(job) = jobs.iter().find(|j| j.id == job_id) {
             pid_to_kill = job.pid;

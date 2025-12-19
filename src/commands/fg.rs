@@ -5,9 +5,14 @@ use crate::{
     commands::jobs::{self, Job},
 };
 
-pub const USAGE: &str = "Usage:\tfg [[%]<JOB_ID>]";
+pub const USAGE: &str = "Usage:\tfg [%[+|-|%%|<JOB_ID>]]";
 
-pub fn fg(args: &[String], jobs: &mut Vec<Job>, current: &mut usize, previous: &mut usize) -> Result<String, String> {
+pub fn fg(
+    args: &[String],
+    jobs: &mut Vec<Job>,
+    current: &mut usize,
+    previous: &mut usize,
+) -> Result<String, String> {
     jobs::check_background_jobs(jobs, current, previous);
 
     let job_id = if args.len() < 2 {
@@ -19,10 +24,7 @@ pub fn fg(args: &[String], jobs: &mut Vec<Job>, current: &mut usize, previous: &
         }
     } else {
         let arg = &args[1];
-        let id_str = if arg.starts_with('%') { &arg[1..] } else { arg };
-        id_str
-            .parse::<usize>()
-            .map_err(|_| format!("Invalid job ID: {}", arg))?
+        jobs::resolve_jobspec(arg, *current, *previous)?
     };
 
     // We need the index so we can remove it later if it finishes.
@@ -36,13 +38,12 @@ pub fn fg(args: &[String], jobs: &mut Vec<Job>, current: &mut usize, previous: &
     *previous = *current;
     *current = job_id;
 
-    // Print the command being brought to foreground
     println!("{}", command_text);
 
-    // Setup signal forwarding
+    // Setup signal forwarding.
     c::CURRENT_CHILD_PID.store(pid, Ordering::SeqCst);
 
-    // Send SIGCONT (in case the job was stopped).
+    // Send SIGCONT in case the job was stopped.
     unsafe {
         c::kill(pid, c::SIGCONT);
     }
@@ -53,7 +54,7 @@ pub fn fg(args: &[String], jobs: &mut Vec<Job>, current: &mut usize, previous: &
         c::waitpid(pid, &mut status, c::WUNTRACED);
     }
 
-    // Teardown signal forwarding
+    // Teardown signal forwarding.
     c::CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
 
     if c::w_if_stopped(status) {

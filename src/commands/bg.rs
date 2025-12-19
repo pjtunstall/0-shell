@@ -6,7 +6,7 @@ use crate::{
     error,
 };
 
-pub const USAGE: &str = "Usage:\tbg [%]<JOB_ID>...";
+pub const USAGE: &str = "Usage:\tbg [%[+|-|%%|<JOB_ID>]]...";
 
 pub fn bg(
     input: &[String],
@@ -29,18 +29,12 @@ pub fn bg(
     let mut target_ids = HashSet::new();
 
     for item in &input[1..] {
-        let id_str = if item.starts_with('%') {
-            &item[1..]
-        } else {
-            item
-        };
-
-        match id_str.parse::<usize>() {
+        match jobs::resolve_jobspec(item, *current, *previous) {
             Ok(id) => {
                 target_ids.insert(id);
             }
             Err(e) => {
-                failures.push_str(&format!("Failed to parse job ID: {}\n", e));
+                failures.push_str(&format!("{}\n", e));
                 failure_count += 1
             }
         }
@@ -108,7 +102,7 @@ mod tests {
         let mut previous = 0;
         let result = bg(&input, &mut jobs, &mut current, &mut previous);
 
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "`bg 1` should resume stopped job");
         assert!(
             matches!(jobs[0].state, State::Running),
             "job id 1 should move to running"
@@ -136,7 +130,7 @@ mod tests {
         let mut previous = 0;
         let result = bg(&input, &mut jobs, &mut current, &mut previous);
 
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "`bg %1` should resume stopped job");
         assert!(
             matches!(jobs[0].state, State::Running),
             "job id 1 should move to running with % syntax"

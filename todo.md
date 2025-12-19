@@ -15,8 +15,6 @@
 There's a lot to read here, but to pass the audit for job-control, it needs to launch arbitrary external binaries (apart from those we had to re-implement).
 
 - Rename `JOB_ID` and consider name of `job.id`. Should it be `job_number` or simply `number`?
-  - Allow other sorts of `jobspec`: %%, %-, +/i for `bg` and `fg`.
-    - When those are implemented, change usage messages to have the more general `jobspec` in place of `JOB_ID`.
 - Bash `bg` with no args stops the current job.
 - Add -l and -s flags for `kill`.
 - Add -n flag for `jobs`.
@@ -31,7 +29,6 @@ There's a lot to read here, but to pass the audit for job-control, it needs to l
 - Handle groups of jobs so as to allow jobs to spawn their own groups of jobs.
   - Meanwhile, ensure suitable error messages if someone tries to run a builtin fron a job.
 - What should happen if `&` is the final argument for builtins?
-- Remove `Terminated` state from `jobs::State` enum?
 - Write more tests for job control as I go along.
 
 A more detailed review of the job-control commands follows:
