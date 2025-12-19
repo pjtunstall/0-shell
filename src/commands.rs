@@ -19,7 +19,13 @@ pub mod touch;
 use crate::{commands::jobs::Job, error, worker};
 
 // This is the command runner that's called by the parent process. We accept (a mutable reference to) the `Vec` of jobs here to pass it down to the `jobs` function for viewing or to 'worker' (so that we can update it if a process has stopped).
-pub fn run_command(args: &[String], jobs: &mut Vec<Job>, current: &mut usize, previous: &mut usize) {
+// By contrast, `run_command_as_worker` below is the command runner launched by child processes (jobs).
+pub fn run_command(
+    args: &[String],
+    jobs: &mut Vec<Job>,
+    current: &mut usize,
+    previous: &mut usize,
+) {
     if args.is_empty() {
         return;
     }
@@ -64,7 +70,7 @@ pub fn run_command(args: &[String], jobs: &mut Vec<Job>, current: &mut usize, pr
             worker::launch_job(clean_args, jobs, is_background, current, previous)
         }
 
-        _ => Err(format!("command not found: {}", command)),
+        _ => Err(format!("Command not found: {}", command)),
     };
 
     match result {
@@ -100,7 +106,7 @@ pub fn run_command_as_worker(args: &[String]) {
         "rm" => rm::rm(clean_args),
         "sleep" => sleep::sleep(clean_args),
         "touch" => touch::touch(clean_args),
-        _ => Err(format!("command not found: {}", command)),
+        _ => Err(format!("Command not found: {}", command)),
     };
 
     match result {
