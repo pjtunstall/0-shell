@@ -98,12 +98,7 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ### Job control
 
-While 0-shell meets the stated requirements for the optional extension project job-control, I've yet to tackle one key additional requirement implied by its audit questions:
-
-- execution of arbitrary external binaries apart from those we had to recreate,
-  - including via the system `PATH` by typing e.g. `tar` or `python`
-
-I assume we're not being asked to re-implement Python.
+My 0-shell meets the stated requirements for the optional extension project job-control, and now also allows execution of arbitrary external binaries (apart from the commands we had to re-implement), a requirement implied by the audit questions. But to pass the test, I still need to mimic Bash's behavior when Python is launched from 0-shell as a background process.
 
 ## Regarding the name
 
