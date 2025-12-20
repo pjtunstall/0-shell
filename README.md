@@ -16,11 +16,11 @@
 
 ## What is this?
 
-This is my take on the [01-Founders/01-Edu project of the same name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit b0b9f3d). The object of the exercise is to learn about shells and job-control by mimicking essential Unix shell behaviors without using external binaries or existing shell utilities.
+This is my take on the [01-Founders/01-Edu project of the same name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit b0b9f3d). The object of the exercise is to learn about shells and job-control by mimicking essential Unix shell behaviors without using external binaries or existing shell utilities.<sup id="ref-f1">[1](#f1)</sup>
 
 We're required to recreate at least the following ten commands:
 
-Built-in:<sup id="ref-f1">[1](#f1)</sup>
+Built-in:<sup id="ref-f2">[2](#f2)</sup>
 
 - echo
 - exit
@@ -42,7 +42,7 @@ We're told:
 
 > Through the 0-shell you will get to the core of the Unix system and explore an important part of this system’s API which is the process creation and synchronization. Executing a command inside a shell implies creating a new process, which execution and final state will be monitored by its parents processes. This set of functions will be the key to success for your project.
 
-For these commands implemented from scratch, I following the hint to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example. When a command is entered, the shell forks and the child re-executes the 0-shell binary with command-line arguments to identify it as the child, and pass it the command. The child then calls the relevant function.<sup id="ref-f2">[2](#f2)</sup>
+For these commands implemented from scratch, I following the hint to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example. When a command is entered, the shell forks and the child re-executes the 0-shell binary with command-line arguments to identify it as the child, and pass it the command. The child then calls the relevant function.<sup id="ref-f3">[3](#f3)</sup>
 
 I've added several bonus features, including:
 
@@ -61,7 +61,7 @@ I'm also implementing some features from the optional extra project [job-control
 - Ctrl+C: terminate a child process and return to the 'shell'
 - Ctrl+Z: pause a child process and return to the 'shell'
 - jobs: list background processes
-- fg: restart a paused child process in the foreground<sup id="ref-f1">[3](#f3)</sup>
+- fg: restart a paused child process in the foreground<sup id="ref-f4">[4](#f4)</sup>
 - bg: restart one or more child processes in the background
 - kill: terminate a process
 
@@ -131,8 +131,10 @@ See [todo.md](todo.md) for possible further developments and topics to explore.
 
 ## Notes
 
-<a id="f1" href="#ref-f1">1</a>: A traditional Unix shell, such as Bash, treats certain commands as built-in utilities: `cd`, `exit`, `pwd`, `echo` (the first two of necessity built-in). Other commands launch external binaries: `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir`. To check whether a command is built-in for a given shell, you can enter `type <command>`.[↩](#ref-f1)
+<a id="f1" href="#ref-f1">1</a>: I've written my code for a Unix-like OS. This assumption is implicit in my handling of process groups and signals, and use of `libc`. An earlier version (from before I implemented job control) did aim to be platform-agnostic, hence the Windows variants for obtaining fs metadata the `ls::system` module.[↩](#ref-f1)
 
-<a id="f2" href="#ref-f2">2</a>: On installation, I gather that Busybox makes, for example, `/bin/ls` a symbolic link pointing to `/bin/0_shell`, allowing it act in place of a default shell. I haven't gone this far.[↩](#ref-f2)
+<a id="f2" href="#ref-f2">2</a>: A traditional Unix shell, such as Bash, treats certain commands as built-in utilities: `cd`, `exit`, `pwd`, `echo` (the first two of necessity built-in). Other commands launch external binaries: `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir`. To check whether a command is built-in for a given shell, you can enter `type <command>`.[↩](#ref-f2)
 
-<a id="f3" href="#ref-f3">3</a>: As in Bash, the arguments to `fg` and `bg` are job numbers (1, 2, ...) while `kill` expects a system-wide PID (process ID), such as `1881893`; the convention can be reversed, for any of these commands, by prefixing the number with `%`, thus: `kill %1` or `fg %1881893`.[↩](#ref-f3)
+<a id="f3" href="#ref-f3">3</a>: On installation, I gather that Busybox makes, for example, `/bin/ls` a symbolic link pointing to `/bin/0_shell`, allowing it act in place of a default shell. I haven't gone this far.[↩](#ref-f3)
+
+<a id="f4" href="#ref-f4">4</a>: As in Bash, the arguments to `fg` and `bg` are job numbers (1, 2, ...) while `kill` expects a system-wide PID (process ID), such as `1881893`; the convention can be reversed, for any of these commands, by prefixing the number with `%`, thus: `kill %1` or `fg %1881893`.[↩](#ref-f4)
