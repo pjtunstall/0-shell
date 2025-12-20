@@ -48,12 +48,11 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
     let stdin = io::stdin();
     let mut stdout = io::stdout().into_raw_mode()?;
 
-    // Necessary to allow Python to print its banner correctly when run in the background, as in the job-control audit question.
     unsafe {
         let mut ios = std::mem::zeroed::<libc::termios>();
         if libc::tcgetattr(libc::STDOUT_FILENO, &mut ios) == 0 {
-            ios.c_oflag |= libc::OPOST; // Enable Output Processing.
-            ios.c_oflag |= libc::ONLCR; // Ensure ONLCR is on (map NL to CR-NL).
+            ios.c_oflag |= libc::OPOST;
+            ios.c_oflag |= libc::ONLCR;
             libc::tcsetattr(libc::STDOUT_FILENO, libc::TCSANOW, &ios);
         }
     }
@@ -96,20 +95,28 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
                     }
                     Key::Char(c) => {
                         input.insert(cursor, c);
-                        cursor += 1;
+                        cursor += c.len_utf8();
                     }
                     Key::Backspace => {
                         if cursor > 0 {
-                            cursor -= 1;
-                            input.remove(cursor);
+                            if let Some(c) = input[..cursor].chars().next_back() {
+                                cursor -= c.len_utf8();
+                                input.remove(cursor);
+                            }
                         }
                     }
                     Key::Left => {
-                        cursor = cursor.saturating_sub(1);
+                        if cursor > 0 {
+                            if let Some(c) = input[..cursor].chars().next_back() {
+                                cursor -= c.len_utf8();
+                            }
+                        }
                     }
                     Key::Right => {
                         if cursor < input.len() {
-                            cursor += 1;
+                            if let Some(c) = input[cursor..].chars().next() {
+                                cursor += c.len_utf8();
+                            }
                         }
                     }
                     Key::Up => {
@@ -140,9 +147,9 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
                     .expect("failed to write to `stdout`");
                 write!(stdout, "{}", input).expect("failed to write to `stdout`");
 
-                let move_left_by = input.len().saturating_sub(cursor);
-                if move_left_by > 0 {
-                    write!(stdout, "{}", termion::cursor::Left(move_left_by as u16))
+                let chars_remaining = input[cursor..].chars().count();
+                if chars_remaining > 0 {
+                    write!(stdout, "{}", termion::cursor::Left(chars_remaining as u16))
                         .expect("failed to write to `stdout`");
                 }
 
@@ -177,7 +184,6 @@ fn prompt() -> io::Result<String> {
     Ok(prompt)
 }
 
-// Return true to continue. This will bypass the usual prompt printing, which would overwrite any possibilities or options message. Only return false when one exact match is found.
 fn tab_and_should_continue(
     input: &mut String,
     cursor: &mut usize,
@@ -190,7 +196,7 @@ fn tab_and_should_continue(
 
     if words.len() > 1 && *words.last().expect("expected a last word") == "-" {
         check_options(stdout, prompt, input, words[0]);
-        return true; // On returning, continue.
+        return true;
     }
 
     let waiting_for_cmd =
@@ -292,7 +298,6 @@ fn display_match(
     matches: Vec<String>,
 ) {
     if words.len() > 0 {
-        // Replace partial with complete match.
         *input = words[..words.len().saturating_sub(1)].join(" ");
         if !input.is_empty() && !input.ends_with(' ') {
             input.push(' ');
@@ -305,7 +310,7 @@ fn display_match(
     input.push(' ');
     *cursor = input.len();
 
-    write!(stdout, "\r{CLEAR_LINE}{prompt}{input}").expect("failed to write to `stdout`"); // Move the cursor back up.
+    write!(stdout, "\r{CLEAR_LINE}{prompt}{input}").expect("failed to write to `stdout`");
     stdout.flush().expect("failed to flush `stdout`");
 }
 
@@ -348,7 +353,7 @@ fn display_possibilities(
         }
     }
 
-    write!(stdout, "\r{}", crate::ansi::cursor_up(num_rows)).expect("failed to write to `stdout`"); // Move the cursor back up.
+    write!(stdout, "\r{}", crate::ansi::cursor_up(num_rows)).expect("failed to write to `stdout`");
     write!(stdout, "\r{}{}", prompt, input).expect("failed to write to `stdout`");
     stdout.flush().expect("failed to flush `stdout`");
 }
@@ -359,7 +364,7 @@ fn display_usage(stdout: &mut RawTerminal<Stdout>, prompt: &str, input: &str, me
     }
     let num_rows = message.matches('\n').count();
     write!(stdout, "{}", message).expect("failed to write to `stdout`");
-    write!(stdout, "\r{}", crate::ansi::cursor_up(num_rows)).expect("failed to write to `stdout`"); // Move the cursor back up.
+    write!(stdout, "\r{}", crate::ansi::cursor_up(num_rows)).expect("failed to write to `stdout`");
     write!(stdout, "\r{}{}", prompt, input).expect("failed to write to `stdout`");
     stdout.flush().expect("failed to flush `stdout`");
 }
