@@ -21,8 +21,11 @@ pub const SIGTTOU: i32 = 22; // Background write to TTY.
 pub const SIGHUP: i32 = 1; // Hangup.
 
 // Other constants for TTY management.
-pub const STDIN_FILENO: i32 = 0;
-pub const TCSANOW: i32 = 0;
+pub const STDIN_FILENO: i32 = 0; // File descriptors.
+pub const STDOUT_FILENO: i32 = 1;
+pub const TCSANOW: i32 = 0; // Termios control.
+pub const OPOST: u32 = 1; // Output mode flags (c_oflag).
+pub const ONLCR: u32 = 4; // Map `\n` (NL) to `\r\n` (CR-NL).
 
 // Store the PID of the currently running foreground job.
 // 0 means "no job running" (we're at the prompt).

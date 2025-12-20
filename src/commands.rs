@@ -62,6 +62,7 @@ pub fn run_command(
     let mut exit_code: Option<i32> = None;
 
     let result = match command {
+        // Small utilities: internal.
         "exit" => match exit::exit(clean_args, jobs, exit_attempted) {
             Ok(code_str) => {
                 exit_code = Some(code_str.parse().unwrap_or(0));
@@ -72,14 +73,19 @@ pub fn run_command(
         "cd" => cd::cd(clean_args),
         "echo" => echo::echo(clean_args),
         "pwd" => pwd::pwd(clean_args),
+
+        // Job control: internal.
         "bg" => bg::bg(clean_args, jobs, current, previous),
         "fg" => fg::fg(clean_args, jobs, current, previous),
         "jobs" => jobs::jobs(clean_args, jobs, current, previous),
         "kill" => kill::kill(clean_args, jobs, current, previous),
 
+        // Custom: fork and re-execute with command-line arguments.
         "cat" | "cp" | "ls" | "mkdir" | "man" | "mv" | "rm" | "sleep" | "touch" => {
             spawn_job(clean_args, jobs, is_background, true, current, previous)
         }
+
+        // External: fork and re-execute
         _ => spawn_job(clean_args, jobs, is_background, false, current, previous),
     };
 
@@ -133,6 +139,7 @@ fn spawn_job(
     }
 
     if pid == 0 {
+        // In this branch, we're the CHILD.
         unsafe {
             let child_pid = c::getpid();
             c::setpgid(0, 0);
@@ -172,6 +179,7 @@ fn spawn_job(
             std::process::exit(1);
         }
     } else {
+        // In this branch, we're the PARENT.
         unsafe {
             c::setpgid(pid, pid);
 

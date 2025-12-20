@@ -17,7 +17,10 @@ use termion::{
 };
 use whoami;
 
-use crate::commands::{ls, rm};
+use crate::{
+    c::{self, *},
+    commands::{ls, rm},
+};
 
 lazy_static! {
     static ref COMMANDS: Vec<String> = vec![
@@ -44,6 +47,17 @@ lazy_static! {
 pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
     let stdin = io::stdin();
     let mut stdout = io::stdout().into_raw_mode()?;
+
+    // Necessary to allow Python to print its banner correctly when run in the background, as in the job-control audit question.
+    unsafe {
+        let mut ios = std::mem::zeroed::<c::Termios>();
+        if c::tcgetattr(STDOUT_FILENO, &mut ios) == 0 {
+            ios.c_oflag |= OPOST; // Enable Output Processing.
+            ios.c_oflag |= ONLCR; // Ensure ONLCR is on (map NL to CR-NL).
+            c::tcsetattr(STDOUT_FILENO, c::TCSANOW, &ios);
+        }
+    }
+
     let mut input = String::new();
     let mut cursor = 0;
 

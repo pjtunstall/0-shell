@@ -61,13 +61,13 @@ I'm also implementing some features from the optional extra project [job-control
 - Ctrl+C: terminate a child process and return to the 'shell'
 - Ctrl+Z: pause a child process and return to the 'shell'
 - jobs: list background processes
-- fg: restart a paused child process in the foreground
+- fg: restart a paused child process in the foreground<sup id="ref-f1">[3](#f3)</sup>
 - bg: restart one or more child processes in the background
 - kill: terminate a process
 
-As in Bash, the arguments to `fg` and `bg` are job numbers (1, 2, ...) while `kill` expects a system-wide PID (process ID), such as `1881893`; the convention can be reversed, for any of these commands, by prefixing the number with `%`, thus: `kill %1` or `fg %1881893`.
-
 For the remaining tasks on this optional, see [Audit: Job control](#job-control).
+
+IMPORTANT: Implementing these aspects of job control introduced much OS-specific (and some architecture-specific) code. I'm considering how best to deal with this: whether to switch to relying on libc and, if so, whether to statically link it or keep the code as is (for the sake of documenting the learning exercise) and containerize it. See [todo.md](todo.md).
 
 ## Audit
 
@@ -103,7 +103,7 @@ This 0-shell meets the stated requirements for the optional extension project jo
 - two additional flags for `ls`, namely `-r` (reverse) and `-R` (recursive)
 - redirection between file descriptors: `2>&1` (is `2>1` a typo?)
 
-I have implemented a feature not stated in the instructions but implied by the audit questions: execution of arbitrary external binaries (apart from the commands we had to re-implement). I'm now also mimicking Bash's behavior when Python is launched from 0-shell as a background process, using process groups, but need to tidy up how the Python banner is printed.
+I have implemented a feature not stated in the instructions but implied by the audit questions: execution of arbitrary external binaries (apart from the commands we had to re-implement). I'm now also mimicking Bash's behavior when Python is launched from 0-shell as a background process, using process groups.
 
 ## Regarding the name
 
@@ -136,3 +136,5 @@ See [todo.md](todo.md) for possible further developments and topics to explore.
 <a id="f1" href="#ref-f1">1</a>: A traditional Unix shell, such as Bash, treats certain commands as built-in utilities: `cd`, `exit`, `pwd`, `echo` (the first two of necessity built-in). Other commands launch external binaries: `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir`. To check whether a command is built-in for a given shell, you can enter `type <command>`.[↩](#ref-f1)
 
 <a id="f2" href="#ref-f2">2</a>: On installation, I gather that Busybox makes, for example, `/bin/ls` a symbolic link pointing to `/bin/0_shell`, allowing it act in place of a default shell. I haven't gone this far.[↩](#ref-f2)
+
+<a id="f3" href="#ref-f3">3</a>: As in Bash, the arguments to `fg` and `bg` are job numbers (1, 2, ...) while `kill` expects a system-wide PID (process ID), such as `1881893`; the convention can be reversed, for any of these commands, by prefixing the number with `%`, thus: `kill %1` or `fg %1881893`.[↩](#ref-f3)

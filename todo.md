@@ -10,21 +10,37 @@
   - [Echo](#echo)
 - [Further](#further)
 
+## Dependence on OS and architecture
+
+Since working on the optional extra job-control, my 0-shell has become very dependent on OS-specific code, and to some extent architecture-dependent too. Options include:
+
+- Use libc. To get around the dependence on system versions of libc (for reliability and in keeping with the embedded element in the project role-play), it could be statically linked:
+  - Install the target: rustup target add x86_64-unknown-linux-musl.
+  - Build: cargo build --target x86_64-unknown-linux-musl.
+- Write OS and architecture-specific definitions myself: too time-consuming and too hard to test for now. It's been suggested that I keep own definitions but check against libc. (But that's only useful if I have access to all systems to run it on.)
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn check_offsets() {
+        assert_eq!(SIGINT, libc::SIGINT);
+        assert_eq!(std::mem::size_of::<Termios>(), std::mem::size_of::<libc::termios>());
+    }
+}
+```
+
 ## Job Control
 
-There's a lot to read here, but to pass the audit for job-control, it needs to launch arbitrary external binaries (apart from those we had to re-implement).
-
-- Fix the Python banner staircase effect.
 - Investigate behavior of `ls -lRr / 2>1 >/dev/null  &`.
 - Rename `JOB_ID` and consider name of `job.id`. Should it be `job_number` or simply `number`?
 - Bash `bg` with no args stops the current job.
 - Add -l and -s flags for `kill`.
-- Add -n flag for `jobs`.
-- Re. `fg`: "Currently no terminal control (tcsetpgrp), so it doesn’t truly foreground in the Bash sense (though you forward signals via CURRENT_CHILD_PID)". Is this relevant?
+- Add -n (new only) and -x (replace and execute) flags for `jobs`.
 - Thoroughly check all existing and new behavior since adding elements of job-control.
   - Compare with Bash.
 - Check behavior of redirection around `echo` and `cat` in conjunction with `jobs`.
-- Check on different platforms; for now, only tried on Linux.
 - Complete the optional extra project job-control in the light of the extra requirements implied by the audit questions.
 - Check formatting: sort out spacing and alignment.
 - In `check_background_jobs`, check `status` for exit codes or signals (e.g., segfaults).
@@ -34,20 +50,6 @@ There's a lot to read here, but to pass the audit for job-control, it needs to l
 - Write more tests for job control as I go along.
 - Refactor again.
 - Bring together the `has_stopped` (jobs) check into one function that can be called from `repl` and `exit`. Maybe make it a method of a `Jobs` struct.
-
-A more detailed review of the job-control commands follows:
-
-### Kill
-
-_kill deviates from Bash (src/commands/kill.rs): only supports SIGTERM; no -SIGNAL/-l/-s flags; forbids PID 0/negative (Bash allows -n for process groups)._
-
-### Jobs
-
-_jobs output/signs differ (src/commands/jobs.rs): no support for -n (new only) or -x (replace and execute)._
-
-### fg
-
-_fg job-spec coverage is partial (src/commands/fg.rs): No terminal control (tcsetpgrp), so it doesn’t truly foreground in the Bash sense (though you forward signals via_ **CURRENT_CHILD_PID**).
 
 ### Naming
 
