@@ -76,9 +76,6 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
                         }
                         continue;
                     }
-                    Key::Char('¨') => {
-                        continue;
-                    }
                     Key::Ctrl('u') => {
                         input.clear();
                         cursor = 0;
