@@ -19,7 +19,6 @@ use whoami;
 
 use crate::{
     ansi::{BLUE, BRIGHT_GREEN, CLEAR_LINE, RESET_FG},
-    c::{self, *},
     commands::{ls, rm},
 };
 
@@ -51,11 +50,11 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
 
     // Necessary to allow Python to print its banner correctly when run in the background, as in the job-control audit question.
     unsafe {
-        let mut ios = std::mem::zeroed::<c::Termios>();
-        if c::tcgetattr(STDOUT_FILENO, &mut ios) == 0 {
-            ios.c_oflag |= OPOST; // Enable Output Processing.
-            ios.c_oflag |= ONLCR; // Ensure ONLCR is on (map NL to CR-NL).
-            c::tcsetattr(STDOUT_FILENO, c::TCSANOW, &ios);
+        let mut ios = std::mem::zeroed::<libc::termios>();
+        if libc::tcgetattr(libc::STDOUT_FILENO, &mut ios) == 0 {
+            ios.c_oflag |= libc::OPOST; // Enable Output Processing.
+            ios.c_oflag |= libc::ONLCR; // Ensure ONLCR is on (map NL to CR-NL).
+            libc::tcsetattr(libc::STDOUT_FILENO, libc::TCSANOW, &ios);
         }
     }
 

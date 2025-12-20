@@ -9,7 +9,6 @@ use crate::{
 };
 
 pub const USAGE: &str = "Usage:\tls [-F] [-a] [-l] [FILE|DIRECTORY]...";
-
 pub const OPTIONS_USAGE: &str = "\r\n-F      -- append file type indicators\r\n-a      -- list entries starting with .\r\n-l      -- long listing";
 
 struct PathClassification {
@@ -241,7 +240,11 @@ fn process_files(
     if flags.long_format {
         for file in files {
             let file_path = Path::new(file);
-            results.push_str(&format::get_long_list(flags.as_u8(), file_path, !is_redirect)?);
+            results.push_str(&format::get_long_list(
+                flags.as_u8(),
+                file_path,
+                !is_redirect,
+            )?);
         }
     } else {
         if is_redirect {

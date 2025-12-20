@@ -18,12 +18,12 @@ pub mod touch;
 
 use std::env;
 use std::ffi::CString;
+use std::io;
 use std::ptr;
-#[cfg(unix)]
 use std::sync::atomic::Ordering;
 
 use crate::{
-    c::{self, *},
+    c::CURRENT_CHILD_PID,
     commands::jobs::{Job, State},
     error,
 };
@@ -132,7 +132,32 @@ fn spawn_job(
     current: &mut usize,
     previous: &mut usize,
 ) -> Result<String, String> {
-    let pid = unsafe { c::fork() };
+    // Build argv up front so the child avoids allocation after fork.
+    let exec_args: Vec<String> = if is_worker {
+        let self_path = env::current_exe()
+            .unwrap_or_else(|_| std::path::PathBuf::from("./0_shell"))
+            .to_string_lossy()
+            .into_owned();
+        let mut v = vec![self_path, "--internal-worker".to_string()];
+        v.extend_from_slice(args);
+        v
+    } else {
+        args.to_vec()
+    };
+
+    let c_strings: Vec<CString> = exec_args
+        .into_iter()
+        .map(|s| {
+            CString::new(s).unwrap_or_else(|_| {
+                eprintln!("0-shell: argument contains interior NUL byte");
+                std::process::exit(1);
+            })
+        })
+        .collect();
+    let mut ptrs: Vec<*const i8> = c_strings.iter().map(|s| s.as_ptr()).collect();
+    ptrs.push(ptr::null());
+
+    let pid = unsafe { libc::fork() };
 
     if pid < 0 {
         return Err("Fork failed".to_string());
@@ -141,78 +166,73 @@ fn spawn_job(
     if pid == 0 {
         // In this branch, we're the CHILD.
         unsafe {
-            let child_pid = c::getpid();
-            c::setpgid(0, 0);
+            let child_pid = libc::getpid();
+            libc::setpgid(0, 0);
 
             if !is_background {
-                c::tcsetpgrp(c::STDIN_FILENO, child_pid);
+                libc::tcsetpgrp(libc::STDIN_FILENO, child_pid);
             }
 
             // Reset signal handlers to default behavior.
-            c::signal(SIGINT, SIG_DFL);
-            c::signal(SIGQUIT, SIG_DFL);
-            c::signal(SIGTSTP, SIG_DFL);
-            c::signal(SIGTTIN, SIG_DFL);
-            c::signal(SIGTTOU, SIG_DFL);
-            c::signal(SIGCHLD, SIG_DFL);
-
-            // This is the vector (`argv` array) that we'll re-exec, i.e. the name of the program (along with any arguments) that will take over from the current process when we call `c::execvp` at the end of this (the child's) branch.
-            let exec_args: Vec<String> = if is_worker {
-                // The path of this program, followed by the command (name of custom-implemented command), followed by the internal-worker flag, then any other arguments.
-                let self_path = env::current_exe()
-                    .unwrap_or_else(|_| std::path::PathBuf::from("./0-shell"))
-                    .to_string_lossy()
-                    .into_owned();
-                let mut v = vec![self_path, "--internal-worker".to_string()];
-                v.extend_from_slice(args);
-                v
-            } else {
-                // The command (name of external binary), followed by any other arguments.
-                args.to_vec()
-            };
-
-            let c_strings: Vec<CString> = exec_args
-                .into_iter()
-                .map(|s| CString::new(s).unwrap())
-                .collect();
-            let mut ptrs: Vec<*const i8> = c_strings.iter().map(|s| s.as_ptr()).collect();
-            ptrs.push(ptr::null());
+            libc::signal(libc::SIGINT, libc::SIG_DFL);
+            libc::signal(libc::SIGQUIT, libc::SIG_DFL);
+            libc::signal(libc::SIGTSTP, libc::SIG_DFL);
+            libc::signal(libc::SIGTTIN, libc::SIG_DFL);
+            libc::signal(libc::SIGTTOU, libc::SIG_DFL);
+            libc::signal(libc::SIGCHLD, libc::SIG_DFL);
 
             // exec vector args + PATH lookup: replace current process image with the target program, keeping the same PID.
-            c::execvp(ptrs[0], ptrs.as_ptr());
+            libc::execvp(ptrs[0], ptrs.as_ptr());
 
             // Only runs if `execvp` fails.
+            error::print_exec_failure(c_strings[0].as_bytes());
             std::process::exit(1);
         }
     } else {
         // In this branch, we're the PARENT.
         unsafe {
-            c::setpgid(pid, pid);
+            libc::setpgid(pid, pid);
 
-            if is_background {
-                let id = jobs.len() + 1;
-                let cmd_str = args.join(" ");
-                jobs.push(Job::new(id, pid, cmd_str, State::Running));
-                *previous = *current;
-                *current = id;
-                return Ok(format!("[{}] {}\n", id, pid));
-            } else {
-                c::tcsetpgrp(c::STDIN_FILENO, pid);
-                c::CURRENT_CHILD_PID.store(pid, Ordering::SeqCst);
-
-                let mut status = 0;
-                c::waitpid(pid, &mut status, c::WUNTRACED);
-
-                c::tcsetpgrp(c::STDIN_FILENO, c::getpgrp());
-                c::CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
-
-                if c::w_if_stopped(status) {
+            match is_background {
+                true => {
                     let id = jobs.len() + 1;
                     let cmd_str = args.join(" ");
-                    jobs.push(Job::new(id, pid, cmd_str.clone(), State::Stopped));
+                    jobs.push(Job::new(id, pid, cmd_str, State::Running));
                     *previous = *current;
                     *current = id;
-                    println!("\n[{}]+\tStopped\t\t{}", id, cmd_str);
+                    return Ok(format!("[{}] {}\n", id, pid));
+                }
+                false => {
+                    libc::tcsetpgrp(libc::STDIN_FILENO, pid);
+                    CURRENT_CHILD_PID.store(pid, Ordering::SeqCst);
+
+                    let mut status = 0;
+                    loop {
+                        let res = libc::waitpid(pid, &mut status, libc::WUNTRACED);
+                        if res == pid {
+                            break;
+                        }
+                        if res == -1 {
+                            let err = io::Error::last_os_error();
+                            if err.raw_os_error() == Some(libc::EINTR) {
+                                continue;
+                            }
+                            return Err(format!("waitpid failed: {}", err));
+                        }
+                        return Err(format!("waitpid returned unexpected pid: {}", res));
+                    }
+
+                    libc::tcsetpgrp(libc::STDIN_FILENO, libc::getpgrp());
+                    CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
+
+                    if libc::WIFSTOPPED(status) {
+                        let id = jobs.len() + 1;
+                        let cmd_str = args.join(" ");
+                        jobs.push(Job::new(id, pid, cmd_str.clone(), State::Stopped));
+                        *previous = *current;
+                        *current = id;
+                        println!("\n[{}]+\tStopped\t\t{}", id, cmd_str);
+                    }
                 }
             }
         }

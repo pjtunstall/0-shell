@@ -379,7 +379,10 @@ mod tests {
         // Ensure no stray file gets created alongside the directory.
         assert!(!Path::new(file).exists(), "no extra file should be created");
         assert!(
-            result.unwrap_err().to_lowercase().contains("is a directory"),
+            result
+                .unwrap_err()
+                .to_lowercase()
+                .contains("is a directory"),
             "error should mention directory"
         );
     }

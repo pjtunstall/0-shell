@@ -1,18 +1,45 @@
 use std::collections::HashSet;
+use std::io;
 
 use crate::{
-    c::{self, SIGCONT},
     commands::jobs::{self, Job, State},
     error,
 };
 
-pub const USAGE: &str = "Usage:\tbg [%[+|-|%%|<JOB_ID>]]...";
+trait Resumer {
+    fn resume(&self, pgid: i32) -> Result<(), io::Error>;
+}
+
+struct RealResumer;
+
+impl Resumer for RealResumer {
+    fn resume(&self, pgid: i32) -> Result<(), io::Error> {
+        let res = unsafe { libc::kill(-pgid, libc::SIGCONT) };
+        if res == -1 {
+            Err(io::Error::last_os_error())
+        } else {
+            Ok(())
+        }
+    }
+}
+
+pub const USAGE: &str = "Usage:\tbg [jobspec ...]";
 
 pub fn bg(
     input: &[String],
     jobs: &mut Vec<Job>,
     current: &mut usize,
     previous: &mut usize,
+) -> Result<String, String> {
+    bg_with_resumer(input, jobs, current, previous, &RealResumer)
+}
+
+fn bg_with_resumer(
+    input: &[String],
+    jobs: &mut Vec<Job>,
+    current: &mut usize,
+    previous: &mut usize,
+    resumer: &dyn Resumer,
 ) -> Result<String, String> {
     jobs::check_background_jobs(jobs, current, previous);
 
@@ -40,7 +67,7 @@ pub fn bg(
         }
     } else {
         for item in &input[1..] {
-            match jobs::resolve_jobspec(item, *current, *previous) {
+            match jobs::resolve_jobspec_or_pid(item, *current, *previous) {
                 Ok(id) => {
                     target_ids.insert(id);
                 }
@@ -55,10 +82,16 @@ pub fn bg(
     for job in jobs.iter_mut() {
         if target_ids.contains(&job.id) {
             if matches!(job.state, State::Stopped) {
-                unsafe {
-                    // Send SIGCONT to the process group (negative PID)
-                    // so that all members of a pipeline resume together.
-                    c::kill(-job.pid, SIGCONT);
+                // Send SIGCONT to the process group (negative PID)
+                // so that all members of a pipeline resume together.
+                if let Err(err) = resumer.resume(job.pid) {
+                    failures.push_str(&format!(
+                        "Failed to resume job {} (pid {}): {}\n",
+                        job.id, job.pid, err
+                    ));
+                    failure_count += 1;
+                    target_ids.remove(&job.id);
+                    continue;
                 }
                 job.state = State::Running;
                 if job.id != *current {
@@ -95,6 +128,14 @@ pub fn bg(
 mod tests {
     use super::*;
 
+    struct NoopResumer;
+
+    impl Resumer for NoopResumer {
+        fn resume(&self, _pgid: i32) -> Result<(), io::Error> {
+            Ok(())
+        }
+    }
+
     #[test]
     fn test_bg_updates_stopped_jobs() {
         let mut jobs = vec![
@@ -116,7 +157,7 @@ mod tests {
 
         let mut current = 0;
         let mut previous = 0;
-        let result = bg(&input, &mut jobs, &mut current, &mut previous);
+        let result = bg_with_resumer(&input, &mut jobs, &mut current, &mut previous, &NoopResumer);
 
         assert!(result.is_ok());
         assert!(matches!(jobs[0].state, State::Running));
@@ -146,7 +187,7 @@ mod tests {
         let mut previous = 1;
         let input = vec!["bg".to_string()];
 
-        let result = bg(&input, &mut jobs, &mut current, &mut previous);
+        let result = bg_with_resumer(&input, &mut jobs, &mut current, &mut previous, &NoopResumer);
 
         assert!(result.is_ok());
         assert!(matches!(jobs[1].state, State::Running));
@@ -167,7 +208,7 @@ mod tests {
 
         let mut current = 0;
         let mut previous = 0;
-        let result = bg(&input, &mut jobs, &mut current, &mut previous);
+        let result = bg_with_resumer(&input, &mut jobs, &mut current, &mut previous, &NoopResumer);
 
         assert!(result.is_ok());
         assert!(matches!(jobs[0].state, State::Running));
@@ -186,7 +227,7 @@ mod tests {
 
         let mut current = 0;
         let mut previous = 0;
-        let _ = bg(&input, &mut jobs, &mut current, &mut previous);
+        let _ = bg_with_resumer(&input, &mut jobs, &mut current, &mut previous, &NoopResumer);
 
         assert!(matches!(jobs[0].state, State::Stopped));
         assert_eq!(current, 0);
@@ -219,7 +260,7 @@ mod tests {
 
         let mut current = 0;
         let mut previous = 0;
-        let result = bg(&input, &mut jobs, &mut current, &mut previous);
+        let result = bg_with_resumer(&input, &mut jobs, &mut current, &mut previous, &NoopResumer);
         let output = result.expect("bg command failed");
         let parts: Vec<&str> = output.split(':').collect();
         let success_count: usize = parts[0].parse().expect("parsing success count failed");

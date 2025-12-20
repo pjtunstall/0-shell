@@ -1,8 +1,8 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, io, mem, ptr};
 
 use crate::{
     ansi::{BOLD, RESET},
-    c::{self, *},
+    c,
     commands::{
         self,
         exit::STOPPED_JOBS_WARNING,
@@ -27,17 +27,15 @@ impl Drop for TextStyle {
 }
 
 // When this struct is instantiated at the start of `repl`, it saves the terminal attributes so that it can restore them on drop to prevent lingering no-echo/cbreak states if an interactive child leaves the TTY altered. The non-Unix version below is a no-op placeholder.
-#[cfg(unix)]
 struct TtyGuard {
-    saved: Option<c::Termios>,
+    saved: Option<libc::termios>,
 }
 
-#[cfg(unix)]
 impl TtyGuard {
     fn new() -> Self {
         unsafe {
-            let mut tio = std::mem::zeroed::<c::Termios>();
-            if c::tcgetattr(STDIN_FILENO, &mut tio) == 0 {
+            let mut tio = std::mem::zeroed::<libc::termios>();
+            if libc::tcgetattr(libc::STDIN_FILENO, &mut tio) == 0 {
                 Self { saved: Some(tio) }
             } else {
                 Self { saved: None }
@@ -46,33 +44,14 @@ impl TtyGuard {
     }
 }
 
-#[cfg(unix)]
 impl Drop for TtyGuard {
     fn drop(&mut self) {
         if let Some(saved) = self.saved {
             unsafe {
-                c::tcsetattr(STDIN_FILENO, TCSANOW, &saved);
+                libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &saved);
             }
         }
     }
-}
-
-// For non-Unix-like operating systems, a non-functional placeholder.
-// Expect a struggle between background and foreground processes if
-// they both try to interact with the terminal, e.g. 0-shell in the
-// foreground and Python in the background, as in one of the
-// job-control audit questions.
-#[cfg(not(unix))]
-struct TtyGuard;
-#[cfg(not(unix))]
-impl TtyGuard {
-    fn new() -> Self {
-        TtyGuard
-    }
-}
-#[cfg(not(unix))]
-impl Drop for TtyGuard {
-    fn drop(&mut self) {}
 }
 
 pub fn repl() {
@@ -83,11 +62,26 @@ pub fn repl() {
     let mut final_status = 0;
 
     unsafe {
-        let handler_ptr = c::handle_forwarding as usize;
-        c::signal(c::SIGINT, handler_ptr);
-        c::signal(c::SIGTSTP, handler_ptr);
-        c::signal(c::SIGTTIN, c::SIG_IGN);
-        c::signal(c::SIGTTOU, c::SIG_IGN);
+        let mut forward = mem::zeroed::<libc::sigaction>();
+        libc::sigemptyset(&mut forward.sa_mask);
+        forward.sa_flags = libc::SA_RESTART;
+        forward.sa_sigaction = c::handle_forwarding as usize;
+
+        let mut ignore = mem::zeroed::<libc::sigaction>();
+        libc::sigemptyset(&mut ignore.sa_mask);
+        ignore.sa_sigaction = libc::SIG_IGN;
+
+        let set_action = |sig: i32, act: &libc::sigaction| {
+            if libc::sigaction(sig, act, ptr::null_mut()) != 0 {
+                let err = io::Error::last_os_error();
+                error::red_println(&format!("0-shell: sigaction({sig}): {err}"));
+            }
+        };
+
+        set_action(libc::SIGINT, &forward);
+        set_action(libc::SIGTSTP, &forward);
+        set_action(libc::SIGTTIN, &ignore);
+        set_action(libc::SIGTTOU, &ignore);
     }
 
     let mut history = VecDeque::new();
@@ -163,8 +157,8 @@ pub fn repl() {
 
     for job in jobs {
         unsafe {
-            c::kill(-job.pid, c::SIGHUP);
-            c::kill(-job.pid, c::SIGCONT);
+            libc::kill(-job.pid, libc::SIGHUP);
+            libc::kill(-job.pid, libc::SIGCONT);
         }
     }
 

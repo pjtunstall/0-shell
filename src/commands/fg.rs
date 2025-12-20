@@ -1,11 +1,11 @@
 use std::sync::atomic::Ordering;
 
 use crate::{
-    c::{self, *},
+    c::CURRENT_CHILD_PID,
     commands::jobs::{self, Job},
 };
 
-pub const USAGE: &str = "Usage:\tfg [%[+|-|%%|<JOB_ID>]]";
+pub const USAGE: &str = "Usage:\tfg [jobspec]";
 
 pub fn fg(
     args: &[String],
@@ -23,7 +23,7 @@ pub fn fg(
         }
     } else {
         let arg = &args[1];
-        jobs::resolve_jobspec(arg, *current, *previous)?
+        jobs::resolve_jobspec_or_pid(arg, *current, *previous)?
     };
 
     let index = jobs
@@ -42,15 +42,28 @@ pub fn fg(
     let mut status: i32 = 0;
 
     unsafe {
-        c::tcsetpgrp(STDIN_FILENO, pid);
+        libc::tcsetpgrp(libc::STDIN_FILENO, pid);
         CURRENT_CHILD_PID.store(pid, Ordering::SeqCst);
-        c::kill(pid, SIGCONT);
-        c::waitpid(pid, &mut status, WUNTRACED);
-        c::tcsetpgrp(STDIN_FILENO, c::getpgrp());
+        libc::kill(pid, libc::SIGCONT);
+        loop {
+            let res = libc::waitpid(pid, &mut status, libc::WUNTRACED);
+            if res == pid {
+                break;
+            }
+            if res == -1 {
+                let err = std::io::Error::last_os_error();
+                if err.raw_os_error() == Some(libc::EINTR) {
+                    continue;
+                }
+                return Err(format!("waitpid failed: {}", err));
+            }
+            return Err(format!("waitpid returned unexpected pid: {}", res));
+        }
+        libc::tcsetpgrp(libc::STDIN_FILENO, libc::getpgrp());
         CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
     }
 
-    if c::w_if_stopped(status) {
+    if libc::WIFSTOPPED(status) {
         if let Some(job) = jobs.get_mut(index) {
             job.state = crate::commands::jobs::State::Stopped;
         }

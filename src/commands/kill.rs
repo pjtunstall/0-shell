@@ -1,9 +1,6 @@
-use std::time::Duration;
+use std::{io, time::Duration};
 
-use crate::{
-    c::{self, SIGCONT, SIGTERM},
-    commands::jobs::{self, Job, State},
-};
+use crate::commands::jobs::{self, Job, State};
 
 pub const USAGE: &str = "Usage:\tkill <PID>|%[+|-|%%|<JOB_ID>]";
 
@@ -28,7 +25,7 @@ pub fn kill(
     let mut is_stopped = false;
 
     if arg.starts_with('%') {
-        let job_id = jobs::resolve_jobspec(arg, *current, *previous)?;
+        let job_id = jobs::resolve_jobspec_or_pid(arg, *current, *previous)?;
 
         if let Some(job) = jobs.iter().find(|j| j.id == job_id) {
             pid_to_kill = job.pid;
@@ -58,11 +55,17 @@ pub fn kill(
         // Use negative PID to target the process group leader and all its children.
         // If the job is running, this kills it immediately.
         // If the job is stopped, the signal is queued.
-        c::kill(-pid_to_kill, SIGTERM);
+        if libc::kill(-pid_to_kill, libc::SIGTERM) == -1 {
+            let err = io::Error::last_os_error();
+            return Err(format!("Failed to kill {}: {}", pid_to_kill, err));
+        }
 
         // Restart a stopped job so that it can receive the queued signal to terminate.
         if is_stopped {
-            c::kill(-pid_to_kill, SIGCONT);
+            if libc::kill(-pid_to_kill, libc::SIGCONT) == -1 {
+                let err = io::Error::last_os_error();
+                return Err(format!("Failed to resume {} for termination: {}", pid_to_kill, err));
+            }
         }
     }
 

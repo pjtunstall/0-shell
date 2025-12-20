@@ -2,9 +2,7 @@ use std::borrow::Borrow;
 
 use libc;
 
-use crate::c;
-
-pub const USAGE: &str = "Usage:\tjobs [-lprs] [%[+|-|%%|<JOB_ID>]...]";
+pub const USAGE: &str = "Usage:\tjobs [-lprs] [jobspec ...]";
 const STATE_COL_WIDTH: usize = 24;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -175,6 +173,10 @@ pub fn resolve_jobspec(spec: &str, current: usize, previous: usize) -> Result<us
         .map_err(|_| format!("Invalid job ID: {}", spec))
 }
 
+pub fn resolve_jobspec_or_pid(spec: &str, current: usize, previous: usize) -> Result<usize, String> {
+    resolve_jobspec(spec, current, previous)
+}
+
 impl std::fmt::Display for JobDisplay<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let state_str = self.job.state.to_string();
@@ -233,29 +235,26 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>, current: &mut usize, previous:
         }
 
         if let Some(index) = jobs.iter().position(|j| j.pid == pid) {
-            if c::w_if_stopped(status) {
+            if libc::WIFSTOPPED(status) {
                 // The kernel stopped the process (e.g. Python background input).
                 if jobs[index].state != State::Stopped {
                     jobs[index].state = State::Stopped;
                     *previous = *current;
                     *current = jobs[index].id;
-                    println!(
-                        "\n[{}]+\tStopped\t\t{}",
-                        jobs[index].id, jobs[index].command
-                    );
+                    println!("\n[{}]+\tStopped\t\t{}", jobs[index].id, jobs[index].command);
                 }
-            } else if c::w_if_exited(status) || c::w_if_signaled(status) {
+            } else if libc::WIFEXITED(status) || libc::WIFSIGNALED(status) {
                 // The process is dead.
                 let job = &jobs[index];
 
-                if c::w_if_signaled(status) {
-                    println!("\n[{}]+\tTerminated\t{}", job.id, job.command);
+                if libc::WIFSIGNALED(status) {
+                    println!("[{}]+\tTerminated\t{}", job.id, job.command);
                 } else {
-                    let code = c::w_exitstatus(status);
+                    let code = libc::WEXITSTATUS(status);
                     if code == 0 {
-                        println!("\n[{}]+\tDone\t\t{}", job.id, job.command);
+                        println!("[{}]+\tDone\t\t{}", job.id, job.command);
                     } else {
-                        println!("\n[{}]+\tExit {}\t\t{}", job.id, code, job.command);
+                        println!("[{}]+\tExit {}\t\t{}", job.id, code, job.command);
                     }
                 }
 
