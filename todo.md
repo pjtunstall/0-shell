@@ -47,7 +47,6 @@
 - Command chaining with `;`.
 - Running it now on Linux, I notice that `ls` with no options formats differently to Mac. You can't please all of the people all of the time.
 - Pick a consistent style of creating `String` from `&str`: either `String::from` or `to_string` or `into`.
-- Get computer and username and print in green?
 
 ## Error handling
 
@@ -115,3 +114,4 @@ Before refactoring, good tests to add:
 - Have a go at the other optional project, `scripting`.
 - There's a hint that the project should teach the difference between Unix and Posix. Consider whether to make sure it strictly adheres to Posix. Look up Posix specifications.
 - Investigate mdBook for Rust documentation.
+- Consider the Nix crate for Rust abstractions over `libc`.
