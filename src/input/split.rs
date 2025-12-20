@@ -1,7 +1,7 @@
 pub fn split(input: &str) -> Result<Vec<String>, String> {
     if let Some((part_1, divider, part_2)) = split_at_first_divider(input) {
         if part_2.is_empty() {
-            return Err("Parse error near `\\n'".to_string());
+            return Err(String::from("Parse error near `\\n'"));
         }
 
         let mut result = Vec::new();
@@ -37,15 +37,15 @@ fn split_at_first_divider(input: &str) -> Option<(String, String, String)> {
             '>' if quote_char.is_none() => {
                 if let Some((_, '>')) = chars.peek() {
                     return Some((
-                        input[..i].to_string(),
-                        ">>".to_string(),
-                        input.get(i + 2..).unwrap_or("").to_string(),
+                        String::from(&input[..i]),
+                        String::from(">>"),
+                        String::from(input.get(i + 2..).unwrap_or("")),
                     ));
                 } else {
                     return Some((
-                        input[..i].to_string(),
-                        ">".to_string(),
-                        input.get(i + 1..).unwrap_or("").to_string(),
+                        String::from(&input[..i]),
+                        String::from(">"),
+                        String::from(input.get(i + 1..).unwrap_or("")),
                     ));
                 }
             }
@@ -74,7 +74,7 @@ fn split_part(input: &str) -> Result<Vec<String>, String> {
             }
         } else {
             if c == '>' {
-                return Err("parse error near `\\n'".to_string());
+                return Err(String::from("parse error near `\\n'"));
             }
             if c == '"' || c == '\'' {
                 // Opening quote: start capturing the word inside quotes.

@@ -41,7 +41,7 @@ pub fn kill(
             .map_err(|e| format!("Failed to parse PID: {}\n{}", e, arg))?;
 
         if pid_to_kill <= 0 {
-            return Err("PID must be positive".to_string());
+            return Err(String::from("PID must be positive"));
         }
 
         if let Some(job) = jobs.iter().find(|j| j.pid == pid_to_kill) {

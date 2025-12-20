@@ -19,7 +19,7 @@ pub fn fg(
         if let Some(last) = jobs.last() {
             last.id
         } else {
-            return Err("Current: no such job".to_string());
+            return Err(String::from("Current: no such job"));
         }
     } else {
         let arg = &args[1];

@@ -7,12 +7,20 @@ use zero_shell::commands::{
 #[test]
 fn audit_question() {
     assert!(
-        mkdir(&vec!["mkdir".to_string(), "new_folder1".to_string()]).is_ok(),
+        mkdir(&vec![
+            String::from("mkdir"),
+            String::from("new_folder1")
+        ])
+        .is_ok(),
         "result of making `new_folder1` should be ok"
     );
 
     assert!(
-        mkdir(&vec!["mkdir".to_string(), "new_folder2".to_string()]).is_ok(),
+        mkdir(&vec![
+            String::from("mkdir"),
+            String::from("new_folder2")
+        ])
+        .is_ok(),
         "result of making `new_folder2` should be ok"
     );
 
@@ -23,25 +31,22 @@ fn audit_question() {
     assert!(dir2.exists(), "`new_folder2` should exist after creation");
 
     assert!(
-        touch(&vec![
-            "touch".to_string(),
-            format!("new_folder1{}new_doc.txt", MAIN_SEPARATOR),
-        ])
+        touch(&vec![String::from("touch"), format!("new_folder1{}new_doc.txt", MAIN_SEPARATOR),])
         .is_ok(),
         "result of creating file should be ok"
     );
 
     assert!(
-        cd(&vec!["cd".to_string(), "new_folder1".to_string()]).is_ok(),
+        cd(&vec![String::from("cd"), String::from("new_folder1")]).is_ok(),
         "result of cd-ing into first folder should be ok"
     );
 
     assert!(
         echo(&vec![
-            "echo".to_string(),
-            "hello".to_string(),
-            ">".to_string(),
-            "new_doc.txt".to_string(),
+            String::from("echo"),
+            String::from("hello"),
+            String::from(">"),
+            String::from("new_doc.txt"),
         ])
         .is_ok(),
         "result of echoing text to file should be ok"
@@ -49,21 +54,21 @@ fn audit_question() {
 
     assert!(
         cp(&vec![
-            "cp".to_string(),
-            "new_doc.txt".to_string(),
-            "../new_folder2".to_string(),
+            String::from("cp"),
+            String::from("new_doc.txt"),
+            String::from("../new_folder2"),
         ])
         .is_ok(),
         "result of copying file should be ok"
     );
 
     assert!(
-        cd(&vec!["cd".to_string(), "..".to_string()]).is_ok(),
+        cd(&vec![String::from("cd"), String::from("..")]).is_ok(),
         "result of cd-ing back out of first folder should be ok"
     );
 
     let concatenation = cat(&vec![
-        "cat".to_string(),
+        String::from("cat"),
         format!("new_folder2{}new_doc.txt", MAIN_SEPARATOR),
     ])
     .expect("concatenation failed");
@@ -74,9 +79,9 @@ fn audit_question() {
 
     assert!(
         mv(&vec![
-            "mv".to_string(),
-            "new_folder2".to_string(),
-            "new_folder1".to_string(),
+            String::from("mv"),
+            String::from("new_folder2"),
+            String::from("new_folder1"),
         ])
         .is_ok(),
         "result of moving `new_folder2` into `new_folder1` should be ok"
@@ -89,9 +94,9 @@ fn audit_question() {
 
     assert!(
         rm(&vec![
-            "rm".to_string(),
-            "-r".to_string(),
-            "new_folder1".to_string(),
+            String::from("rm"),
+            String::from("-r"),
+            String::from("new_folder1"),
         ])
         .is_ok(),
         "should remove `new_folder1` ok"

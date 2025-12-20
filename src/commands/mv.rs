@@ -15,32 +15,32 @@ pub fn mv(input: &[String]) -> Result<String, String> {
         let dest_file = target_path.join(
             source_path
                 .file_name()
-                .ok_or_else(|| "Failed to join source name to target".to_string())? // Convert `None` to `Err(String)`.
+                .ok_or_else(|| String::from("Failed to join source name to target"))? // Convert `None` to `Err(String)`.
                 .to_owned(), // Convert `&OsStr` to `OsString` (needed for join).
         );
         fs::rename(source_path, dest_file).map_err(|err| {
             err.to_string()
                 .split(" (os ")
                 .next()
-                .unwrap_or(" ")
-                .to_string()
+                .map(String::from)
+                .unwrap_or_else(|| String::from(" "))
         })?
     } else {
         fs::rename(source_path, target_path).map_err(|err| {
             err.to_string()
                 .split(" (os ")
                 .next()
-                .unwrap_or(" ")
-                .to_string()
+                .map(String::from)
+                .unwrap_or_else(|| String::from(" "))
         })?
     }
 
-    Ok("".to_string())
+    Ok(String::from(""))
 }
 
 fn is_input_len_at_least_two(input: &[String]) -> Result<(), String> {
     if input.len() < 3 {
-        return Err(format!("Not enough arguments\n{}", USAGE).to_string());
+        return Err(format!("Not enough arguments\n{}", USAGE));
     }
     Ok(())
 }

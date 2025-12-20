@@ -82,8 +82,8 @@ pub fn get_short_list(flags: u8, path: &Path, is_redirect: bool) -> Result<Strin
     };
 
     if flags & 1 == 1 {
-        entries.push_front("..".to_string());
-        entries.push_front(".".to_string());
+        entries.push_front(String::from(".."));
+        entries.push_front(String::from("."));
     }
 
     if entries.is_empty() {
@@ -233,9 +233,9 @@ fn long_format_list(entries: Vec<String>, total: u64) -> Result<String, String> 
     parsed_entries.sort_by_key(|row| {
         let name = row.last().cloned().unwrap_or_default();
         if name == "./" {
-            "\x00".to_string()
+            String::from("\x00")
         } else if name == "../" {
-            "\x01".to_string()
+            String::from("\x01")
         } else {
             name
         }
@@ -317,7 +317,7 @@ fn format_entry<T: AsRef<Path>>(
     };
 
     let info = FileInfo {
-        file_type: file_type.to_string(),
+        file_type: String::from(file_type),
         permissions,
         hard_links,
         user_name,
@@ -346,7 +346,7 @@ fn format_entry_from_direntry(e: DirEntry, flags: u8, colorize: bool) -> Option<
 
 fn format_entry_from_path(path: &Path, name: &str, flags: u8, colorize: bool) -> Option<String> {
     let metadata = fs::metadata(path).ok()?;
-    format_entry(path, Some(name.to_string()), metadata, flags, colorize)
+    format_entry(path, Some(String::from(name)), metadata, flags, colorize)
 }
 
 fn format_time(modified: SystemTime) -> String {

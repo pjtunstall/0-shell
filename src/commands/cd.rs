@@ -15,12 +15,12 @@ pub fn cd(input: &[String]) -> Result<String, String> {
                     format!("Failed to change directory: {}", err)
                         .split(" (os ")
                         .next()
-                        .unwrap_or(" ")
-                        .to_string()
+                        .map(String::from)
+                        .unwrap_or_else(|| String::from(" "))
                 })?;
                 return Ok(String::new());
             } else {
-                return Err("Could not determine home directory".to_string());
+                return Err(String::from("Could not determine home directory"));
             }
         }
     };
@@ -30,8 +30,8 @@ pub fn cd(input: &[String]) -> Result<String, String> {
         Err(err) => Err(format!("{}: {}", path, err)
             .split(" (os ")
             .next()
-            .unwrap_or(" ")
-            .to_string()),
+            .map(String::from)
+            .unwrap_or_else(|| String::from(" "))),
     }
 }
 

@@ -10,7 +10,7 @@ pub fn echo(input: &[String]) -> Result<String, String> {
     let (sources, targets) = redirect::separate_sources_from_targets(input);
 
     if input.len() < 2 {
-        return Ok("\n".to_string());
+        return Ok(String::from("\n"));
     }
 
     let mut output = String::new();
@@ -34,8 +34,8 @@ pub fn echo(input: &[String]) -> Result<String, String> {
         e.to_string()
             .split(" (os ")
             .next()
-            .unwrap_or(" ")
-            .to_string()
+            .map(String::from)
+            .unwrap_or_else(|| String::from(" "))
     })?;
 
     parse_environment_variables(&mut output);
@@ -119,17 +119,17 @@ mod tests {
     fn echo_basic() {
         assert_eq!(
             echo(&string_vec!["echo", "hello"]),
-            Ok("hello\n".to_string()),
+            Ok(String::from("hello\n")),
             "Expected to echo one word"
         );
         assert_eq!(
             echo(&string_vec!["echo", "hello", "world"]),
-            Ok("hello world\n".to_string()),
+            Ok(String::from("hello world\n")),
             "Expected to echo two words"
         );
         assert_eq!(
             echo(&string_vec!["echo", "hello", "world", "hello"]),
-            Ok("hello world hello\n".to_string()),
+            Ok(String::from("hello world hello\n")),
             "Expected to echo three words"
         );
     }
@@ -138,43 +138,43 @@ mod tests {
     fn echo_special_characters() {
         assert_eq!(
             echo(&string_vec!["echo", "a\\na"]),
-            Ok("ana\n".to_string()),
+            Ok(String::from("ana\n")),
             "Expected to convert `\\n` to `n`"
         );
         assert_eq!(
             echo(&string_vec!["echo", "a\\\\na"]),
-            Ok("a\na\n".to_string()),
+            Ok(String::from("a\na\n")),
             "Expected to convert `\\\\n` to `\\n`"
         );
         assert_eq!(
             echo(&string_vec!["echo", "a\\\\\\na"]),
-            Ok("a\na\n".to_string()),
+            Ok(String::from("a\na\n")),
             "Expected to convert `\\\\\\n` to `\\n`"
         );
         assert_eq!(
             echo(&string_vec!["echo", "a\\\\\\\\na"]),
-            Ok("a\\na\n".to_string()),
+            Ok(String::from("a\\na\n")),
             "Expected to convert `\\\\\\\\n` to `\\\\n`"
         );
 
         assert_eq!(
             echo(&string_vec!["echo", "\"a\\na\""]),
-            Ok("a\na\n".to_string()),
+            Ok(String::from("a\na\n")),
             "Expected to leave `\\n` unchanged in quotes"
         );
         assert_eq!(
-            echo(&string_vec!["echo".to_string(), "\"a\\\\na\"".to_string()]),
-            Ok("a\na\n".to_string()),
+            echo(&string_vec![String::from("echo"), String::from("\"a\\\\na\"")]),
+            Ok(String::from("a\na\n")),
             "Expected to leave `\\\\n` unchanged in quotes"
         );
         assert_eq!(
             echo(&string_vec!["echo", "\"a\\\\\\na\""]),
-            Ok("a\\na\n".to_string()),
+            Ok(String::from("a\\na\n")),
             "Expected to convert `\\\\\\n` in quotes to `\\n`"
         );
         assert_eq!(
             echo(&string_vec!["echo", "\"a\\\\\\\\na\""]),
-            Ok("a\\na\n".to_string()),
+            Ok(String::from("a\\na\n")),
             "Expected to convert `\\\\\\\\n` in quotes to `\\n`"
         );
     }
@@ -183,13 +183,13 @@ mod tests {
     fn echo_redirection_in_double_quotes() {
         assert_eq!(
             echo(&string_vec!["echo", "\">\""]),
-            Ok(">\n".to_string()),
+            Ok(String::from(">\n")),
             "Expected to escape `>` in double quotes, and give no error when final"
         );
 
         assert_eq!(
             echo(&string_vec!["echo", "\">>\""]),
-            Ok(">>\n".to_string()),
+            Ok(String::from(">>\n")),
             "Expected to leave `>>` unchanged in double quotes, and give no error when final"
         );
     }
@@ -198,13 +198,13 @@ mod tests {
     fn echo_redirection_in_single_quotes() {
         assert_eq!(
             echo(&string_vec!["echo", "\'>\'"]),
-            Ok(">\n".to_string()),
+            Ok(String::from(">\n")),
             "Expected to leave `>` unchanged in single quotes, and give no error when final"
         );
 
         assert_eq!(
             echo(&string_vec!["echo", "\'>>\'"]),
-            Ok(">>\n".to_string()),
+            Ok(String::from(">>\n")),
             "Expected to leave `>>` unchanged in single quotes, and give no error when final"
         );
     }
@@ -218,7 +218,7 @@ mod tests {
 
         assert_eq!(
             echo(&string_vec!["echo", "$USER"]),
-            Ok("testuser\n".to_string()),
+            Ok(String::from("testuser\n")),
             "expected `USER` to be replaced with `testuser`"
         );
 
@@ -241,7 +241,7 @@ mod tests {
         }
         assert_eq!(
             echo(&string_vec!["echo", "$LANG"]),
-            Ok("\n".to_string()),
+            Ok(String::from("\n")),
             "expected empty substitution when LANG is unset"
         );
         if let Some(value) = prev_lang {

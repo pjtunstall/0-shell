@@ -38,12 +38,12 @@ pub fn cp(input: &[String]) -> Result<String, String> {
             err.to_string()
                 .split(" (os ")
                 .next()
-                .unwrap_or(" ")
-                .to_string()
+                .map(String::from)
+                .unwrap_or_else(|| String::from(" "))
         })?;
     }
 
-    Ok("".to_string())
+    Ok(String::from(""))
 }
 
 fn is_input_len_at_least_two(input: &[String]) -> Result<(), String> {

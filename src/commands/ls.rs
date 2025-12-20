@@ -137,7 +137,7 @@ fn process_initial_results(
     let mut running_results = String::new();
     process_files(files, flags, &mut running_results, is_redirect)?;
 
-    let mut trimmed_results = running_results.trim_start().to_string();
+    let mut trimmed_results = String::from(running_results.trim_start());
     if is_redirect && !trimmed_results.is_empty() {
         trimmed_results.push('\n');
     }
@@ -326,11 +326,11 @@ mod tests {
 
     #[test]
     fn test_basic_and_flags_ok() {
-        let basic = vec!["ls".to_string()];
-        let a = vec!["ls".to_string(), "-a".to_string()];
-        let l = vec!["ls".to_string(), "-l".to_string()];
-        let f = vec!["ls".to_string(), "-F".to_string()];
-        let alf = vec!["ls".to_string(), "-alF".to_string()];
+        let basic = vec![String::from("ls")];
+        let a = vec![String::from("ls"), String::from("-a")];
+        let l = vec![String::from("ls"), String::from("-l")];
+        let f = vec![String::from("ls"), String::from("-F")];
+        let alf = vec![String::from("ls"), String::from("-alF")];
         let l_a_f = vec!["ls", "-l", "-a", "-F"]
             .into_iter()
             .map(String::from)

@@ -13,10 +13,10 @@ mod tests {
 
     #[test]
     fn test_string_vec() {
-        let input = string_vec!["a", "b".to_string(), &"c".to_string()];
+        let input = string_vec!["a", String::from("b"), &String::from("c")];
         assert_eq!(
             input,
-            vec!["a".to_string(), "b".to_string(), "c".to_string()]
+            vec![String::from("a"), String::from("b"), String::from("c")]
         );
     }
 }

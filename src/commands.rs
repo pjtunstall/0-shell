@@ -138,7 +138,7 @@ fn spawn_job(
             .unwrap_or_else(|_| std::path::PathBuf::from("./0_shell"))
             .to_string_lossy()
             .into_owned();
-        let mut v = vec![self_path, "--internal-worker".to_string()];
+        let mut v = vec![self_path, String::from("--internal-worker")];
         v.extend_from_slice(args);
         v
     } else {
@@ -160,7 +160,7 @@ fn spawn_job(
     let pid = unsafe { libc::fork() };
 
     if pid < 0 {
-        return Err("Fork failed".to_string());
+        return Err(String::from("Fork failed"));
     }
 
     if pid == 0 {

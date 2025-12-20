@@ -152,7 +152,7 @@ pub fn resolve_jobspec(spec: &str, current: usize, previous: usize) -> Result<us
             // No explicit current; fall back to previous.
             return Ok(previous);
         } else {
-            return Err("Current: no such job".to_string());
+            return Err(String::from("Current: no such job"));
         }
     } else if spec == "%-" {
         if previous > 0 {
@@ -161,7 +161,7 @@ pub fn resolve_jobspec(spec: &str, current: usize, previous: usize) -> Result<us
             // Single-job case: %- maps to current.
             return Ok(current);
         } else {
-            return Err("Current: no such job".to_string());
+            return Err(String::from("Current: no such job"));
         }
     } else if let Some(rest) = spec.strip_prefix('%') {
         rest
@@ -282,7 +282,7 @@ mod tests {
         let job = Job {
             id: 2,
             pid: 9999,
-            command: "sleep 50".to_string(),
+            command: String::from("sleep 50"),
             state: State::Running,
         };
 
@@ -310,7 +310,7 @@ mod tests {
         let job = Job {
             id: 2,
             pid: 9999,
-            command: "sleep 50".to_string(),
+            command: String::from("sleep 50"),
             state: State::Stopped,
         };
 
@@ -338,7 +338,7 @@ mod tests {
         let job = Job {
             id: 1,
             pid: 8287,
-            command: "ls ...".to_string(),
+            command: String::from("ls ..."),
             state: State::Stopped,
         };
 
@@ -368,8 +368,8 @@ mod tests {
     #[test]
     fn format_jobs_filters_by_running_only() {
         let jobs = vec![
-            Job::new(1, 100, "run".into(), State::Running),
-            Job::new(2, 101, "stop".into(), State::Stopped),
+            Job::new(1, 100, String::from("run"), State::Running),
+            Job::new(2, 101, String::from("stop"), State::Stopped),
         ];
 
         let mut opts = JobOptions::default();
@@ -390,8 +390,8 @@ mod tests {
     #[test]
     fn format_jobs_filters_by_specific_id() {
         let jobs = vec![
-            Job::new(1, 100, "run".into(), State::Running),
-            Job::new(2, 101, "stop".into(), State::Stopped),
+            Job::new(1, 100, String::from("run"), State::Running),
+            Job::new(2, 101, String::from("stop"), State::Stopped),
         ];
 
         let opts = JobOptions::default();
@@ -412,9 +412,9 @@ mod tests {
     #[test]
     fn format_jobs_marks_current_and_previous() {
         let jobs = vec![
-            Job::new(1, 100, "first".into(), State::Running),
-            Job::new(2, 101, "second".into(), State::Running),
-            Job::new(3, 102, "third".into(), State::Running),
+            Job::new(1, 100, String::from("first"), State::Running),
+            Job::new(2, 101, String::from("second"), State::Running),
+            Job::new(3, 102, String::from("third"), State::Running),
         ];
 
         let opts = JobOptions::default();

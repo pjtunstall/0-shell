@@ -63,7 +63,7 @@ fn bg_with_resumer(
         if let Some(id) = fallback {
             target_ids.insert(id);
         } else {
-            return Err("Current: no such job".to_string());
+            return Err(String::from("Current: no such job"));
         }
     } else {
         for item in &input[1..] {
@@ -143,17 +143,17 @@ mod tests {
                 id: 1,
                 pid: 101,
                 state: State::Stopped,
-                command: "sleep 100".to_string(),
+                command: String::from("sleep 100"),
             },
             Job {
                 id: 2,
                 pid: 102,
                 state: State::Running,
-                command: "ls".to_string(),
+                command: String::from("ls"),
             },
         ];
 
-        let input = vec!["bg".to_string(), "1".to_string()];
+        let input = vec![String::from("bg"), String::from("1")];
 
         let mut current = 0;
         let mut previous = 0;
@@ -173,19 +173,19 @@ mod tests {
                 id: 1,
                 pid: 101,
                 state: State::Stopped,
-                command: "sleep 100".to_string(),
+                command: String::from("sleep 100"),
             },
             Job {
                 id: 2,
                 pid: 102,
                 state: State::Stopped,
-                command: "sleep 200".to_string(),
+                command: String::from("sleep 200"),
             },
         ];
 
         let mut current = 2;
         let mut previous = 1;
-        let input = vec!["bg".to_string()];
+        let input = vec![String::from("bg")];
 
         let result = bg_with_resumer(&input, &mut jobs, &mut current, &mut previous, &NoopResumer);
 
@@ -201,10 +201,10 @@ mod tests {
             id: 1,
             pid: 101,
             state: State::Stopped,
-            command: "sleep 100".to_string(),
+            command: String::from("sleep 100"),
         }];
 
-        let input = vec!["bg".to_string(), "%1".to_string()];
+        let input = vec![String::from("bg"), String::from("%1")];
 
         let mut current = 0;
         let mut previous = 0;
@@ -221,9 +221,9 @@ mod tests {
             id: 1,
             pid: 101,
             state: State::Stopped,
-            command: "sleep".to_string(),
+            command: String::from("sleep"),
         }];
-        let input = vec!["bg".to_string(), "999".to_string()];
+        let input = vec![String::from("bg"), String::from("999")];
 
         let mut current = 0;
         let mut previous = 0;
@@ -241,21 +241,21 @@ mod tests {
                 id: 1,
                 pid: 101,
                 state: State::Stopped,
-                command: "sleep".to_string(),
+                command: String::from("sleep"),
             },
             Job {
                 id: 2,
                 pid: 102,
                 state: State::Running,
-                command: "ls".to_string(),
+                command: String::from("ls"),
             },
         ];
         let input = vec![
-            "bg".to_string(),
-            "1".to_string(),
-            "not_a_job_id".to_string(),
-            "2".to_string(),
-            "also_not_a_job_id".to_string(),
+            String::from("bg"),
+            String::from("1"),
+            String::from("not_a_job_id"),
+            String::from("2"),
+            String::from("also_not_a_job_id"),
         ];
 
         let mut current = 0;

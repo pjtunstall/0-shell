@@ -8,7 +8,7 @@ pub fn exit(args: &[String], jobs: &[Job], exit_attempted: &mut bool) -> Result<
 
     if has_stopped && !*exit_attempted {
         *exit_attempted = true;
-        return Err(STOPPED_JOBS_WARNING.to_string());
+        return Err(String::from(STOPPED_JOBS_WARNING));
     }
 
     if args.len() > 2 {

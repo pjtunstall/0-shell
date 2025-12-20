@@ -36,7 +36,7 @@ fn backtrack(data: &[String], partial: &str, matches: &mut Vec<String>) {
     }
 
     if accept(partial, data) {
-        matches.push(partial.to_string());
+        matches.push(String::from(partial));
     }
 
     let candidates = get_candidates(partial, data);
@@ -70,14 +70,18 @@ mod tests {
             "`find_matches` should return an empty vector when there are no matches"
         );
 
-        expected = vec!["cat".to_string(), "cd".to_string(), "cp".to_string()];
+        expected = vec![
+            String::from("cat"),
+            String::from("cd"),
+            String::from("cp")
+        ];
         assert_eq!(
             find_matches(&COMMANDS, "c"),
             expected,
             "`find_matches(\"c\")` should find all three commands beginning with 'c'"
         );
 
-        expected = vec!["mkdir".to_string()];
+        expected = vec![String::from("mkdir")];
         assert_eq!(
             find_matches(&COMMANDS, "mk"),
             expected,

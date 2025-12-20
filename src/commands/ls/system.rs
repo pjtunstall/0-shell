@@ -26,10 +26,10 @@ pub fn get_platform_specific_info(metadata: &Metadata) -> (String, u64, String, 
     #[cfg(windows)]
     {
         (
-            "rw-r--r--".to_string(),
+            String::from("rw-r--r--"),
             1,
-            "Owner".to_string(),
-            "Group".to_string(),
+            String::from("Owner"),
+            String::from("Group"),
         )
     }
 }
@@ -38,7 +38,7 @@ pub fn get_extended_attributes(path: &Path) -> String {
     #[cfg(unix)]
     {
         if has_extended_attributes(path) {
-            "@".to_string()
+            String::from("@")
         } else {
             String::new()
         }
@@ -54,7 +54,7 @@ pub fn get_symlink_info(metadata: &Metadata) -> String {
     #[cfg(unix)]
     {
         if metadata.file_type().is_symlink() {
-            "-> symlink".to_string()
+            String::from("-> symlink")
         } else {
             String::new()
         }
@@ -86,9 +86,9 @@ pub fn is_hidden(path: &Path) -> bool {
 
 pub fn classify(path: &Path) -> String {
     if path.is_dir() {
-        return MAIN_SEPARATOR_STR.to_string();
+        return String::from(MAIN_SEPARATOR_STR);
     } else if path.is_symlink() {
-        return "@".to_string();
+        return String::from("@");
     }
 
     #[cfg(unix)]
@@ -99,11 +99,11 @@ pub fn classify(path: &Path) -> String {
             let file_type = metadata.file_type();
 
             if metadata.permissions().mode() & 0o111 != 0 {
-                return "*".to_string();
+                return String::from("*");
             } else if file_type.is_fifo() {
-                return "|".to_string();
+                return String::from("|");
             } else if file_type.is_socket() {
-                return "=".to_string();
+                return String::from("=");
             }
         }
     }
@@ -113,12 +113,12 @@ pub fn classify(path: &Path) -> String {
         if let Some(ext) = path.extension() {
             let ext = ext.to_string_lossy().to_lowercase();
             if ["exe", "bat", "cmd", "com"].contains(&ext.as_str()) {
-                return "*".to_string();
+                return String::from("*");
             }
         }
     }
 
-    "".to_string()
+    String::from("")
 }
 
 pub fn get_total_blocks_in_directory(path: &Path) -> u64 {
