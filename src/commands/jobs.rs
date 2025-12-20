@@ -1,6 +1,8 @@
 use std::borrow::Borrow;
 
-use crate::c::{self, *};
+use libc;
+
+use crate::c;
 
 pub const USAGE: &str = "Usage:\tjobs [-lprs] [%[+|-|%%|<JOB_ID>]...]";
 const STATE_COL_WIDTH: usize = 24;
@@ -218,7 +220,13 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>, current: &mut usize, previous:
 
         // WNOHANG: Poll once but don't wait.
         // WUNTRACED: Report stopped processes too. (By default `waitpid` only reports terminated processes.)
-        let pid = unsafe { c::waitpid(-1, &mut status, WNOHANG | WUNTRACED | WCONTINUED) };
+        let pid = unsafe {
+            libc::waitpid(
+                -1,
+                &mut status,
+                libc::WNOHANG | libc::WUNTRACED | libc::WCONTINUED,
+            )
+        };
 
         if pid <= 0 {
             break; // No more children have changed state.

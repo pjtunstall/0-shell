@@ -67,8 +67,6 @@ I'm also implementing some features from the optional extra project [job-control
 
 For the remaining tasks on this optional, see [Audit: Job control](#job-control).
 
-IMPORTANT: Implementing these aspects of job control introduced much OS-specific (and some architecture-specific) code. I'm considering how best to deal with this: whether to switch to relying on libc and, if so, whether to statically link it or keep the code as is (for the sake of documenting the learning exercise) and containerize it. See [todo.md](todo.md).
-
 ## Audit
 
 ### Prompt

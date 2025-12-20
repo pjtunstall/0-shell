@@ -10,27 +10,6 @@
   - [Echo](#echo)
 - [Further](#further)
 
-## Dependence on OS and architecture
-
-Since working on the optional extra job-control, my 0-shell has become very dependent on OS-specific code, and to some extent architecture-dependent too. Options include:
-
-- Use libc. To get around the dependence on system versions of libc (for reliability and in keeping with the embedded element in the project role-play), it could be statically linked:
-  - Install the target: rustup target add x86_64-unknown-linux-musl.
-  - Build: cargo build --target x86_64-unknown-linux-musl.
-- Write OS and architecture-specific definitions myself: too time-consuming and too hard to test for now. It's been suggested that I keep own definitions but check against libc. (But that's only useful if I have access to all systems to run it on.)
-
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn check_offsets() {
-        assert_eq!(SIGINT, libc::SIGINT);
-        assert_eq!(std::mem::size_of::<Termios>(), std::mem::size_of::<libc::termios>());
-    }
-}
-```
-
 ## Job Control
 
 - Investigate behavior of `ls -lRr / 2>1 >/dev/null  &`.

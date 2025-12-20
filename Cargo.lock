@@ -851,6 +851,7 @@ dependencies = [
  "filetime",
  "home",
  "lazy_static",
+ "libc",
  "rustyline",
  "serde_json",
  "tempfile",
