@@ -222,6 +222,11 @@ fn spawn_job(
                         return Err(format!("waitpid returned unexpected pid: {}", res));
                     }
 
+                    if libc::WIFSIGNALED(status) && libc::WTERMSIG(status) == libc::SIGINT {
+                        // Move the cursor to the next line so that the prompt doesn't overwrite the `^C`.
+                        println!();
+                    }
+
                     libc::tcsetpgrp(libc::STDIN_FILENO, libc::getpgrp());
                     CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
 

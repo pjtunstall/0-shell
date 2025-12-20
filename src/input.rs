@@ -70,7 +70,7 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
                 match key {
                     Key::Ctrl('d') => {
                         if input.is_empty() {
-                            write!(stdout, "\r\n").expect("failed to write to `stdout`");
+                            write!(stdout, "^D\r\n").expect("failed to write to `stdout`");
                             stdout.suspend_raw_mode().expect("failed to reset terminal");
                             return Ok(None);
                         }
@@ -80,7 +80,7 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
                         input.clear();
                         cursor = 0;
                     }
-                    Key::Char('\n') | Key::Ctrl('c') => {
+                    Key::Char('\n') => {
                         write!(stdout, "\r\n").expect("failed to write to `stdout`");
                         stdout.flush().expect("failed to flush `stdout`");
                         break;
