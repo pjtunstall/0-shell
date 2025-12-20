@@ -1,3 +1,4 @@
+pub mod ansi;
 pub mod c;
 pub mod commands;
 pub mod error;

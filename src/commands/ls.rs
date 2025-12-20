@@ -3,7 +3,10 @@ mod system;
 
 use std::{fs::File, io::Write, path::Path};
 
-use crate::redirect;
+use crate::{
+    ansi::{BOLD, RED, RESET},
+    redirect,
+};
 
 pub const USAGE: &str = "Usage:\tls [-F] [-a] [-l] [FILE|DIRECTORY]...";
 
@@ -173,8 +176,8 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
         let target_path = Path::new(target[1]);
         if target_path.is_dir() {
             println!(
-                "\x1b[31m0-shell: Is a directory: {}\x1b[0m\x1b[1m",
-                target[1]
+                "{RED}0-shell: Is a directory: {path}{RESET}{BOLD}",
+                path = target[1]
             );
         }
 
@@ -183,15 +186,15 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
                 Ok(mut file) => {
                     if let Err(_) = file.write_all(contents.as_bytes()) {
                         println!(
-                            "\x1b[31m0-shell: Failed to write to file: {}\x1b[0m\x1b[1m",
-                            target[1]
+                            "{RED}0-shell: Failed to write to file: {path}{RESET}{BOLD}",
+                            path = target[1]
                         );
                     }
                 }
                 Err(_) => {
                     println!(
-                        "\x1b[31m0-shell: Failed to create file: {}\x1b[0m\x1b[1m",
-                        target[1]
+                        "{RED}0-shell: Failed to create file: {path}{RESET}{BOLD}",
+                        path = target[1]
                     );
                 }
             }
@@ -200,15 +203,15 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
                 Ok(mut file) => {
                     if let Err(_) = file.write_all(contents.as_bytes()) {
                         println!(
-                            "\x1b[31m0-shell: Failed to append to file: {}\x1b[0m\x1b[1m",
-                            target[1]
+                            "{RED}0-shell: Failed to append to file: {path}{RESET}{BOLD}",
+                            path = target[1]
                         );
                     }
                 }
                 Err(_) => {
                     println!(
-                        "\x1b[31m0-shell: Failed to open file: {}\x1b[0m\x1b[1m",
-                        target[1]
+                        "{RED}0-shell: Failed to open file: {path}{RESET}{BOLD}",
+                        path = target[1]
                     );
                 }
             }
@@ -264,8 +267,8 @@ fn classify_paths(paths: &[&String]) -> PathClassification {
             files.push(path_str.to_string());
         } else {
             non_existent.push(format!(
-                "\x1b[31mls: {}: No such file or directory\x1b[0m\x1b[1m\n",
-                path_str
+                "{RED}ls: {path}: No such file or directory{RESET}{BOLD}\n",
+                path = path_str
             ));
         }
     }

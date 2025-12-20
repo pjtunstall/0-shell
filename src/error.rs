@@ -1,3 +1,5 @@
+use crate::ansi::{BOLD, RED, RESET};
+
 pub fn handle_error(command: &str, err: String) {
     if err.starts_with("0-shell: ") {
         red_println(&format!("{}", err));
@@ -7,5 +9,8 @@ pub fn handle_error(command: &str, err: String) {
 }
 
 pub fn red_println(text: &str) {
-    println!("\x1b[31m{}\x1b[0m\x1b[1m", text);
+    println!(
+        "{RED}{text}{RESET}{BOLD}",
+        text = text
+    );
 }

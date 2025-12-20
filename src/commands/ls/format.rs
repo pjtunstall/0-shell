@@ -10,10 +10,11 @@ use chrono;
 use terminal_size::{Width, terminal_size};
 
 use super::system;
+use crate::ansi::{BLUE, RESET_FG};
 
 fn blue(text: &str) -> String {
     // Use foreground reset (39m) so we don't clear other active attributes (e.g., bold).
-    format!("\x1b[34m{}\x1b[39m", text)
+    format!("{BLUE}{text}{RESET_FG}")
 }
 
 struct FileInfo {

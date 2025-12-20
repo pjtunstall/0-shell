@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use crate::{
+    ansi::{BOLD, RESET},
     c::{self, *},
     commands::{
         self,
@@ -14,14 +15,14 @@ struct TextStyle;
 
 impl TextStyle {
     fn new() -> Self {
-        print!("\x1b[1m");
+        print!("{BOLD}");
         TextStyle
     }
 }
 
 impl Drop for TextStyle {
     fn drop(&mut self) {
-        print!("\x1b[0m");
+        print!("{RESET}");
     }
 }
 

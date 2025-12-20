@@ -1,4 +1,5 @@
 use super::*;
+use crate::ansi::{BOLD, RED, RESET};
 
 const USAGE: &str = "Usage:\tman <COMMAND>";
 
@@ -34,7 +35,7 @@ pub fn man(input: &[String]) -> Result<String, String> {
             "sleep" => sleep::USAGE,
             "touch" => touch::USAGE,
             _ => {
-                wouldbe_next = format!("\x1b[31mNo manual entry for {}\x1b[0m\x1b[1m", cmd).clone();
+                wouldbe_next = format!("{RED}No manual entry for {cmd}{RESET}{BOLD}");
                 &wouldbe_next
             }
         };

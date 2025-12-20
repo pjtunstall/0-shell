@@ -18,6 +18,7 @@ use termion::{
 use whoami;
 
 use crate::{
+    ansi::{BLUE, BRIGHT_GREEN, CLEAR_LINE, RESET_FG},
     c::{self, *},
     commands::{ls, rm},
 };
@@ -173,10 +174,8 @@ fn prompt() -> io::Result<String> {
         }
     }
 
-    let prompt = format!(
-        "\x1b[92m{}@{}\x1b[39m:\x1b[34m{}\x1b[39m ▶ ",
-        username, hostname, cwd
-    );
+    let prompt =
+        format!("{BRIGHT_GREEN}{username}@{hostname}{RESET_FG}:{BLUE}{cwd}{RESET_FG} ▶ ");
     Ok(prompt)
 }
 
@@ -308,7 +307,8 @@ fn display_match(
     input.push(' ');
     *cursor = input.len();
 
-    write!(stdout, "\r\x1b[K{}{}", prompt, input).expect("failed to write to `stdout`"); // Move the cursor back up.
+    write!(stdout, "\r{CLEAR_LINE}{prompt}{input}")
+        .expect("failed to write to `stdout`"); // Move the cursor back up.
     stdout.flush().expect("failed to flush `stdout`");
 }
 
@@ -351,7 +351,8 @@ fn display_possibilities(
         }
     }
 
-    write!(stdout, "\r\x1b[{}A", num_rows).expect("failed to write to `stdout`"); // Move the cursor back up.
+    write!(stdout, "\r{}", crate::ansi::cursor_up(num_rows))
+        .expect("failed to write to `stdout`"); // Move the cursor back up.
     write!(stdout, "\r{}{}", prompt, input).expect("failed to write to `stdout`");
     stdout.flush().expect("failed to flush `stdout`");
 }
@@ -362,7 +363,8 @@ fn display_usage(stdout: &mut RawTerminal<Stdout>, prompt: &str, input: &str, me
     }
     let num_rows = message.matches('\n').count();
     write!(stdout, "{}", message).expect("failed to write to `stdout`");
-    write!(stdout, "\r\x1b[{}A", num_rows).expect("failed to write to `stdout`"); // Move the cursor back up.
+    write!(stdout, "\r{}", crate::ansi::cursor_up(num_rows))
+        .expect("failed to write to `stdout`"); // Move the cursor back up.
     write!(stdout, "\r{}{}", prompt, input).expect("failed to write to `stdout`");
     stdout.flush().expect("failed to flush `stdout`");
 }

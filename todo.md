@@ -47,6 +47,8 @@
 - Command chaining with `;`.
 - Running it now on Linux, I notice that `ls` with no options formats differently to Mac. You can't please all of the people all of the time.
 - Pick a consistent style of creating `String` from `&str`: either `String::from` or `to_string` or `into`.
+- Consider `pipe()` and `dup2()` for pipes and redirection of file descriptors.
+- Consider a crate to abstract color handling: `colored`, `owo-colors`, or `termcolor`. But, now that I'm commited to Unix-style only, maybe I've lost the main reason for choosing such a crate over plain ANSI codes.
 
 ## Error handling
 

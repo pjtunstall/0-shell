@@ -62,7 +62,7 @@ pub fn run_command(
     let mut exit_code: Option<i32> = None;
 
     let result = match command {
-        // Small utilities: internal.
+        // Basic commands: internal.
         "exit" => match exit::exit(clean_args, jobs, exit_attempted) {
             Ok(code_str) => {
                 exit_code = Some(code_str.parse().unwrap_or(0));
@@ -80,12 +80,12 @@ pub fn run_command(
         "jobs" => jobs::jobs(clean_args, jobs, current, previous),
         "kill" => kill::kill(clean_args, jobs, current, previous),
 
-        // Custom: fork and re-execute with command-line arguments.
+        // Custom commands: fork and let the child exec this program (plus command name and other args).
         "cat" | "cp" | "ls" | "mkdir" | "man" | "mv" | "rm" | "sleep" | "touch" => {
             spawn_job(clean_args, jobs, is_background, true, current, previous)
         }
 
-        // External: fork and re-execute
+        // External commands: fork and let the child exec the external binary (plus other args).
         _ => spawn_job(clean_args, jobs, is_background, false, current, previous),
     };
 
@@ -156,7 +156,9 @@ fn spawn_job(
             c::signal(SIGTTOU, SIG_DFL);
             c::signal(SIGCHLD, SIG_DFL);
 
+            // This is the vector (`argv` array) that we'll re-exec, i.e. the name of the program (along with any arguments) that will take over from the current process when we call `c::execvp` at the end of this (the child's) branch.
             let exec_args: Vec<String> = if is_worker {
+                // The path of this program, followed by the command (name of custom-implemented command), followed by the internal-worker flag, then any other arguments.
                 let self_path = env::current_exe()
                     .unwrap_or_else(|_| std::path::PathBuf::from("./0-shell"))
                     .to_string_lossy()
@@ -165,6 +167,7 @@ fn spawn_job(
                 v.extend_from_slice(args);
                 v
             } else {
+                // The command (name of external binary), followed by any other arguments.
                 args.to_vec()
             };
 
@@ -175,7 +178,10 @@ fn spawn_job(
             let mut ptrs: Vec<*const i8> = c_strings.iter().map(|s| s.as_ptr()).collect();
             ptrs.push(ptr::null());
 
+            // exec vector args + PATH lookup: replace current process image with the target program, keeping the same PID.
             c::execvp(ptrs[0], ptrs.as_ptr());
+
+            // Only runs if `execvp` fails.
             std::process::exit(1);
         }
     } else {

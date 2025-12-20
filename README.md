@@ -16,7 +16,7 @@
 
 ## What is this?
 
-This is my take on the [01-Founders/01-Edu project of the same name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit b0b9f3d). The object of the exercise is to learn about shells and job-control by mimicking essential Unix shell behaviors without using external binaries or existing shell utilities.<sup id="ref-f1">[1](#f1)</sup>
+This is my take on the [01-Founders/01-Edu project of the same name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit b0b9f3d). The object of the exercise is to learn about shells by mimicking essential Unix shell behaviors without using external binaries or existing shell utilities.<sup id="ref-f1">[1](#f1)</sup>
 
 We're required to recreate at least the following ten commands:
 
@@ -42,7 +42,7 @@ We're told:
 
 > Through the 0-shell you will get to the core of the Unix system and explore an important part of this system’s API which is the process creation and synchronization. Executing a command inside a shell implies creating a new process, which execution and final state will be monitored by its parents processes. This set of functions will be the key to success for your project.
 
-For these commands implemented from scratch, I following the hint to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example. When a command is entered, the shell forks and the child re-executes the 0-shell binary with command-line arguments to identify it as the child, and pass it the command. The child then calls the relevant function.<sup id="ref-f3">[3](#f3)</sup>
+For the external commands above, I following the hint to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example. When such a command is entered, the shell forks. Its child then execs itself with the command as an argument. On finding itself launched with such an argument, the program calls the relevant function.<sup id="ref-f3">[3](#f3)</sup>
 
 I've added several bonus features, including:
 
@@ -50,13 +50,13 @@ I've added several bonus features, including:
   - man
   - sleep
   - touch
-- color for error messages
+- colors
 - auto-completion
 - command history
 - redirection
 - environment variables
 
-I'm also implementing some features from the optional extra project [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
+I've also implemented some features from the optional extra project [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
 
 - Ctrl+C: terminate a child process and return to the 'shell'
 - Ctrl+Z: pause a child process and return to the 'shell'
@@ -65,7 +65,7 @@ I'm also implementing some features from the optional extra project [job-control
 - bg: restart one or more child processes in the background
 - kill: terminate a process
 
-For the remaining tasks on this optional, see [Audit: Job control](#job-control).
+See [Audit: Job control](#job-control).
 
 ## Audit
 
@@ -96,12 +96,12 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ### Job control
 
-This 0-shell meets the stated requirements for the optional extension project job-control, although not yet the following extra features implied by the example:
+My 0-shell meets the stated requirements for job-control, although not yet the following extra features implied by the example:
 
 - two additional flags for `ls`, namely `-r` (reverse) and `-R` (recursive)
 - redirection between file descriptors: `2>&1` (is `2>1` a typo?)
 
-I have implemented a feature not stated in the instructions but implied by the audit questions: execution of arbitrary external binaries (apart from the commands we had to re-implement). I'm now also mimicking Bash's behavior when Python is launched from 0-shell as a background process, using process groups.
+While the instructions tell us to obey the same principles as 0-shell, one of the job-control [audit questions](https://github.com/01-edu/public/blob/master/subjects/0-shell/job-control/audit.md) implies that it should now launch external binaries.<sup id="ref-f5">[5](#f5)</sup> I've squared this circle by keeping my custom versions of the listed externals, and, for other externals, forking the process and letting the child exec the given command.
 
 ## Regarding the name
 
@@ -131,10 +131,12 @@ See [todo.md](todo.md) for possible further developments and topics to explore.
 
 ## Notes
 
-<a id="f1" href="#ref-f1">1</a>: I've written my code for a Unix-like OS. This assumption is implicit in my handling of process groups and signals, and use of `libc`. An earlier version (from before I implemented job control) did aim to be platform-agnostic, hence the Windows variants for obtaining fs metadata the `ls::system` module.[↩](#ref-f1)
+<a id="f1" href="#ref-f1">1</a>: I've written my code for a Unix-like OS. This assumption is implicit in my handling of process groups and signals, and associated use of `libc`, for example. An earlier version (from before I implemented job control) did aim to be platform-agnostic, hence the Windows variants for obtaining fs metadata the `ls::system` module.[↩](#ref-f1)
 
 <a id="f2" href="#ref-f2">2</a>: A traditional Unix shell, such as Bash, treats certain commands as built-in utilities: `cd`, `exit`, `pwd`, `echo` (the first two of necessity built-in). Other commands launch external binaries: `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir`. To check whether a command is built-in for a given shell, you can enter `type <command>`.[↩](#ref-f2)
 
 <a id="f3" href="#ref-f3">3</a>: On installation, I gather that Busybox makes, for example, `/bin/ls` a symbolic link pointing to `/bin/0_shell`, allowing it act in place of a default shell. I haven't gone this far.[↩](#ref-f3)
 
 <a id="f4" href="#ref-f4">4</a>: As in Bash, the arguments to `fg` and `bg` are job numbers (1, 2, ...) while `kill` expects a system-wide PID (process ID), such as `1881893`; the convention can be reversed, for any of these commands, by prefixing the number with `%`, thus: `kill %1` or `fg %1881893`.[↩](#ref-f4)
+
+<a id="f5" href="#ref-f5">5</a>: "then run `python &"`. I assume they didn't want us write our own Python.[↩](#ref-f5)
