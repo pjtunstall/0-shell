@@ -10,13 +10,20 @@
   - [Echo](#echo)
 - [Further](#further)
 
+- Read up on theory: shell, terminal, signals, tty.
+- Correct my interchangeable use of the terms job and process. Check how I'm using the term child.
+  - Consider how I'll implement piping: look out for anywhere that I've used PID where jobspec of job ID would be more appropriate.
+- Comment all unsafe blocks and C code.
+- Implement file-descriptor redirection: `2>1 >/dev/null  &` (possible typo: `&1`?).
+  - Consider the intention.
+  - Consider the effect of my inconsistent error handling. Could/should I sent my `red_println` to `stderr`?
+- Implement `-R` (recursive) flag for `ls`.
+  - First refactor `ls` and submodules, breaking up long functions.
+- Change colors so as to make it easier to tell apart my shell from Bash.
+- Change my prompt to `$` after all, and remove the remark from README. `$` is conventional, and is used to distinguish from superuser mode: `#`.
+
 ## Job Control
 
-- Carefully study C code and unsafe blocks.
-  - Comment/document.
-  - Ensure that it all beheves as expected.
-  - Ensure that nothing is superluous.
-- Investigate behavior of `ls -lRr / 2>1 >/dev/null  &`.
 - Rename `JOB_ID` and consider name of `job.id`. Should it be `job_number` or simply `number`?
 - Add -l and -s flags for `kill`.
 - Add -n (new only) and -x (replace and execute) flags for `jobs`.
@@ -33,8 +40,7 @@
 
 ### Naming
 
-- Assess for consistency, especially: job, process, child.
-- Root out any overly graphic terminology: e.g. favor "kill/terminate job/process" over "kill child"!
+- Assess for consistency and accuracy, especially: job, process, child.
 
 ## General
 
@@ -51,7 +57,7 @@
 
 ## Error handling
 
-- Overhaul error handling. `ls` alone has a menagerie of different ways.
+- Overhaul error handling. `ls` alone has a menagerie of different ways. Try to normalize it. Look out first for low-g=hanging fruit.
 - Revisit question of capitalization patterns in error messages. Internally consistent now, I hope: but what conventions to the best-known shells use?
 - Feret out any remaining OS-specific error tests: e.g. ones that require a particular OS-generates error message. I think it's only custom error messages that are being compared in tests now; for system error, I think I'm just testing existence or non-existence.
 - Use enums for errors so that I can test for the correct variant instead of for specific strings, thus making these tests less brittle.
@@ -61,7 +67,7 @@
 ## Tests.
 
 - Test input functions.
-- Test `ls` on Windows as is uses platform-specific code, conditional on which platform is being compiled for.
+- Look out for ways to test `ls`.
 - See if there's a way to avoid some of those clones in the tests etc., e.g. `mv`. Look at whether there are places I can avoid copying, e.g. use refs instead of Strings either in the code or the tests.
 - Use a loop to insert the right number of backslashes in echo special character test.
 - Use this less verbose pattern in tests:

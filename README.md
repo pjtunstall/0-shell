@@ -65,7 +65,7 @@ I've also implemented some features from the optional extra project [job-control
 - bg: restart one or more child processes in the background
 - kill: terminate a process
 
-See [Audit: Job control](#job-control).
+As yet, I'm assuming one process per job. Eventually, I'll add piping to allow for more. See further: [Audit: Job control](#job-control).
 
 ## Audit
 
@@ -96,12 +96,12 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ### Job control
 
-My 0-shell meets the stated requirements for job-control, although not yet the following extra features implied by the example:
+To the best of my knowledge, my 0-shell meets the stated requirements for job-control, although not yet the following extra features implied by the example:
 
 - two additional flags for `ls`, namely `-r` (reverse) and `-R` (recursive)
 - redirection between file descriptors: `2>&1` (is `2>1` a typo?)
 
-While the instructions tell us to obey the same principles as 0-shell, one of the job-control [audit questions](https://github.com/01-edu/public/blob/master/subjects/0-shell/job-control/audit.md) implies that it should now launch external binaries.<sup id="ref-f5">[5](#f5)</sup> I've squared this circle by keeping my custom versions of the listed externals, and, for other externals, forking the process and letting the child exec the given command.
+While the instructions tell us to obey the same principles as 0-shell, one of the job-control [audit questions](https://github.com/01-edu/public/blob/master/subjects/0-shell/job-control/audit.md) implies that it should now launch external binaries.<sup id="ref-f5">[5](#f5)</sup> I've squared this circle by keeping my custom versions of the listed externals, and, for other externals, forking the process and letting the child exec itself with the given command as an argument.
 
 ## Regarding the name
 
