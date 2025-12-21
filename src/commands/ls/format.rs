@@ -382,9 +382,15 @@ fn format_entry_from_path(
 }
 
 fn format_time(modified: SystemTime) -> String {
-    let duration = modified.duration_since(UNIX_EPOCH).unwrap();
-    let secs = duration.as_secs();
-    let timestamp = chrono::DateTime::from_timestamp(secs as i64, 0)
+    let (secs, nanos) = match modified.duration_since(UNIX_EPOCH) {
+        Ok(duration) => (duration.as_secs() as i64, duration.subsec_nanos()),
+        Err(e) => {
+            let duration = e.duration();
+            (-(duration.as_secs() as i64), duration.subsec_nanos())
+        }
+    };
+
+    let timestamp = chrono::DateTime::from_timestamp(secs, nanos)
         .map(|naive| naive.format("%b %e %H:%M").to_string())
         .unwrap_or_else(|| format!("{}", secs));
 

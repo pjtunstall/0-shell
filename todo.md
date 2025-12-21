@@ -14,17 +14,14 @@
 
 - Investigate behavior of `ls -lRr / 2>1 >/dev/null  &`.
 - Rename `JOB_ID` and consider name of `job.id`. Should it be `job_number` or simply `number`?
-- Bash `bg` with no args stops the current job.
 - Add -l and -s flags for `kill`.
 - Add -n (new only) and -x (replace and execute) flags for `jobs`.
 - Thoroughly check all existing and new behavior since adding elements of job-control.
   - Compare with Bash.
 - Check behavior of redirection around `echo` and `cat` in conjunction with `jobs`.
 - Complete the optional extra project job-control in the light of the extra requirements implied by the audit questions.
-- Check formatting: sort out spacing and alignment.
 - In `check_background_jobs`, check `status` for exit codes or signals (e.g., segfaults).
-- Handle groups of jobs so as to allow jobs to spawn their own groups of jobs.
-  - Meanwhile, ensure suitable error messages if someone tries to run a builtin fron a job.
+- Ensure suitable error messages if someone tries to run a builtin fron a job.
 - What should happen if `&` is the final argument for builtins?
 - Write more tests for job control as I go along.
 - Refactor again.
@@ -45,8 +42,6 @@
   - Make a definitive list of commands that can be shared between, e.g. `input.rs` and `man.rs` and `commands.rs` to make it harder to omit items as more are added.
   - Make a `Jobs` struct with methods for its various functionality and possibly other fields besides the the `Vec<Job>`, such as as stack to track the last two foregrounded jobs.
 - Command chaining with `;`.
-- Running it now on Linux, I notice that `ls` with no options formats differently to Mac. You can't please all of the people all of the time.
-- Pick a consistent style of creating `String` from `&str`: either `String::from` or `to_string` or `into`.
 - Consider `pipe()` and `dup2()` for pipes and redirection of file descriptors.
 - Consider a crate to abstract color handling: `colored`, `owo-colors`, or `termcolor`. But, now that I'm commited to Unix-style only, maybe I've lost the main reason for choosing such a crate over plain ANSI codes.
 

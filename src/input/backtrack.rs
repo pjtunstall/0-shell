@@ -18,11 +18,12 @@ fn get_candidates(partial: &str, data: &[String]) -> Vec<String> {
 
     for item in data {
         if item.starts_with(partial) && item.len() > partial_len {
-            let next_char = item.chars().nth(partial_len).unwrap();
-            let candidate = format!("{}{}", partial, next_char);
+            if let Some(next_char) = item[partial_len..].chars().next() {
+                let candidate = format!("{}{}", partial, next_char);
 
-            if !candidates.contains(&candidate) {
-                candidates.push(candidate);
+                if !candidates.contains(&candidate) {
+                    candidates.push(candidate);
+                }
             }
         }
     }

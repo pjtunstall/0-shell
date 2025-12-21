@@ -39,8 +39,11 @@ mod tests {
         let input = string_vec!["pwd"];
         let expected = "0-shell\n";
         let result = pwd(&input).expect("`pwd` should be ok");
-        let last_segment = result.split(MAIN_SEPARATOR).last().unwrap();
-        assert_eq!(last_segment, expected);
+        let last_segment = result
+            .split(MAIN_SEPARATOR)
+            .last()
+            .expect("`pwd` output should contain at least one path segment");
+        assert_eq!(last_segment, expected, "`pwd` should return the cwd path");
     }
 
     #[test]
