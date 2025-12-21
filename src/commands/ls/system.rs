@@ -121,20 +121,32 @@ pub fn classify(path: &Path) -> String {
     String::from("")
 }
 
-pub fn get_total_blocks_in_directory(path: &Path) -> u64 {
+pub fn get_total_blocks_in_directory(path: &Path) -> Option<u64> {
     let mut total_blocks = 0;
+    let mut failed = false;
 
     if path.is_dir() {
-        if let Ok(entries) = fs::read_dir(path) {
-            for entry in entries.filter_map(Result::ok) {
-                let metadata = entry.metadata().unwrap();
-                let blocks = metadata.blocks(); // Returns the number of 512-byte blocks
-                total_blocks += blocks;
+        match fs::read_dir(path) {
+            Ok(entries) => {
+                for entry in entries.filter_map(Result::ok) {
+                    match entry.metadata() {
+                        Ok(metadata) => {
+                            let blocks = metadata.blocks(); // Returns the number of 512-byte blocks
+                            total_blocks += blocks;
+                        }
+                        Err(_) => failed = true,
+                    }
+                }
             }
+            Err(_) => failed = true,
         }
     }
 
-    total_blocks
+    if failed {
+        None
+    } else {
+        Some(total_blocks)
+    }
 }
 
 fn mode_to_string(mode: u32) -> String {

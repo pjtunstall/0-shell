@@ -232,7 +232,11 @@ pub(super) fn get_long_list(
     long_format_list(entries.into_iter().collect(), total, flags)
 }
 
-fn long_format_list(entries: Vec<String>, total: u64, flags: &LsFlags) -> Result<String, String> {
+fn long_format_list(
+    entries: Vec<String>,
+    total: Option<u64>,
+    flags: &LsFlags,
+) -> Result<String, String> {
     if entries.is_empty() {
         return Ok(String::new());
     }
@@ -307,8 +311,11 @@ fn long_format_list(entries: Vec<String>, total: u64, flags: &LsFlags) -> Result
         })
         .collect();
 
-    let total = format!("total: {}\n", total.to_string());
-    let mut result = total + &formatted_entries.join("\n");
+    let total_label = match total {
+        Some(val) => val.to_string(),
+        None => String::from("?"),
+    };
+    let mut result = format!("total: {}\n", total_label) + &formatted_entries.join("\n");
     result.push('\n');
 
     Ok(result)
