@@ -1,6 +1,7 @@
 use std::fs::{DirEntry, Metadata};
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{
+    cmp::Reverse,
     collections::VecDeque,
     fs,
     path::{MAIN_SEPARATOR_STR, Path},
@@ -95,14 +96,11 @@ pub(super) fn get_short_list(
     }
 
     let mut entries: Vec<_> = entries.into();
-    entries.sort_by(|a, b| {
-        let priority = |name: &String| match name.as_str() {
-            "." => 0,
-            ".." => 1,
-            _ => 2,
-        };
-        (priority(a), a).cmp(&(priority(b), b))
-    });
+    if flags.reverse {
+        entries.sort_by_key(|name| Reverse(dot_sort_key(name)));
+    } else {
+        entries.sort_by_key(|name| dot_sort_key(name));
+    }
 
     short_format_list(entries, is_redirect)
 }
@@ -164,6 +162,20 @@ fn get_terminal_width() -> usize {
     }
 }
 
+fn dot_sort_key(name: &str) -> String {
+    // Use ASCII sentinels so `.` and `..` sort first:
+    // \x00 (NUL) for the current dir, \x01 (SOH) for the parent,
+    // \x02 for everything else. Long listings include the directory
+    // suffix (e.g., "./"), so we match both bare and suffixed forms.
+    let prefix = match name {
+        "." | "./" => "\x00",
+        ".." | "../" => "\x01",
+        _ => "\x02",
+    };
+
+    format!("{}{}", prefix, name)
+}
+
 pub(super) fn get_long_list(
     flags: &LsFlags,
     path: &Path,
@@ -217,10 +229,10 @@ pub(super) fn get_long_list(
     }
 
     let total = system::get_total_blocks_in_directory(path);
-    long_format_list(entries.into_iter().collect(), total)
+    long_format_list(entries.into_iter().collect(), total, flags)
 }
 
-fn long_format_list(entries: Vec<String>, total: u64) -> Result<String, String> {
+fn long_format_list(entries: Vec<String>, total: u64, flags: &LsFlags) -> Result<String, String> {
     if entries.is_empty() {
         return Ok(String::new());
     }
@@ -245,16 +257,16 @@ fn long_format_list(entries: Vec<String>, total: u64) -> Result<String, String> 
         }
     }
 
-    parsed_entries.sort_by_key(|row| {
-        let name = row.last().cloned().unwrap_or_default();
-        if name == "./" {
-            String::from("\x00") // ASCII `NUL`: sort first.
-        } else if name == "../" {
-            String::from("\x01") // ASCII `SOH` (Start of Heading): sort second.
-        } else {
-            name
-        }
-    });
+    let key_for = |row: &Vec<String>| {
+        let name = row.last().map(String::as_str).unwrap_or("");
+        dot_sort_key(name)
+    };
+
+    if flags.reverse {
+        parsed_entries.sort_by_key(|row| Reverse(key_for(row)));
+    } else {
+        parsed_entries.sort_by_key(key_for);
+    }
 
     let formatted_entries: Vec<String> = parsed_entries
         .iter()

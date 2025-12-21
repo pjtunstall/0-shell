@@ -8,8 +8,9 @@ use crate::{
     redirect,
 };
 
-pub const USAGE: &str = "Usage:\tls [-F] [-a] [-l] [FILE|DIRECTORY]...";
-pub const OPTIONS_USAGE: &str = "\r\n-F      -- append file type indicators\r\n-a      -- list entries starting with .\r\n-l      -- long listing";
+pub const USAGE: &str = "Usage:\tls [-F] [-a] [-l] [-r] [FILE|DIRECTORY]...";
+pub const OPTIONS_USAGE: &str =
+    "\r\n-F      -- append file type indicators\r\n-a      -- list entries starting with .\r\n-l      -- long listing\r\n-r      -- reverse order";
 
 struct PathClassification {
     directories: Vec<String>,
@@ -22,6 +23,7 @@ struct LsFlags {
     show_hidden: bool, // -a
     long_format: bool, // -l
     classify: bool,    // -F
+    reverse: bool,
     first_pathname_index: Option<usize>,
 }
 
@@ -31,6 +33,7 @@ impl LsFlags {
             show_hidden: false,
             long_format: false,
             classify: false,
+            reverse: false,
             first_pathname_index: None,
         };
 
@@ -40,14 +43,15 @@ impl LsFlags {
                 break;
             }
 
-            if arg.chars().skip(1).any(|c| !['a', 'l', 'F'].contains(&c)) {
+            if arg.chars().skip(1).any(|c| !['a', 'l', 'F', 'r'].contains(&c)) {
                 // `skip(1)` to skip the '-'.
-                return Err(format!("Unrecognized option `{}'\n{}", arg, USAGE));
+                return Err(format!("Unrecognized option: `{}'\n{}", arg, USAGE));
             }
 
             flags.show_hidden |= arg.contains('a');
             flags.long_format |= arg.contains('l');
             flags.classify |= arg.contains('F');
+            flags.reverse |= arg.contains('r');
         }
 
         Ok(flags)
@@ -69,7 +73,7 @@ pub fn ls(input: &[String]) -> Result<String, String> {
     let paths = &sources[first_pathname_index..];
 
     let mut path_classification = classify_paths(paths);
-    sort_path_classification(&mut path_classification);
+    sort_path_classification(&mut path_classification, &flags);
 
     print_non_existent_paths(&path_classification.non_existent);
 
@@ -105,10 +109,16 @@ fn handle_current_directory_listing(
     }
 }
 
-fn sort_path_classification(classification: &mut PathClassification) {
+fn sort_path_classification(classification: &mut PathClassification, flags: &LsFlags) {
     classification.directories.sort();
     classification.non_existent.sort();
     classification.files.sort();
+
+    if flags.reverse {
+        classification.directories.reverse();
+        classification.non_existent.reverse();
+        classification.files.reverse();
+    }
 }
 
 fn print_non_existent_paths(non_existent: &[String]) {
@@ -226,11 +236,7 @@ fn process_files(
     if flags.long_format {
         for file in files {
             let file_path = Path::new(file);
-            results.push_str(&format::get_long_list(
-                flags,
-                file_path,
-                !is_redirect,
-            )?);
+            results.push_str(&format::get_long_list(flags, file_path, !is_redirect)?);
         }
     } else {
         if is_redirect {
