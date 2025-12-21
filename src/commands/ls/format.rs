@@ -9,8 +9,8 @@ use std::{
 use chrono;
 use terminal_size::{Width, terminal_size};
 
-use super::system;
-use crate::ansi::{BLUE, RESET_FG};
+use super::{LsFlags, system};
+use crate::ansi::{ANSI_PREFIX, BLUE, RESET_FG};
 
 fn blue(text: &str) -> String {
     // Use foreground reset (39m) so we don't clear other active attributes (e.g., bold).
@@ -50,18 +50,22 @@ impl FileInfo {
     }
 }
 
-pub fn get_short_list(flags: u8, path: &Path, is_redirect: bool) -> Result<String, String> {
+pub(super) fn get_short_list(
+    flags: &LsFlags,
+    path: &Path,
+    is_redirect: bool,
+) -> Result<String, String> {
     let mut entries: VecDeque<String> = match fs::read_dir(path) {
         Ok(dir) => dir
             .filter_map(|entry| match entry {
                 Ok(e) => {
                     let name = e.file_name().to_string_lossy().to_string();
 
-                    if flags & 1 == 0 && system::is_hidden(&e.path()) {
+                    if !flags.show_hidden && system::is_hidden(&e.path()) {
                         return None;
                     }
 
-                    let suffix = if flags & 4 != 0 {
+                    let suffix = if flags.classify {
                         system::classify(&e.path())
                     } else {
                         String::new()
@@ -81,7 +85,7 @@ pub fn get_short_list(flags: u8, path: &Path, is_redirect: bool) -> Result<Strin
         Err(e) => return Ok(format!("Error reading directory: {}", e)),
     };
 
-    if flags & 1 == 1 {
+    if flags.show_hidden {
         entries.push_front(String::from(".."));
         entries.push_front(String::from("."));
     }
@@ -91,7 +95,14 @@ pub fn get_short_list(flags: u8, path: &Path, is_redirect: bool) -> Result<Strin
     }
 
     let mut entries: Vec<_> = entries.into();
-    entries.sort();
+    entries.sort_by(|a, b| {
+        let priority = |name: &String| match name.as_str() {
+            "." => 0,
+            ".." => 1,
+            _ => 2,
+        };
+        (priority(a), a).cmp(&(priority(b), b))
+    });
 
     short_format_list(entries, is_redirect)
 }
@@ -131,7 +142,7 @@ fn visible_width(s: &str) -> usize {
     let mut width = 0;
     let mut chars = s.chars().peekable();
     while let Some(c) = chars.next() {
-        if c == '\x1b' {
+        if c == ANSI_PREFIX {
             // Skip ANSI escape sequences.
             while let Some(next) = chars.next() {
                 if next == 'm' {
@@ -153,7 +164,11 @@ fn get_terminal_width() -> usize {
     }
 }
 
-pub fn get_long_list(flags: u8, path: &Path, colorize: bool) -> Result<String, String> {
+pub(super) fn get_long_list(
+    flags: &LsFlags,
+    path: &Path,
+    colorize: bool,
+) -> Result<String, String> {
     let metadata = match fs::metadata(path) {
         Ok(meta) => meta,
         Err(_) => return Ok(String::new()),
@@ -165,7 +180,7 @@ pub fn get_long_list(flags: u8, path: &Path, colorize: bool) -> Result<String, S
                 .filter_map(|entry| format_entry_from_direntry(entry.ok()?, flags, colorize))
                 .filter(|entry_str| {
                     let name = entry_str.split_whitespace().last().unwrap_or("");
-                    flags & 1 == 1 || !system::is_hidden(Path::new(name))
+                    flags.show_hidden || !system::is_hidden(Path::new(name))
                 })
                 .collect(),
             Err(_) => return Ok(String::new()),
@@ -182,7 +197,7 @@ pub fn get_long_list(flags: u8, path: &Path, colorize: bool) -> Result<String, S
         }
     };
 
-    if flags & 1 == 1 {
+    if flags.show_hidden {
         if let Ok(absolute_path) = fs::canonicalize(path) {
             let parent_path = absolute_path
                 .parent()
@@ -291,7 +306,7 @@ fn format_entry<T: AsRef<Path>>(
     path: T,
     name: Option<String>,
     metadata: Metadata,
-    flags: u8,
+    flags: &LsFlags,
     colorize: bool,
 ) -> Option<String> {
     let path = path.as_ref();
@@ -310,7 +325,7 @@ fn format_entry<T: AsRef<Path>>(
     let (permissions, hard_links, user_name, group_name) =
         system::get_platform_specific_info(&metadata);
 
-    let suffix = if flags & 4 != 0 {
+    let suffix = if flags.classify {
         system::classify(path)
     } else {
         String::new()
@@ -333,7 +348,7 @@ fn format_entry<T: AsRef<Path>>(
     Some(info.format())
 }
 
-fn format_entry_from_direntry(e: DirEntry, flags: u8, colorize: bool) -> Option<String> {
+fn format_entry_from_direntry(e: DirEntry, flags: &LsFlags, colorize: bool) -> Option<String> {
     let metadata = e.metadata().ok()?;
     format_entry(
         e.path(),
@@ -344,7 +359,12 @@ fn format_entry_from_direntry(e: DirEntry, flags: u8, colorize: bool) -> Option<
     )
 }
 
-fn format_entry_from_path(path: &Path, name: &str, flags: u8, colorize: bool) -> Option<String> {
+fn format_entry_from_path(
+    path: &Path,
+    name: &str,
+    flags: &LsFlags,
+    colorize: bool,
+) -> Option<String> {
     let metadata = fs::metadata(path).ok()?;
     format_entry(path, Some(String::from(name)), metadata, flags, colorize)
 }

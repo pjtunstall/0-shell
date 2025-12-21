@@ -1,3 +1,4 @@
+pub const ANSI_PREFIX: char = '\x1b';
 
 pub const RED: &str = "\x1b[31m";
 pub const BLUE: &str = "\x1b[34m";

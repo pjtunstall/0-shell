@@ -173,7 +173,11 @@ pub fn resolve_jobspec(spec: &str, current: usize, previous: usize) -> Result<us
         .map_err(|_| format!("Invalid job ID: {}", spec))
 }
 
-pub fn resolve_jobspec_or_pid(spec: &str, current: usize, previous: usize) -> Result<usize, String> {
+pub fn resolve_jobspec_or_pid(
+    spec: &str,
+    current: usize,
+    previous: usize,
+) -> Result<usize, String> {
     resolve_jobspec(spec, current, previous)
 }
 
@@ -241,7 +245,10 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>, current: &mut usize, previous:
                     jobs[index].state = State::Stopped;
                     *previous = *current;
                     *current = jobs[index].id;
-                    println!("\n[{}]+\tStopped\t\t{}", jobs[index].id, jobs[index].command);
+                    println!(
+                        "\n[{}]+\tStopped\t\t{}",
+                        jobs[index].id, jobs[index].command
+                    );
                 }
             } else if libc::WIFEXITED(status) || libc::WIFSIGNALED(status) {
                 // The process is dead.
@@ -433,12 +440,32 @@ mod tests {
 
     #[test]
     fn resolve_jobspec_handles_current_and_previous_aliases() {
-        assert_eq!(resolve_jobspec("%+", 2, 1).unwrap(), 2);
-        assert_eq!(resolve_jobspec("%%", 2, 1).unwrap(), 2);
-        assert_eq!(resolve_jobspec("%", 2, 1).unwrap(), 2);
-        assert_eq!(resolve_jobspec("%-", 2, 1).unwrap(), 1);
+        assert_eq!(
+            resolve_jobspec("%+", 2, 1).unwrap(),
+            2,
+            "%+ should resolve to current job"
+        );
+        assert_eq!(
+            resolve_jobspec("%%", 2, 1).unwrap(),
+            2,
+            "%% should resolve to current job"
+        );
+        assert_eq!(
+            resolve_jobspec("%", 2, 1).unwrap(),
+            2,
+            "% should resolve to current job"
+        );
+        assert_eq!(
+            resolve_jobspec("%-", 2, 1).unwrap(),
+            1,
+            "%- should resolve to previous job"
+        );
 
         // Single-job case: %- falls back to current.
-        assert_eq!(resolve_jobspec("%-", 3, 0).unwrap(), 3);
+        assert_eq!(
+            resolve_jobspec("%-", 3, 0).unwrap(),
+            3,
+            "%- should fall back to current when previous is 0"
+        );
     }
 }

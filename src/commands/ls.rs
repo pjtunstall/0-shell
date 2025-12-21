@@ -52,20 +52,6 @@ impl LsFlags {
 
         Ok(flags)
     }
-
-    fn as_u8(&self) -> u8 {
-        let mut result = 0;
-        if self.show_hidden {
-            result |= 1;
-        }
-        if self.long_format {
-            result |= 2;
-        }
-        if self.classify {
-            result |= 4;
-        }
-        result
-    }
 }
 
 pub fn ls(input: &[String]) -> Result<String, String> {
@@ -94,7 +80,7 @@ pub fn ls(input: &[String]) -> Result<String, String> {
         input,
         path_classification,
         &mut running_results,
-        flags.as_u8(),
+        &flags,
         is_redirect,
         targets,
     )
@@ -149,7 +135,7 @@ fn finalize_directory_listing(
     input: &[String],
     path_classification: PathClassification,
     running_results: &mut String,
-    flags: u8,
+    flags: &LsFlags,
     is_redirect: bool,
     targets: Vec<[&String; 2]>,
 ) -> Result<String, String> {
@@ -221,9 +207,9 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
 fn list_current_directory(flags: &LsFlags, is_redirect: bool) -> Result<String, String> {
     let path = Path::new(".");
     if flags.long_format {
-        format::get_long_list(flags.as_u8(), path, !is_redirect)
+        format::get_long_list(flags, path, !is_redirect)
     } else {
-        format::get_short_list(flags.as_u8(), path, is_redirect)
+        format::get_short_list(flags, path, is_redirect)
     }
 }
 
@@ -241,7 +227,7 @@ fn process_files(
         for file in files {
             let file_path = Path::new(file);
             results.push_str(&format::get_long_list(
-                flags.as_u8(),
+                flags,
                 file_path,
                 !is_redirect,
             )?);
@@ -287,7 +273,7 @@ fn process_directories(
     input: &[String],
     dirs: Vec<String>,
     results: String,
-    flags: u8,
+    flags: &LsFlags,
     files: Vec<String>,
     is_redirect: bool,
 ) -> Result<String, String> {
@@ -305,7 +291,7 @@ fn process_directories(
             results.push_str(&format!("{}:\n", dir));
         }
 
-        let dir_listing = if flags & 2 != 0 {
+        let dir_listing = if flags.long_format {
             format::get_long_list(flags, path, !is_redirect)?
         } else {
             format::get_short_list(flags, path, is_redirect)?
