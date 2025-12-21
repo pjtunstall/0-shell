@@ -233,9 +233,9 @@ fn long_format_list(entries: Vec<String>, total: u64) -> Result<String, String> 
     parsed_entries.sort_by_key(|row| {
         let name = row.last().cloned().unwrap_or_default();
         if name == "./" {
-            String::from("\x00")
+            String::from("\x00") // ASCII `NUL`: sort first.
         } else if name == "../" {
-            String::from("\x01")
+            String::from("\x01") // ASCII `SOH` (Start of Heading): sort second.
         } else {
             name
         }
