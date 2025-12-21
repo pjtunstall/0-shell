@@ -24,7 +24,7 @@ pub fn man(input: &[String]) -> Result<String, String> {
             "echo" => echo::USAGE,
             "exit" => exit::USAGE,
             "fg" => fg::USAGE,
-            "jobs" => jobs::USAGE,
+            "jobs" => &format!("{}{}", jobs::USAGE, jobs::OPTIONS_USAGE),
             "kill" => kill::USAGE,
             "ls" => &format!("{}{}", ls::USAGE, ls::OPTIONS_USAGE),
             "man" => man::USAGE,

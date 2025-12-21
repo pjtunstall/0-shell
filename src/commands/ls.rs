@@ -8,7 +8,7 @@ use crate::{
     redirect,
 };
 
-pub const USAGE: &str = "Usage:\tls [-F] [-a] [-l] [-r] [FILE|DIRECTORY]...";
+pub const USAGE: &str = "Usage:\tls [-Falr] [FILE|DIRECTORY]...";
 pub const OPTIONS_USAGE: &str =
     "\r\n-F      -- append file type indicators\r\n-a      -- list entries starting with .\r\n-l      -- long listing\r\n-r      -- reverse order";
 

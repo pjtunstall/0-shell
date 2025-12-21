@@ -3,6 +3,7 @@ use std::borrow::Borrow;
 use libc;
 
 pub const USAGE: &str = "Usage:\tjobs [-lprs] [jobspec ...]";
+pub const OPTIONS_USAGE: &str = "\r\n-l      -- show process IDs\r\n-p      -- show only process IDs\r\n-r      -- show only running jobs\r\n-s      -- show only stopped jobs";
 const STATE_COL_WIDTH: usize = 24;
 
 #[derive(Debug, Clone, Copy, PartialEq)]

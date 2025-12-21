@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-pub const USAGE: &str = "Usage:\trm [-r] <FILE|DIRECTORY>...";
+pub const USAGE: &str = "Usage:\trm [-Rr] <FILE|DIRECTORY>...";
 
 pub const OPTIONS_USAGE: &str = "\r\n-R  -r  -- remove directories and their contents recursively";
 
