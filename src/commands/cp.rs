@@ -29,7 +29,15 @@ pub fn cp(input: &[String]) -> Result<String, String> {
         }
 
         let dest_file = if dest_path.is_dir() {
-            dest_path.join(src_path.file_name().unwrap())
+            match src_path.file_name() {
+                Some(name) => dest_path.join(name),
+                None => {
+                    return Err(format!(
+                        "`{}` does not have a valid file name to copy",
+                        source
+                    ))
+                }
+            }
         } else {
             dest_path.to_path_buf()
         };
