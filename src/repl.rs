@@ -62,26 +62,26 @@ pub fn repl() {
     let mut final_status = 0;
 
     unsafe {
-        // Declare `forward` as a C "signal action" struct, and zero its memory. This represents an action: a callback function and some configuration. Below, two calls to the `set_action` closure will register `forward` as the action associated with `SIGINT` and `SIGTSTP` respectively.
+        // Declare `forward` as a C "signal action" struct, and zero its memory. This struct represents an action: a callback function and some configuration. Below, two calls to the Rust `set_action` closure will register `forward` as the action associated with `SIGINT` and `SIGTSTP` respectively.
         let mut forward = mem::zeroed::<libc::sigaction>();
 
         // Almost certainly superfluous, but covers the remote, theoretical possibility that we're on an OS that has bucked convention and implemented "empty" as all ones, say, rather than all zeros.
         libc::sigemptyset(&mut forward.sa_mask);
 
-        // After running the signal handler, automatically restart any interrupted I/O syscall instead of the default behavior instead of failing with an `EINTR` error.
+        // After running the signal handler, automatically restart any interrupted I/O syscall instead of the default behavior (which would be to fail with an `EINTR` error).
         forward.sa_flags = libc::SA_RESTART;
 
-        // Set action's callback function to `c::handle_forwarding` (a function pointer cast to `usize`), that will forward the signal to the process whose PID is stored in `static CURRENT_CHILD_PID: AtomicI32` (defined in `crate::c`).
+        // Set this action's callback function to `c::handle_forwarding` (a function pointer cast to `usize`), that will forward the signal to the process whose PID is stored in `static CURRENT_CHILD_PID: AtomicI32` (defined in `crate::c`).
         forward.sa_sigaction = c::handle_forwarding as usize;
 
-        // Analogous to `forward`, we define an `ignore` action. Its callback, `libc::SIG_IGN`, tells the kernel to ignore the signal.
+        // Analogous to `forward`, we define an `ignore` action. Its callback, `libc::SIG_IGN`, tells the kernel to ignore whatever signal it's registered with.
         let mut ignore = mem::zeroed::<libc::sigaction>();
         libc::sigemptyset(&mut ignore.sa_mask);
         ignore.sa_sigaction = libc::SIG_IGN;
 
         // Define a closure to register a signal handler if it can and panic if not.
         let set_action = |sig: i32, act: &libc::sigaction| {
-            // `null_mut`: This argument is for the "Old Action." If we passed a pointer here, the OS would write the previous signal handler settings into it. Since we don't care what the previous handler was, we pass a null pointer.
+            // `null_mut`: This argument is for the "old action". If we passed a pointer here, the OS would write the previous signal handler settings into it. Since we don't care what the previous handler was, we pass a null pointer.
             if libc::sigaction(sig, act, ptr::null_mut()) != 0 {
                 let err = io::Error::last_os_error();
                 panic!("failed to set signal action `{}`: {}", sig, err);
@@ -91,8 +91,8 @@ pub fn repl() {
         set_action(libc::SIGINT, &forward); // Ctr+C: terminate.
         set_action(libc::SIGTSTP, &forward); // Ctrl+Z: stop (i.e. pause).
 
-        // Prevent the shell from being stopped if it does a terminal read or write while backgrounded?
-        set_action(libc::SIGTTIN, &ignore); // Ignore input.
+        // Prevent the shell from being stopped if it does a terminal read or write while backgrounded.
+        set_action(libc::SIGTTIN, &ignore); // Ignore input (except control chars).
         set_action(libc::SIGTTOU, &ignore); // Ignore output.
     }
 
