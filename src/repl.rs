@@ -68,7 +68,7 @@ pub fn repl() {
         // Almost certainly superfluous, but covers the remote, theoretical possibility that we're on an OS that has bucked convention and implemented "empty" as all ones, say, rather than all zeros.
         libc::sigemptyset(&mut forward.sa_mask);
 
-        // After running the signal handler, automatically restart any interrupted I/O syscall instead of the default behavior (which would be to fail with an `EINTR` error).
+        // After running the signal handler, automatically restart any interrupted I/O syscall instead of the default behavior (which would be to fail with an `EINTR` error). The `sa_flags` field is a bitbask indicating which other signals to block while the current signal is being handled. This line ensures that mask is empty.
         forward.sa_flags = libc::SA_RESTART;
 
         // Set this action's callback function to `c::handle_forwarding` (a function pointer cast to `usize`), that will forward the signal to the process whose PID is stored in `static CURRENT_CHILD_PID: AtomicI32` (defined in `crate::c`).
