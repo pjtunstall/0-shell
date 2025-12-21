@@ -12,6 +12,10 @@
 
 ## Job Control
 
+- Carefully study C code and unsafe blocks.
+  - Comment/document.
+  - Ensure that it all beheves as expected.
+  - Ensure that nothing is superluous.
 - Investigate behavior of `ls -lRr / 2>1 >/dev/null  &`.
 - Rename `JOB_ID` and consider name of `job.id`. Should it be `job_number` or simply `number`?
 - Add -l and -s flags for `kill`.
@@ -47,6 +51,7 @@
 
 ## Error handling
 
+- Overhaul error handling. `ls` alone has a menagerie of different ways.
 - Revisit question of capitalization patterns in error messages. Internally consistent now, I hope: but what conventions to the best-known shells use?
 - Feret out any remaining OS-specific error tests: e.g. ones that require a particular OS-generates error message. I think it's only custom error messages that are being compared in tests now; for system error, I think I'm just testing existence or non-existence.
 - Use enums for errors so that I can test for the correct variant instead of for specific strings, thus making these tests less brittle.
@@ -86,9 +91,9 @@ Regarding the task of moving redirection into the shell, I get this AI advice:
 ```
 Refactoring redirection into the shell is doable but non-trivial: today cat, ls, and echo each parse/handle redirection themselves (via redirect::separate_sources_from_targets), with slightly different behaviors. Moving it up means:
 
-Parsing redirection tokens in the shell, stripping them from argv, opening/truncating/append files centrally, and wiring stdout/stderr accordingly before invoking the command.
-Removing/redesigning per-command redirect logic (and tests) and ensuring commands return plain output strings.
-Risk: moderate. Easy to break edge cases like multiple targets, append vs truncate, empty output, current “partial success with accumulated errors” semantics (cat, ls), and colored inline errors in ls. Also risk in piping/stream handling if added later.
+- Parsing redirection tokens in the shell, stripping them from argv, opening/truncating/append files centrally, and wiring stdout/stderr accordingly before invoking the command.
+- Removing/redesigning per-command redirect logic (and tests) and ensuring commands return plain output strings.
+- Risk: moderate. Easy to break edge cases like multiple targets, append vs truncate, empty output, current “partial success with accumulated errors” semantics (cat, ls), and colored inline errors in ls. Also risk in piping/stream handling if added later.
 
 Before refactoring, good tests to add:
 
