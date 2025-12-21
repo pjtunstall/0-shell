@@ -91,7 +91,7 @@ pub fn repl() {
         set_action(libc::SIGINT, &forward); // Ctr+C: terminate.
         set_action(libc::SIGTSTP, &forward); // Ctrl+Z: stop (i.e. pause).
 
-        // Prevent the shell from being stopped if it does a terminal read or write while backgrounded.
+        // Prevent the shell from being stopped if it attempts a terminal read or write while backgrounded. The terminal driver fires `SIGTIN` (`SIGTOU`) when a background process group tries to read from (or write to--unless output is piped or redirected), the controlling terminal.
         set_action(libc::SIGTTIN, &ignore); // Ignore input (except control chars).
         set_action(libc::SIGTTOU, &ignore); // Ignore output.
     }
