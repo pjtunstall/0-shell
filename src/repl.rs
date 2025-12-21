@@ -62,26 +62,41 @@ pub fn repl() {
     let mut final_status = 0;
 
     unsafe {
+        // Declare `forward` as a C "signal action" struct, and zero its memory. This represents an action: a callback function and some configuration. Below, two calls to the `set_action` closure will register `forward` as the action associated with `SIGINT` and `SIGTSTP` respectively.
         let mut forward = mem::zeroed::<libc::sigaction>();
+
+        // Almost certainly superfluous, but covers the remote, theoretical possibility that we're on an OS that has bucked convention and implemented "empty" as all ones, say, rather than all zeros.
         libc::sigemptyset(&mut forward.sa_mask);
+
+        // After running the signal handler, automatically restart any interrupted I/O syscall instead of the default behavior instead of failing with an `EINTR` error.
         forward.sa_flags = libc::SA_RESTART;
+
+        // Set action's callback function to `c::handle_forwarding` (a function pointer cast to `usize`), that will forward the signal to the process whose PID is stored in `static CURRENT_CHILD_PID: AtomicI32` (defined in `crate::c`).
         forward.sa_sigaction = c::handle_forwarding as usize;
 
+        // Analogous to `forward`, we define an `ignore` action. Its callback, `libc::SIG_INT`, tells the kernel to ignore the signal.
         let mut ignore = mem::zeroed::<libc::sigaction>();
         libc::sigemptyset(&mut ignore.sa_mask);
         ignore.sa_sigaction = libc::SIG_IGN;
 
+        // Define a closure to register a signal handler if it can and panic if not.
         let set_action = |sig: i32, act: &libc::sigaction| {
+            // `null_mut`
             if libc::sigaction(sig, act, ptr::null_mut()) != 0 {
                 let err = io::Error::last_os_error();
-                error::red_println(&format!("0-shell: sigaction({sig}): {err}"));
+                panic!("faled to set signal action `{}`: {}", sig, err);
+                // // Too serious to show the error to the user and moving on!
+                // error::red_println(&format!("0-shell: sigaction({sig}): {err}"));
             }
         };
 
-        set_action(libc::SIGINT, &forward);
-        set_action(libc::SIGTSTP, &forward);
-        set_action(libc::SIGTTIN, &ignore);
-        set_action(libc::SIGTTOU, &ignore);
+        // If a job is started in the foreground, it won't be set as "current" child.
+        set_action(libc::SIGINT, &forward); // Ctr+C: terminate.
+        set_action(libc::SIGTSTP, &forward); // Ctrl+Z: stop (i.e. pause).
+
+        // Prevent shell from being stopped if if it does a terminal read or write while backgrounded?
+        set_action(libc::SIGTTIN, &ignore); // Ignore input.
+        set_action(libc::SIGTTOU, &ignore); // Ignore output.
     }
 
     let mut history = VecDeque::new();
