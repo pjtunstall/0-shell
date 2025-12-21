@@ -65,10 +65,10 @@ pub fn repl() {
         // Declare `forward` as a C "signal action" struct, and zero its memory. This struct represents an action: a callback function and some configuration. Below, two calls to the Rust `set_action` closure will register `forward` as the action associated with `SIGINT` and `SIGTSTP` respectively.
         let mut forward = mem::zeroed::<libc::sigaction>();
 
-        // Almost certainly superfluous, but covers the remote, theoretical possibility that we're on an OS that has bucked convention and implemented "empty" as all ones, say, rather than all zeros.
+        // Almost certainly superfluous, but covers the remote, theoretical possibility that we're on an OS that has bucked convention and implemented "empty" as all ones, say, rather than all zeros. The `sa_masks` field is a bitbask indicating which other signals to block while the current signal is being handled. This line ensures that mask is empty.
         libc::sigemptyset(&mut forward.sa_mask);
 
-        // After running the signal handler, automatically restart any interrupted I/O syscall instead of the default behavior (which would be to fail with an `EINTR` error). The `sa_flags` field is a bitbask indicating which other signals to block while the current signal is being handled. This line ensures that mask is empty.
+        // After running the signal handler, automatically restart any interrupted I/O syscall instead of the default behavior (which would be to fail with an `EINTR` error).
         forward.sa_flags = libc::SA_RESTART;
 
         // Set this action's callback function to `c::handle_forwarding` (a function pointer cast to `usize`), that will forward the signal to the process whose PID is stored in `static CURRENT_CHILD_PID: AtomicI32` (defined in `crate::c`).
