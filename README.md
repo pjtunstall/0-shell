@@ -18,8 +18,8 @@
 This is my take on the 01-Edu project
 [0-shell](https://github.com/01-edu/public/tree/master/subjects/0-shell)
 (commit b0b9f3d). The object of the exercise is to learn about shells by
-implementing some core Unix commands from scratch without using external binaries or existing shell
-utilities.<sup id="ref-f1">[1](#f1)</sup>
+implementing some core Unix commands from scratch without using external
+binaries or existing shell utilities.<sup id="ref-f1">[1](#f1)</sup>
 
 We're required to recreate at least the following ten commands:
 
