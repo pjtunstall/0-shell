@@ -17,8 +17,8 @@
 
 This is my take on the [01-Founders/01-Edu project of the same
 name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit
-b0b9f3d). The object of the exercise is to learn about shells by mimicking
-essential Unix shell behaviors without using external binaries or existing shell
+b0b9f3d). The object of the exercise is to learn about shells by implementing
+some core Unix commands from scratch without using external binaries or existing shell
 utilities.<sup id="ref-f1">[1](#f1)</sup>
 
 We're required to recreate at least the following ten commands:
@@ -39,7 +39,7 @@ External:
 - `mv`
 - `mkdir`
 
-Also, Ctrl+D to exit our 'shell'.
+Also, Ctrl+D to exit our shell.
 
 We're told:
 
@@ -71,81 +71,59 @@ I've added several bonus features, including:
 
 I've also done the optional extra project
 [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control),
-which extends 0-shell with the following features:
+which extends 0-shell with these features:
 
-- Ctrl+C: terminate a child process and return to the 'shell'
-- Ctrl+Z: pause a child process and return to the 'shell'
-- jobs: list background processes
-- `fg`: restart a paused child process in the foreground
-- `bg`: restart one or more child processes in the background
-- `kill`: terminate a process
+- Ctrl+C: terminate a child process and return to 0-shell
+- Ctrl+Z: pause a child process and return to 0-shell
+- `jobs`: list background jobs (aka pipelines, aka process groups)
+- `fg`: restart a paused job in the foreground
+- `bg`: restart one or more jobs in the background
+- `kill`: terminate a job
 
 While the instructions tell us that our program should respect the same
 principles as 0-shell, one of the job-control [audit
 questions](https://github.com/01-edu/public/blob/master/subjects/0-shell/job-control/audit.md)
-implies that it should now launch external binaries.<sup id="ref-f5">[5](#f5)</sup>
+implies that it should now launch external binaries, at least for commands
+included in the core project.<sup id="ref-f5">[5](#f5)</sup>
 
-I've squared this circle by keeping my custom versions of the listed externals,
-and, for other externals, forking the process and letting the child exec itself
+To accomplish this, I've kept my custom versions of the listed externals,
+and, for other externals, I fork the process and let the child exec itself
 with the given command as an argument.
 
 I've also implemented the features not mentioned in the instructions but implied
-by the example:
+by the example, namely:
 
 - additional flags for `ls`:
   - `-r`: reverse
   - `-R`: recurse
 - redirection from file descriptor to file: `2>1`<sup id="ref-f5">[5](#f5)</sup>
 
+## Setup
+
+Make sure you have [Rust](https://www.rust-lang.org/tools/install) installed.
+Then
+
+```sh
+git clone https://github.com/pjtunstall/0-shell
+cd 0-shell
+cargo run
+```
+
 ## Audit
 
-### Project name
+### Name
 
-The root directory and repo are named `0-shell`, as required by the brief.
-Unfortunately clashing conventions have resulted in almost the maximum
-conceivable variants! Rust's build tool, Cargo, doesn't allow a package name to
-begin with a numeral, hence the package is called `zero-shell` and the lib crate
-`zero_shell` according to Rust convention. The binary is explicitly named
-`0-shell` in `Cargo.toml`, so building via `cargo run`, `cargo build`, or `cargo
-build --release` produces a `0-shell` executable in `target`.
+I've named the internal package zero-shell because Rust's package/build
+manager Cargo disallows package names starting with numerals. Howevere, ensured
+that the binary itself is called `0-shell`.
+
+- Library: `zero_shell`
+- Binary output: `target/debug/0-shell`
 
 ### echo something
 
-One of the audit instructions is:
-
-**Try to run the command "echo "something!"". Do the same in your computer
-terminal.**
-
-It then asks, "Can you confirm that the displayed message of the project is
-exactly the same as the computer terminal?" I've made the following assumptions
-about the text to be entered, besides the obvious one that "your computer
-terminal" is not also running 0-shell! (Basically, your milage may vary,
-depending on your shell and how it's configured.)
-
-- The outer quotes are to be omitted, as in the instruction for the next item.
-- The text inside those outer quotes is to be entered unchanged in shells which
-  don't use `!` as a special character for history expension, such as PowerShell
-  and fish.
-- In shells with default history expension (such as Zsh, csh, and tcsh), the `!`
-  is to be escaped with a preceding `\`. Otherwise, these shells will display
-  `dquote>` in response to any input till you close the inner quotes. In Bash,
-  history expansion is disabled in non-interactive mode (e.g. `bash -c 'echo
-"something!"'`), so the bang works unescaped; in interactive Bash it only
-  needs escaping if `histexpand` is enabled (the usual default), otherwise `echo
-"something!"` works as-is.
-  - It works as is with the default settings for Bash in my current version of
-    VS Code, for example.
-- In POSIX shell (sh), dash, and ksh, that have optional history expansion, the
-  text should be entered depending on which option is currently selected. I
-  gather the default is no history expansion with `!`.
-- It's my understanding that BusyBox's default shell (ash) does not treat `!` as
-  special (it lacks history expansion by default, similar to dash). However, if
-  built with hush (another shell included in BusyBox), history expansion with
-  `!` can be optionally enabled.
-
-Since there's no requirement to implement special behavior for `!` or guidance
-on which shell to use as a standard (unless we can take the mention on BusyBox
-as a hint), I consider this is an oversight.
+Depending on your shell and how it's configured, you may need to escape the
+bang in `echo "something!"` when you type it in your own shell, thus `\!`.
 
 ### Last orders, please
 
@@ -153,7 +131,7 @@ See `integration.rs` for an integration test that covers the last section of the
 audit (before the bonus questions). I've assumed that the omission of `txt`
 extension from `new_doc.txt` on the third mention is accidental.
 
-### Known deviations
+### Deviations
 
 There are many trivial deviations from Zsh (my default shell at the time when I
 made my orignal version of the core project), even among the few items that I've
@@ -181,16 +159,9 @@ Tests should be run in single-threaded mode ...
 cargo test -- --test-threads=1
 ```
 
-... rather than in the default parallel mode, `cargo test`. This is necessary to
+... rather than in the default parallel mode, `cargo test`. This is to
 prevent tests that change the current directory from interfering with tests that
-check the identity of the current ditectory, or the existence or nonexistence or
-contents of files they've created in it. The success test for `pwd`, for
-example, expects the current directory to be `0-shell`, but the `cd` test
-temporarily changes the current directory. The integration test in
-`integration.rs` also changes the current directory briefly. If it was just one
-or two such clashes, they could be guarded with a mutex, but relying on a mutex
-would put the burdon on anyone adding a test to any of the modules to remember
-to use it. It seems more robust to just run them all sequentially.
+check the the current ditectory or its contents.
 
 ## Further
 
@@ -207,7 +178,7 @@ variants for obtaining fs metadata the `ls::system` module.[↩](#ref-f1)
 <a id="f2" href="#ref-f2">2</a>: A traditional Unix shell, such as Bash, treats
 certain commands as built-in utilities: `cd`, `exit`, `pwd`, `echo` (the first
 two of necessity built-in). Other commands launch external binaries: `ls`,
-`cat`, `cp`, `rm`, `mv`, `mkdir`. To check whether a command is built-in for a
+`cat`, `cp`, `rm`, `mv`, `mkdir`. To check whether a command is a builtin for a
 given shell, you can enter `type <command>`.[↩](#ref-f2)
 
 <a id="f3" href="#ref-f3">3</a>: On installation, I gather that Busybox makes,
