@@ -17,8 +17,7 @@
 - Implement file-descriptor redirection: `2>1 >/dev/null  &` (possible typo: `&1`?).
   - Consider the intention.
   - Consider the effect of my inconsistent error handling. Could/should I sent my `red_println` to `stderr`?
-- Implement `-R` (recursive) flag for `ls`.
-  - First refactor `ls` and submodules, breaking up long functions.
+  - Refactor `ls` and submodules, breaking up long functions.
 
 ## Job Control
 

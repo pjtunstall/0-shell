@@ -1,15 +1,20 @@
 pub mod format;
 mod system;
 
-use std::{fs::File, io::Write, path::Path};
+use std::{
+    collections::VecDeque,
+    fs::{self, File},
+    io::Write,
+    path::Path,
+};
 
 use crate::{
     ansi::{BOLD, ERROR_COLOR, RESET},
     redirect,
 };
 
-pub const USAGE: &str = "Usage:\tls [-Falr] [FILE|DIRECTORY]...";
-pub const OPTIONS_USAGE: &str = "\r\n-F      -- append file type indicators\r\n-a      -- list entries starting with .\r\n-l      -- long listing\r\n-r      -- reverse order";
+pub const USAGE: &str = "Usage:\tls [-FalrR] [FILE|DIRECTORY]...";
+pub const OPTIONS_USAGE: &str = "\r\n-F      -- append file type indicators\r\n-a      -- list entries starting with .\r\n-l      -- long listing\r\n-r      -- reverse order\r\n-R      -- recursive";
 
 struct PathClassification {
     directories: Vec<String>,
@@ -22,7 +27,8 @@ struct LsFlags {
     show_hidden: bool, // -a
     long_format: bool, // -l
     classify: bool,    // -F
-    reverse: bool,
+    reverse: bool,     // -r
+    recursive: bool,   // -R
     first_pathname_index: Option<usize>,
 }
 
@@ -33,6 +39,7 @@ impl LsFlags {
             long_format: false,
             classify: false,
             reverse: false,
+            recursive: false,
             first_pathname_index: None,
         };
 
@@ -45,7 +52,7 @@ impl LsFlags {
             if arg
                 .chars()
                 .skip(1)
-                .any(|c| !['a', 'l', 'F', 'r'].contains(&c))
+                .any(|c| !['a', 'l', 'F', 'r', 'R'].contains(&c))
             {
                 // `skip(1)` to skip the '-'.
                 return Err(format!("Unrecognized option: `{}'\n{}", arg, USAGE));
@@ -55,6 +62,7 @@ impl LsFlags {
             flags.long_format |= arg.contains('l');
             flags.classify |= arg.contains('F');
             flags.reverse |= arg.contains('r');
+            flags.recursive |= arg.contains('R');
         }
 
         Ok(flags)
@@ -67,15 +75,22 @@ pub fn ls(input: &[String]) -> Result<String, String> {
 
     let flags = LsFlags::parse(&sources)?;
 
-    // Handle current directory listing if no path is specified.
-    let first_pathname_index = match flags.first_pathname_index {
-        Some(i) => i,
-        None => return handle_current_directory_listing(input, &flags, is_redirect),
+    // Default to the current directory if no path is specified so we can reuse
+    // the same flow (including recursion) for all cases.
+    let default_path_holder = if flags.first_pathname_index.is_none() {
+        Some(String::from("."))
+    } else {
+        None
+    };
+    let paths: Vec<&String> = if let Some(i) = flags.first_pathname_index {
+        sources[i..].to_vec()
+    } else {
+        vec![default_path_holder
+            .as_ref()
+            .expect("missing default path for recursive ls")]
     };
 
-    let paths = &sources[first_pathname_index..];
-
-    let mut path_classification = classify_paths(paths);
+    let mut path_classification = classify_paths(&paths);
     sort_path_classification(&mut path_classification, &flags);
 
     print_non_existent_paths(&path_classification.non_existent);
@@ -91,25 +106,6 @@ pub fn ls(input: &[String]) -> Result<String, String> {
         is_redirect,
         targets,
     )
-}
-
-fn handle_current_directory_listing(
-    input: &[String],
-    flags: &LsFlags,
-    is_redirect: bool,
-) -> Result<String, String> {
-    match list_current_directory(flags, is_redirect) {
-        Ok(contents) => {
-            if is_redirect {
-                let targets = redirect::separate_sources_from_targets(input).1;
-                redirect(targets, contents);
-                Ok(String::new())
-            } else {
-                Ok(contents)
-            }
-        }
-        Err(e) => Err(e),
-    }
 }
 
 fn sort_path_classification(classification: &mut PathClassification, flags: &LsFlags) {
@@ -157,14 +153,14 @@ fn finalize_directory_listing(
         path_classification.directories,
         running_results.to_string(),
         flags,
-        path_classification.files,
         is_redirect,
     );
 
     if targets.is_empty() || results.is_err() {
         results
     } else {
-        redirect(targets, results.unwrap()); // This can't fail as we checked for errors above.
+        // This can't fail as we checked for errors above.
+        redirect(targets, results.unwrap());
         Ok(String::new())
     }
 }
@@ -214,15 +210,6 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
                 }
             }
         }
-    }
-}
-
-fn list_current_directory(flags: &LsFlags, is_redirect: bool) -> Result<String, String> {
-    let path = Path::new(".");
-    if flags.long_format {
-        format::get_long_list(flags, path, !is_redirect)
-    } else {
-        format::get_short_list(flags, path, is_redirect)
     }
 }
 
@@ -283,20 +270,21 @@ fn process_directories(
     dirs: Vec<String>,
     results: String,
     flags: &LsFlags,
-    files: Vec<String>,
     is_redirect: bool,
 ) -> Result<String, String> {
     let mut results = results;
-    for (i, dir) in dirs.iter().enumerate() {
-        let path = Path::new(dir);
+    let mut queue: VecDeque<String> = dirs.into();
+    let show_header = flags.recursive || input.len() > 2;
 
-        // Add spacing between sections.
-        if i > 0 || !files.is_empty() {
-            results.push_str("\n");
+    while let Some(dir) = queue.pop_front() {
+        let path = Path::new(&dir);
+
+        if !results.is_empty() {
+            results.push('\n');
         }
 
         // Add directory header if there are multiple directories or non-dir files.
-        if input.len() > 2 {
+        if show_header {
             results.push_str(&format!("{}:\n", dir));
         }
 
@@ -307,6 +295,40 @@ fn process_directories(
         };
 
         results.push_str(&dir_listing);
+
+        if flags.recursive {
+            let mut child_dirs: Vec<String> = fs::read_dir(path)
+                .map(|entries| {
+                    entries
+                        .filter_map(Result::ok)
+                        .filter_map(|entry| {
+                            let child_path = entry.path();
+                            let name = child_path.file_name()?.to_string_lossy().to_string();
+
+                            // Avoid recursing into . or .. and honor hidden filtering.
+                            if name == "." || name == ".." {
+                                return None;
+                            }
+                            if !flags.show_hidden && system::is_hidden(&child_path) {
+                                return None;
+                            }
+                            if child_path.is_dir() {
+                                Some(child_path.display().to_string())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+
+            child_dirs.sort();
+            if flags.reverse {
+                child_dirs.reverse();
+            }
+
+            queue.extend(child_dirs);
+        }
     }
 
     Ok(results)
