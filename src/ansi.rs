@@ -1,8 +1,12 @@
 pub const ANSI_PREFIX: char = '\x1b';
 
-pub const RED: &str = "\x1b[31m";
-pub const BLUE: &str = "\x1b[34m";
-pub const BRIGHT_GREEN: &str = "\x1b[92m";
+pub const ERROR_COLOR: &str = RED;
+pub const USER_COLOR: &str = PURPLE;
+pub const FOLDER_COLOR: &str = BRIGHT_CYAN;
+
+const RED: &str = "\x1b[31m";
+const PURPLE: &str = "\x1b[35m";
+const BRIGHT_CYAN: &str = "\x1b[96m";
 
 pub const RESET: &str = "\x1b[0m";
 pub const RESET_FG: &str = "\x1b[39m";

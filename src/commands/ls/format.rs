@@ -11,11 +11,11 @@ use chrono;
 use terminal_size::{Width, terminal_size};
 
 use super::{LsFlags, system};
-use crate::ansi::{ANSI_PREFIX, BLUE, RESET_FG};
+use crate::ansi::{ANSI_PREFIX, FOLDER_COLOR, RESET_FG};
 
 fn blue(text: &str) -> String {
     // Use foreground reset (39m) so we don't clear other active attributes (e.g., bold).
-    format!("{BLUE}{text}{RESET_FG}")
+    format!("{FOLDER_COLOR}{text}{RESET_FG}")
 }
 
 struct FileInfo {

@@ -4,13 +4,12 @@ mod system;
 use std::{fs::File, io::Write, path::Path};
 
 use crate::{
-    ansi::{BOLD, RED, RESET},
+    ansi::{BOLD, ERROR_COLOR, RESET},
     redirect,
 };
 
 pub const USAGE: &str = "Usage:\tls [-Falr] [FILE|DIRECTORY]...";
-pub const OPTIONS_USAGE: &str =
-    "\r\n-F      -- append file type indicators\r\n-a      -- list entries starting with .\r\n-l      -- long listing\r\n-r      -- reverse order";
+pub const OPTIONS_USAGE: &str = "\r\n-F      -- append file type indicators\r\n-a      -- list entries starting with .\r\n-l      -- long listing\r\n-r      -- reverse order";
 
 struct PathClassification {
     directories: Vec<String>,
@@ -43,7 +42,11 @@ impl LsFlags {
                 break;
             }
 
-            if arg.chars().skip(1).any(|c| !['a', 'l', 'F', 'r'].contains(&c)) {
+            if arg
+                .chars()
+                .skip(1)
+                .any(|c| !['a', 'l', 'F', 'r'].contains(&c))
+            {
                 // `skip(1)` to skip the '-'.
                 return Err(format!("Unrecognized option: `{}'\n{}", arg, USAGE));
             }
@@ -171,7 +174,7 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
         let target_path = Path::new(target[1]);
         if target_path.is_dir() {
             println!(
-                "{RED}0-shell: Is a directory: {path}{RESET}{BOLD}",
+                "{ERROR_COLOR}0-shell: Is a directory: {path}{RESET}{BOLD}",
                 path = target[1]
             );
         }
@@ -181,14 +184,14 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
                 Ok(mut file) => {
                     if let Err(_) = file.write_all(contents.as_bytes()) {
                         println!(
-                            "{RED}0-shell: Failed to write to file: {path}{RESET}{BOLD}",
+                            "{ERROR_COLOR}0-shell: Failed to write to file: {path}{RESET}{BOLD}",
                             path = target[1]
                         );
                     }
                 }
                 Err(_) => {
                     println!(
-                        "{RED}0-shell: Failed to create file: {path}{RESET}{BOLD}",
+                        "{ERROR_COLOR}0-shell: Failed to create file: {path}{RESET}{BOLD}",
                         path = target[1]
                     );
                 }
@@ -198,14 +201,14 @@ fn redirect(targets: Vec<[&String; 2]>, contents: String) {
                 Ok(mut file) => {
                     if let Err(_) = file.write_all(contents.as_bytes()) {
                         println!(
-                            "{RED}0-shell: Failed to append to file: {path}{RESET}{BOLD}",
+                            "{ERROR_COLOR}0-shell: Failed to append to file: {path}{RESET}{BOLD}",
                             path = target[1]
                         );
                     }
                 }
                 Err(_) => {
                     println!(
-                        "{RED}0-shell: Failed to open file: {path}{RESET}{BOLD}",
+                        "{ERROR_COLOR}0-shell: Failed to open file: {path}{RESET}{BOLD}",
                         path = target[1]
                     );
                 }
@@ -262,7 +265,7 @@ fn classify_paths(paths: &[&String]) -> PathClassification {
             files.push(path_str.to_string());
         } else {
             non_existent.push(format!(
-                "{RED}ls: {path}: No such file or directory{RESET}{BOLD}\n",
+                "{ERROR_COLOR}ls: {path}: No such file or directory{RESET}{BOLD}\n",
                 path = path_str
             ));
         }

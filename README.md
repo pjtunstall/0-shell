@@ -69,10 +69,6 @@ As yet, I'm assuming one process per job. Eventually, I'll add piping to allow f
 
 ## Audit
 
-### Prompt
-
-The 01Edu instructions say, "This interpreter must display at least a simple `$`". I chose to take `$` in a generic sense; I claim my "simple `$`" looks like this: `▶`. Or, to put it another way, my program displays "at least a simple `$`"--in fact, it something does better than that: it displays a `▶`.
-
 ### echo something
 
 One of the audit instructions is:

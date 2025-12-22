@@ -18,7 +18,7 @@ use termion::{
 use whoami;
 
 use crate::{
-    ansi::{BLUE, BRIGHT_GREEN, CLEAR_LINE, RESET_FG},
+    ansi::{CLEAR_LINE, FOLDER_COLOR, RESET_FG, USER_COLOR},
     commands::{ls, rm},
 };
 
@@ -70,7 +70,8 @@ pub fn get_input(history: &mut VecDeque<String>) -> io::Result<Option<String>> {
                 match key {
                     Key::Ctrl('d') => {
                         if input.is_empty() {
-                            write!(stdout, "^D\r\n").expect("failed to write to `stdout`");
+                            // Show ^D on its own line before any following output.
+                            write!(stdout, "\r\n^D\r\n").expect("failed to write to `stdout`");
                             stdout.suspend_raw_mode().expect("failed to reset terminal");
                             return Ok(None);
                         }
@@ -177,7 +178,8 @@ fn prompt() -> io::Result<String> {
         }
     }
 
-    let prompt = format!("{BRIGHT_GREEN}{username}@{hostname}{RESET_FG}:{BLUE}{cwd}{RESET_FG} ▶ ");
+    let prompt =
+        format!("{USER_COLOR}{username}@{hostname}{RESET_FG}:{FOLDER_COLOR}{cwd}{RESET_FG}$ ");
     Ok(prompt)
 }
 

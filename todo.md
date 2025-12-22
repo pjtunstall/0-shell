@@ -19,8 +19,6 @@
   - Consider the effect of my inconsistent error handling. Could/should I sent my `red_println` to `stderr`?
 - Implement `-R` (recursive) flag for `ls`.
   - First refactor `ls` and submodules, breaking up long functions.
-- Change colors so as to make it easier to tell apart my shell from Bash.
-- Change my prompt to `$` after all, and remove the remark from README. `$` is conventional, and is used to distinguish from superuser mode: `#`.
 
 ## Job Control
 

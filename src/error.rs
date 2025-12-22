@@ -1,4 +1,4 @@
-use crate::ansi::{BOLD, RED, RESET_FG};
+use crate::ansi::{BOLD, ERROR_COLOR, RESET_FG};
 
 pub fn handle_error(command: &str, err: String) {
     if err.starts_with("0-shell: ") {
@@ -10,7 +10,7 @@ pub fn handle_error(command: &str, err: String) {
 
 pub fn red_println(text: &str) {
     // Reset only the foreground color so we keep any active bold styling.
-    println!("{RED}{BOLD}{text}{RESET_FG}", text = text);
+    println!("{ERROR_COLOR}{BOLD}{text}{RESET_FG}", text = text);
 }
 
 // Emit a minimal, async-signal-safe error message after execvp failure.
@@ -20,8 +20,8 @@ pub fn print_exec_failure(cmd_bytes: &[u8]) {
     unsafe {
         let _ = libc::write(
             libc::STDERR_FILENO,
-            RED.as_bytes().as_ptr() as *const libc::c_void,
-            RED.len(),
+            ERROR_COLOR.as_bytes().as_ptr() as *const libc::c_void,
+            ERROR_COLOR.len(),
         );
         let _ = libc::write(
             libc::STDERR_FILENO,
