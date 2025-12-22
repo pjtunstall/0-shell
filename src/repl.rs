@@ -195,8 +195,8 @@ pub fn repl() {
 
     for job in jobs {
         unsafe {
-            libc::kill(-job.leader_pid, libc::SIGHUP);
-            libc::kill(-job.leader_pid, libc::SIGCONT);
+            libc::kill(-job.pgid, libc::SIGHUP);
+            libc::kill(-job.pgid, libc::SIGCONT);
         }
     }
 

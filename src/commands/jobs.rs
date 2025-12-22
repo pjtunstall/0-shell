@@ -26,18 +26,18 @@ impl Default for JobOptions {
 }
 
 pub struct Job {
-    pub jid: usize,      // Job ID: 1, 2, 3, ...
-    pub leader_pid: i32, // PID of group leader, also called PGID (process group ID).
+    pub jid: usize, // Job ID: 1, 2, 3, ...
+    pub pgid: i32,  // Process group ID: the PID of the group leader.
     pub command: String,
     pub state: State,
 }
 
 impl Job {
-    pub fn new(jid: usize, leader_pid: i32, command: String, state: State) -> Self {
-        assert!(leader_pid > 0, "`leader_pid` must be positive");
+    pub fn new(jid: usize, pgid: i32, command: String, state: State) -> Self {
+        assert!(pgid > 0, "`pgid` must be positive");
         Self {
             jid,
-            leader_pid,
+            pgid,
             command,
             state,
         }
@@ -126,8 +126,8 @@ pub fn format_jobs<T: Borrow<Job>>(
 
         // Mode: -p (PIDs only).
         if opts.pid_only {
-            let leader_pid = job.leader_pid;
-            output.push_str(&format!("{leader_pid}\n"));
+            let pgid = job.pgid;
+            output.push_str(&format!("{pgid}\n"));
             continue;
         }
 
@@ -193,7 +193,7 @@ impl std::fmt::Display for JobDisplay<'_> {
                 "[{}]{} {:<5} {:<width$} {}{}",
                 self.job.jid,
                 self.sign,
-                self.job.leader_pid,
+                self.job.pgid,
                 state_str,
                 self.job.command,
                 ampersand,
@@ -233,7 +233,7 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>, current: &mut usize, previous:
             break; // No more children have changed state.
         }
 
-        if let Some(index) = jobs.iter().position(|j| j.leader_pid == pid) {
+        if let Some(index) = jobs.iter().position(|j| j.pgid == pid) {
             if libc::WIFSTOPPED(status) {
                 // The kernel stopped the process (e.g. Python background input).
                 if jobs[index].state != State::Stopped {
@@ -284,7 +284,7 @@ mod tests {
     fn short_form_pads_state_column_and_adds_ampersand() {
         let job = Job {
             jid: 2,
-            leader_pid: 9999,
+            pgid: 9999,
             command: String::from("sleep 50"),
             state: State::Running,
         };
@@ -312,7 +312,7 @@ mod tests {
     fn stopped_job_has_no_ampersand() {
         let job = Job {
             jid: 2,
-            leader_pid: 9999,
+            pgid: 9999,
             command: String::from("sleep 50"),
             state: State::Stopped,
         };
@@ -340,7 +340,7 @@ mod tests {
     fn long_form_pads_state_and_pid_columns() {
         let job = Job {
             jid: 1,
-            leader_pid: 8287,
+            pgid: 8287,
             command: String::from("ls ..."),
             state: State::Stopped,
         };

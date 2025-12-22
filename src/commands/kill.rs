@@ -31,7 +31,7 @@ pub fn kill(
         let job_id = jobs::resolve_jobspec(arg, *current, *previous)?;
 
         if let Some(job) = jobs.iter().find(|j| j.jid == job_id) {
-            pid_to_kill = job.leader_pid;
+            pid_to_kill = job.pgid;
             if matches!(job.state, State::Stopped) {
                 is_stopped = true;
             }
@@ -47,7 +47,7 @@ pub fn kill(
             return Err(String::from("ID must be positive"));
         }
 
-        if let Some(job) = jobs.iter().find(|j| j.leader_pid == pid_to_kill) {
+        if let Some(job) = jobs.iter().find(|j| j.pgid == pid_to_kill) {
             if matches!(job.state, State::Stopped) {
                 is_stopped = true;
             }
@@ -81,7 +81,7 @@ pub fn kill(
     // Poll briefly so we don't block indefinitely if the process ignores SIGTERM.
     for _ in 0..5 {
         jobs::check_background_jobs(jobs, current, previous);
-        if jobs.iter().all(|j| j.leader_pid != pid_to_kill) {
+        if jobs.iter().all(|j| j.pgid != pid_to_kill) {
             break;
         }
         std::thread::sleep(Duration::from_millis(1));

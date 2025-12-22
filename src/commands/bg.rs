@@ -80,15 +80,15 @@ fn bg_with_resumer(
 
     for job in jobs.iter_mut() {
         let jid = job.jid;
-        let leader_pid = job.leader_pid;
+        let pgid = job.pgid;
 
         if target_ids.contains(&jid) {
             if matches!(job.state, State::Stopped) {
                 // Send SIGCONT to the process group (negative PID)
                 // so that all members of a pipeline resume together.
-                if let Err(err) = resumer.resume(leader_pid) {
+                if let Err(err) = resumer.resume(pgid) {
                     failures.push_str(&format!(
-                        "Failed to resume job {jid} (pid {leader_pid}): {err}\n"
+                        "Failed to resume job {jid} (pid {pgid}): {err}\n"
                     ));
                     failure_count += 1;
                     target_ids.remove(&jid);
@@ -142,13 +142,13 @@ mod tests {
         let mut jobs = vec![
             Job {
                 jid: 1,
-                leader_pid: 101,
+                pgid: 101,
                 state: State::Stopped,
                 command: String::from("sleep 100"),
             },
             Job {
                 jid: 2,
-                leader_pid: 102,
+                pgid: 102,
                 state: State::Running,
                 command: String::from("ls"),
             },
@@ -172,13 +172,13 @@ mod tests {
         let mut jobs = vec![
             Job {
                 jid: 1,
-                leader_pid: 101,
+                pgid: 101,
                 state: State::Stopped,
                 command: String::from("sleep 100"),
             },
             Job {
                 jid: 2,
-                leader_pid: 102,
+                pgid: 102,
                 state: State::Stopped,
                 command: String::from("sleep 200"),
             },
@@ -200,7 +200,7 @@ mod tests {
     fn test_bg_supports_percent_syntax() {
         let mut jobs = vec![Job {
             jid: 1,
-            leader_pid: 101,
+            pgid: 101,
             state: State::Stopped,
             command: String::from("sleep 100"),
         }];
@@ -220,7 +220,7 @@ mod tests {
     fn test_bg_ignores_missing_pids() {
         let mut jobs = vec![Job {
             jid: 1,
-            leader_pid: 101,
+            pgid: 101,
             state: State::Stopped,
             command: String::from("sleep"),
         }];
@@ -240,13 +240,13 @@ mod tests {
         let mut jobs = vec![
             Job {
                 jid: 1,
-                leader_pid: 101,
+                pgid: 101,
                 state: State::Stopped,
                 command: String::from("sleep"),
             },
             Job {
                 jid: 2,
-                leader_pid: 102,
+                pgid: 102,
                 state: State::Running,
                 command: String::from("ls"),
             },

@@ -31,7 +31,7 @@ pub fn fg(
         .position(|j| j.jid == job_id)
         .ok_or_else(|| format!("No such job ID: {job_id}"))?;
 
-    let pid = jobs[index].leader_pid;
+    let pgid = jobs[index].pgid;
     let command_text = jobs[index].command.clone();
 
     *previous = *current;
@@ -42,12 +42,12 @@ pub fn fg(
     let mut status: i32 = 0;
 
     unsafe {
-        libc::tcsetpgrp(libc::STDIN_FILENO, pid);
-        CURRENT_CHILD_PID.store(pid, Ordering::SeqCst);
-        libc::kill(pid, libc::SIGCONT);
+        libc::tcsetpgrp(libc::STDIN_FILENO, pgid);
+        CURRENT_CHILD_PID.store(pgid, Ordering::SeqCst);
+        libc::kill(pgid, libc::SIGCONT);
         loop {
-            let res = libc::waitpid(pid, &mut status, libc::WUNTRACED);
-            if res == pid {
+            let res = libc::waitpid(pgid, &mut status, libc::WUNTRACED);
+            if res == pgid {
                 break;
             }
             if res == -1 {
