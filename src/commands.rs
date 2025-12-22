@@ -136,7 +136,8 @@ fn spawn_job(
     current: &mut usize,
     previous: &mut usize,
 ) -> Result<String, String> {
-    // Build argv up front so the child avoids allocation after fork.
+    // Build argv up front so that the child doesn't have to allocate after the
+    // fork.
     let exec_args: Vec<String> = if is_worker {
         let self_path = env::current_exe()
             .unwrap_or_else(|_| std::path::PathBuf::from("./0_shell"))
@@ -161,108 +162,120 @@ fn spawn_job(
     let mut ptrs: Vec<*const i8> = c_strings.iter().map(|s| s.as_ptr()).collect();
     ptrs.push(ptr::null());
 
-    let pid = unsafe { libc::fork() }; // Split into parent/child processes.
+    let pid = unsafe { libc::fork() };
 
-    if pid < 0 {
-        return Err(String::from("Fork failed"));
-    }
-
-    if pid == 0 {
-        // In this branch, we're the CHILD.
-        unsafe {
-            // Child learns its own PID.
-            let child_pid = libc::getpid();
-
-            // Put child in its own process group (pgid = pid).
-            libc::setpgid(0, 0);
-
-            if !is_background {
-                // Take control of the TTY for foreground jobs.
-                libc::tcsetpgrp(libc::STDIN_FILENO, child_pid);
-            }
-
-            // Reset any signal handlers we've customized back to their default
-            // behavior:
-
-            // Let Ctrl+C use the default in children.
-            libc::signal(libc::SIGINT, libc::SIG_DFL);
-
-            // Let Ctrl+Z use the default in children.
-            libc::signal(libc::SIGTSTP, libc::SIG_DFL);
-
-            // Default: stop if background job reads the TTY.
-            libc::signal(libc::SIGTTIN, libc::SIG_DFL);
-
-            // Default: stop if background job writes the TTY.
-            libc::signal(libc::SIGTTOU, libc::SIG_DFL);
-
-            // Exec vector args + PATH lookup: that is, replace the current
-            // process image with the target program, keeping the same PID.
-            libc::execvp(ptrs[0], ptrs.as_ptr());
-
-            // Only runs if `execvp` fails.
-            error::print_exec_failure(c_strings[0].as_bytes());
-            std::process::exit(1);
+    match pid {
+        -1 => Err(String::from("Fork failed")),
+        0 => {
+            run_child(ptrs, is_background, c_strings);
+            unreachable!();
         }
-    } else {
-        // In this branch, we're the PARENT.
-        unsafe {
-            // Ensure child is its own process group leader.
-            libc::setpgid(pid, pid);
+        child_pid => run_parent(args, jobs, is_background, current, previous, child_pid),
+    }
+}
 
-            match is_background {
-                true => {
+fn run_child(ptrs: Vec<*const i8>, is_background: bool, c_strings: Vec<CString>) {
+    unsafe {
+        // Child learns its own PID.
+        let child_pid = libc::getpid();
+
+        // Put child in its own process group (pgid = pid).
+        libc::setpgid(0, 0);
+
+        if !is_background {
+            // Take control of the TTY for foreground jobs.
+            libc::tcsetpgrp(libc::STDIN_FILENO, child_pid);
+        }
+
+        // Reset any signal handlers we've customized back to their default
+        // behavior:
+
+        // Let Ctrl+C use the default in children.
+        libc::signal(libc::SIGINT, libc::SIG_DFL);
+
+        // Let Ctrl+Z use the default in children.
+        libc::signal(libc::SIGTSTP, libc::SIG_DFL);
+
+        // Default: stop if background job reads the TTY.
+        libc::signal(libc::SIGTTIN, libc::SIG_DFL);
+
+        // Default: stop if background job writes the TTY.
+        libc::signal(libc::SIGTTOU, libc::SIG_DFL);
+
+        // Exec vector args + PATH lookup: that is, replace the current
+        // process image with the target program, keeping the same PID.
+        libc::execvp(ptrs[0], ptrs.as_ptr());
+
+        // Only runs if `execvp` fails.
+        error::print_exec_failure(c_strings[0].as_bytes());
+        std::process::exit(1);
+    }
+}
+
+fn run_parent(
+    args: &[String],
+    jobs: &mut Vec<Job>,
+    is_background: bool,
+    current: &mut usize,
+    previous: &mut usize,
+    child_pid: i32,
+) -> Result<String, String> {
+    unsafe {
+        // Ensure the child is its own process group leader.
+        libc::setpgid(child_pid, child_pid);
+
+        match is_background {
+            true => {
+                let id = jobs.len() + 1;
+                let cmd_str = display_command(args);
+                jobs.push(Job::new(id, child_pid, cmd_str, State::Running));
+                *previous = *current;
+                *current = id;
+                return Ok(format!("[{}] {}\n", id, child_pid));
+            }
+            false => {
+                // Hand terminal control to the foreground child.
+                libc::tcsetpgrp(libc::STDIN_FILENO, child_pid);
+                CURRENT_CHILD_PID.store(child_pid, Ordering::SeqCst);
+
+                let mut status = 0;
+                loop {
+                    // Wait, but also return if the child stops (Ctrl+Z).
+                    let res = libc::waitpid(child_pid, &mut status, libc::WUNTRACED);
+                    if res == child_pid {
+                        break;
+                    }
+                    if res == -1 {
+                        let err = io::Error::last_os_error();
+                        if err.raw_os_error() == Some(libc::EINTR) {
+                            // Retry if interrupted by a signal.
+                            continue;
+                        }
+                        return Err(format!("waitpid failed: {}", err));
+                    }
+                    return Err(format!("waitpid returned unexpected pid: {}", res));
+                }
+
+                // If the child died from SIGINT, tidy the prompt placement.
+                if libc::WIFSIGNALED(status) && libc::WTERMSIG(status) == libc::SIGINT {
+                    // Move the cursor to the next line so that the prompt
+                    // doesn't overwrite the `^C`.
+                    println!();
+                }
+
+                // Reclaim the terminal for the shell.
+                libc::tcsetpgrp(libc::STDIN_FILENO, libc::getpgrp());
+                CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
+
+                // Child was stopped (e.g., Ctrl+Z), keep it in the jobs
+                // table.
+                if libc::WIFSTOPPED(status) {
                     let id = jobs.len() + 1;
                     let cmd_str = display_command(args);
-                    jobs.push(Job::new(id, pid, cmd_str, State::Running));
+                    jobs.push(Job::new(id, child_pid, cmd_str.clone(), State::Stopped));
                     *previous = *current;
                     *current = id;
-                    return Ok(format!("[{}] {}\n", id, pid));
-                }
-                false => {
-                    // Hand terminal control to the foreground child.
-                    libc::tcsetpgrp(libc::STDIN_FILENO, pid);
-                    CURRENT_CHILD_PID.store(pid, Ordering::SeqCst);
-
-                    let mut status = 0;
-                    loop {
-                        // Wait, but also return if the child stops (Ctrl+Z).
-                        let res = libc::waitpid(pid, &mut status, libc::WUNTRACED);
-                        if res == pid {
-                            break;
-                        }
-                        if res == -1 {
-                            let err = io::Error::last_os_error();
-                            if err.raw_os_error() == Some(libc::EINTR) {
-                                // Retry if interrupted by a signal.
-                                continue;
-                            }
-                            return Err(format!("waitpid failed: {}", err));
-                        }
-                        return Err(format!("waitpid returned unexpected pid: {}", res));
-                    }
-
-                    // If the child died from SIGINT, tidy the prompt placement.
-                    if libc::WIFSIGNALED(status) && libc::WTERMSIG(status) == libc::SIGINT {
-                        // Move the cursor to the next line so that the prompt
-                        // doesn't overwrite the `^C`.
-                        println!();
-                    }
-
-                    // Reclaim the terminal for the shell.
-                    libc::tcsetpgrp(libc::STDIN_FILENO, libc::getpgrp());
-                    CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
-
-                    // Child was stopped (e.g., Ctrl+Z), keep it in the jobs
-                    // table.
-                    if libc::WIFSTOPPED(status) {
-                        let id = jobs.len() + 1;
-                        let cmd_str = display_command(args);
-                        jobs.push(Job::new(id, pid, cmd_str.clone(), State::Stopped));
-                        *previous = *current;
-                        *current = id;
-                        println!("\n[{}]+\tStopped\t\t{}", id, cmd_str);
-                    }
+                    println!("\n[{}]+\tStopped\t\t{}", id, cmd_str);
                 }
             }
         }
