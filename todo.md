@@ -15,15 +15,14 @@
   - Consider the effect of my inconsistent error handling. Could/should I sent
     my `red_println` to `stderr`?
 - Refactor `ls` and submodules, breaking up long functions.
+- Likewise `commands.rs`.
 - Consider how I'll implement piping: look out for anywhere that I've used PID where jobspec of job ID would be more appropriate.
 
 ## Job Control
 
-- Rename `JOB_ID` and consider name of `job.pgid`. Should it be `job_number` or simply `number`?
 - Add -l and -s flags for `kill`.
 - Add -n (new only) and -x (replace and execute) flags for `jobs`.
 - Thoroughly check all existing and new behavior since adding elements of job-control.
-  - Compare with Bash.
 - Check behavior of redirection around `echo` and `cat` in conjunction with `jobs`.
 - Complete the optional extra project job-control in the light of the extra requirements implied by the audit questions.
 - In `check_background_jobs`, check `status` for exit codes or signals (e.g., segfaults).
@@ -118,3 +117,4 @@ Before refactoring, good tests to add:
 - There's a hint that the project should teach the difference between Unix and Posix. Consider whether to make sure it strictly adheres to Posix. Look up Posix specifications.
 - Investigate mdBook for Rust documentation.
 - Consider the Nix crate for Rust abstractions over `libc`.
+- Change prompt to `#` for superuser.

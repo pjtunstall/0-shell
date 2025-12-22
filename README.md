@@ -92,8 +92,7 @@ I've also implemented some features from the optional extra project
 - bg: restart one or more child processes in the background
 - kill: terminate a process
 
-As yet, I'm assuming one process per job. Eventually, I'll add piping to allow
-for more. See further: [Audit: Job control](#job-control).
+See further: [Audit: Job control](#job-control).
 
 ## Audit
 
@@ -142,10 +141,9 @@ See `integration.rs` for an integration test that covers the last section of the
 ### Job control
 
 To the best of my knowledge, my 0-shell meets the stated requirements for
-job-control, although not yet the following extra features implied by the
+job-control, although not yet the following extra feature implied by the
 example:
 
-- two additional flags for `ls`, namely `-r` (reverse) and `-R` (recursive)
 - redirection between file descriptors: `2>&1` (is `2>1` a typo?)
 
 While the instructions tell us to obey the same principles as 0-shell, one of
@@ -163,8 +161,8 @@ Unfortunately clashing conventions have resulted in almost the maximum
 conceivable variants! Rust's build tool, Cargo, doesn't allow a package name to
 begin with a numeral, hence the package is called `zero-shell` and the lib crate
 `zero_shell` according to Rust convention. The binary is explicitly named
-`0-shell` in `Cargo.toml`, so building via `cargo run`, `cargo build`, or `cargo
-build --release` produces a `0-shell` executable in `target`.
+`0-shell` in `Cargo.toml`, so building via `cargo run`, `cargo build`, or
+`cargo build --release` produces a `0-shell` executable in `target`.
 
 ## Testing
 
