@@ -225,8 +225,9 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>, current: &mut usize, previous:
     loop {
         let mut status = 0;
 
-        // WNOHANG: Poll once but don't wait.
-        // WUNTRACED: Report stopped processes too. (By default `waitpid` only reports terminated processes.)
+        // WNOHANG: Poll once but don't wait. WUNTRACED: Report stopped
+        // processes too. (By default `waitpid` only reports terminated
+        // processes.)
         let pid = unsafe {
             libc::waitpid(
                 -1,
@@ -269,7 +270,8 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>, current: &mut usize, previous:
                 let removed_id = job.id;
                 jobs.remove(index);
 
-                // Update pointers if the removed job was the current or previous one.
+                // Update pointers if the removed job was the current or
+                // previous one.
                 if removed_id == *current {
                     *current = *previous;
                     *previous = 0;
