@@ -26,17 +26,17 @@ impl Default for JobOptions {
 }
 
 pub struct Job {
-    pub pgid: usize,
-    pub leader_pid: i32,
+    pub jid: usize,      // Job ID: 1, 2, 3, ...
+    pub leader_pid: i32, // PID of group leader, also called PGID (process group ID).
     pub command: String,
     pub state: State,
 }
 
 impl Job {
-    pub fn new(pgid: usize, leader_pid: i32, command: String, state: State) -> Self {
+    pub fn new(jid: usize, leader_pid: i32, command: String, state: State) -> Self {
         assert!(leader_pid > 0, "`leader_pid` must be positive");
         Self {
-            pgid,
+            jid,
             leader_pid,
             command,
             state,
@@ -111,7 +111,7 @@ pub fn format_jobs<T: Borrow<Job>>(
         let job = item.borrow();
 
         // Filter by specific Job IDs (if user asked for specific jobs).
-        if !filter_ids.is_empty() && !filter_ids.contains(&job.pgid) {
+        if !filter_ids.is_empty() && !filter_ids.contains(&job.jid) {
             continue;
         }
 
@@ -131,9 +131,9 @@ pub fn format_jobs<T: Borrow<Job>>(
             continue;
         }
 
-        let sign = if job.pgid == current {
+        let sign = if job.jid == current {
             "+"
-        } else if job.pgid == previous {
+        } else if job.jid == previous {
             "-"
         } else {
             " "
@@ -191,7 +191,7 @@ impl std::fmt::Display for JobDisplay<'_> {
             write!(
                 f,
                 "[{}]{} {:<5} {:<width$} {}{}",
-                self.job.pgid,
+                self.job.jid,
                 self.sign,
                 self.job.leader_pid,
                 state_str,
@@ -203,7 +203,7 @@ impl std::fmt::Display for JobDisplay<'_> {
             write!(
                 f,
                 "[{}]{}  {:<width$} {}{}",
-                self.job.pgid,
+                self.job.jid,
                 self.sign,
                 state_str,
                 self.job.command,
@@ -239,10 +239,10 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>, current: &mut usize, previous:
                 if jobs[index].state != State::Stopped {
                     jobs[index].state = State::Stopped;
                     *previous = *current;
-                    *current = jobs[index].pgid;
+                    *current = jobs[index].jid;
                     println!(
                         "\n[{}]+\tStopped\t\t{}",
-                        jobs[index].pgid, jobs[index].command
+                        jobs[index].jid, jobs[index].command
                     );
                 }
             } else if libc::WIFEXITED(status) || libc::WIFSIGNALED(status) {
@@ -250,17 +250,17 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>, current: &mut usize, previous:
                 let job = &jobs[index];
 
                 if libc::WIFSIGNALED(status) {
-                    println!("[{}]+\tTerminated\t{}", job.pgid, job.command);
+                    println!("[{}]+\tTerminated\t{}", job.jid, job.command);
                 } else {
                     let code = libc::WEXITSTATUS(status);
                     if code == 0 {
-                        println!("[{}]+\tDone\t\t{}", job.pgid, job.command);
+                        println!("[{}]+\tDone\t\t{}", job.jid, job.command);
                     } else {
-                        println!("[{}]+\tExit {}\t\t{}", job.pgid, code, job.command);
+                        println!("[{}]+\tExit {}\t\t{}", job.jid, code, job.command);
                     }
                 }
 
-                let removed_id = job.pgid;
+                let removed_id = job.jid;
                 jobs.remove(index);
 
                 // Update pointers if the removed job was the current or
@@ -283,7 +283,7 @@ mod tests {
     #[test]
     fn short_form_pads_state_column_and_adds_ampersand() {
         let job = Job {
-            pgid: 2,
+            jid: 2,
             leader_pid: 9999,
             command: String::from("sleep 50"),
             state: State::Running,
@@ -311,7 +311,7 @@ mod tests {
     #[test]
     fn stopped_job_has_no_ampersand() {
         let job = Job {
-            pgid: 2,
+            jid: 2,
             leader_pid: 9999,
             command: String::from("sleep 50"),
             state: State::Stopped,
@@ -339,7 +339,7 @@ mod tests {
     #[test]
     fn long_form_pads_state_and_pid_columns() {
         let job = Job {
-            pgid: 1,
+            jid: 1,
             leader_pid: 8287,
             command: String::from("ls ..."),
             state: State::Stopped,
