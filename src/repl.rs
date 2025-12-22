@@ -65,7 +65,7 @@ pub fn repl() {
         // Declare `forward` as a C "signal action" struct, and zero its memory. This struct represents an action: a callback function and some configuration. Below, two calls to the Rust `set_action` closure will register `forward` as the action associated with `SIGINT` and `SIGTSTP` respectively.
         let mut forward = mem::zeroed::<libc::sigaction>();
 
-        // The `sa_mask` field is a bitmask indicating which other signals to block while the current signal is being handled. This line says block them all. It ensures that no other signal can interrupt the current action. They're queued till it's finished.
+        // The `sa_mask` field is a bitmask indicating which other signals to block while the current signal is being handled. This line says block them all. It ensures that no other signal can interrupt the current action apart from `SIGKILL` (force kill) and `SIGSTOP` (force stop). They're queued till it's finished.
         libc::sigfillset(&mut forward.sa_mask);
 
         // After running the signal handler, automatically restart any interrupted I/O syscall instead of the default behavior (which would be to fail with an `EINTR` error).

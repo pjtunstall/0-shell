@@ -173,15 +173,15 @@ fn spawn_job(
                 libc::tcsetpgrp(libc::STDIN_FILENO, child_pid);
             }
 
-            // Reset signal handlers to default behavior.
+            // Reset any signal handlers we've customized back to their default behavior.
             libc::signal(libc::SIGINT, libc::SIG_DFL);
-            libc::signal(libc::SIGQUIT, libc::SIG_DFL);
+            // libc::signal(libc::SIGQUIT, libc::SIG_DFL);
             libc::signal(libc::SIGTSTP, libc::SIG_DFL);
             libc::signal(libc::SIGTTIN, libc::SIG_DFL);
             libc::signal(libc::SIGTTOU, libc::SIG_DFL);
-            libc::signal(libc::SIGCHLD, libc::SIG_DFL);
+            // libc::signal(libc::SIGCHLD, libc::SIG_DFL);
 
-            // exec vector args + PATH lookup: replace current process image with the target program, keeping the same PID.
+            // Exec vector args + PATH lookup: that is, replace the current process image with the target program, keeping the same PID.
             libc::execvp(ptrs[0], ptrs.as_ptr());
 
             // Only runs if `execvp` fails.
