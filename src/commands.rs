@@ -247,7 +247,8 @@ fn spawn_job(
                         println!();
                     }
 
-                    libc::tcsetpgrp(libc::STDIN_FILENO, libc::getpgrp()); // Reclaim the terminal for the shell.
+                    // Reclaim the terminal for the shell.
+                    libc::tcsetpgrp(libc::STDIN_FILENO, libc::getpgrp());
                     CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
 
                     // Child was stopped (e.g., Ctrl+Z), keep it in the jobs

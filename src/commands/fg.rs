@@ -23,7 +23,7 @@ pub fn fg(
         }
     } else {
         let arg = &args[1];
-        jobs::resolve_jobspec_or_pid(arg, *current, *previous)?
+        jobs::resolve_jobspec(arg, *current, *previous)?
     };
 
     let index = jobs

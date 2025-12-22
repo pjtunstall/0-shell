@@ -67,7 +67,7 @@ fn bg_with_resumer(
         }
     } else {
         for item in &input[1..] {
-            match jobs::resolve_jobspec_or_pid(item, *current, *previous) {
+            match jobs::resolve_jobspec(item, *current, *previous) {
                 Ok(id) => {
                     target_ids.insert(id);
                 }

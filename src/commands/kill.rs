@@ -25,7 +25,7 @@ pub fn kill(
     let mut is_stopped = false;
 
     if arg.starts_with('%') {
-        let job_id = jobs::resolve_jobspec_or_pid(arg, *current, *previous)?;
+        let job_id = jobs::resolve_jobspec(arg, *current, *previous)?;
 
         if let Some(job) = jobs.iter().find(|j| j.id == job_id) {
             pid_to_kill = job.pid;
@@ -64,7 +64,10 @@ pub fn kill(
         if is_stopped {
             if libc::kill(-pid_to_kill, libc::SIGCONT) == -1 {
                 let err = io::Error::last_os_error();
-                return Err(format!("Failed to resume {} for termination: {}", pid_to_kill, err));
+                return Err(format!(
+                    "Failed to resume {} for termination: {}",
+                    pid_to_kill, err
+                ));
             }
         }
     }
