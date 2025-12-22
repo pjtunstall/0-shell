@@ -71,11 +71,7 @@ mod tests {
             "`find_matches` should return an empty vector when there are no matches"
         );
 
-        expected = vec![
-            String::from("cat"),
-            String::from("cd"),
-            String::from("cp")
-        ];
+        expected = vec![String::from("cat"), String::from("cd"), String::from("cp")];
         assert_eq!(
             find_matches(&COMMANDS, "c"),
             expected,

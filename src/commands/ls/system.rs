@@ -1,6 +1,6 @@
-use std::fs::Metadata;
 use std::{
     fs,
+    fs::Metadata,
     path::{MAIN_SEPARATOR_STR, Path},
 };
 
@@ -142,11 +142,7 @@ pub fn get_total_blocks_in_directory(path: &Path) -> Option<u64> {
         }
     }
 
-    if failed {
-        None
-    } else {
-        Some(total_blocks)
-    }
+    if failed { None } else { Some(total_blocks) }
 }
 
 fn mode_to_string(mode: u32) -> String {

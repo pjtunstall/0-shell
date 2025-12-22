@@ -1,10 +1,10 @@
-use std::fs::{DirEntry, Metadata};
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::{
     cmp::Reverse,
     collections::VecDeque,
     fs,
+    fs::{DirEntry, Metadata},
     path::{MAIN_SEPARATOR_STR, Path},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use chrono;

@@ -85,9 +85,11 @@ pub fn ls(input: &[String]) -> Result<String, String> {
     let paths: Vec<&String> = if let Some(i) = flags.first_pathname_index {
         sources[i..].to_vec()
     } else {
-        vec![default_path_holder
-            .as_ref()
-            .expect("missing default path for recursive ls")]
+        vec![
+            default_path_holder
+                .as_ref()
+                .expect("missing default path for recursive ls"),
+        ]
     };
 
     let mut path_classification = classify_paths(&paths);
@@ -489,7 +491,10 @@ file_a1\n\
             dir_aa = dir_aa.display(),
         );
 
-        assert_eq!(contents, expected, "Recursive ls output did not match expected");
+        assert_eq!(
+            contents, expected,
+            "Recursive ls output did not match expected"
+        );
     }
 
     #[test]
@@ -558,6 +563,9 @@ file_a1\n\
             dir_aa_name = dir_aa.file_name().unwrap().to_string_lossy(),
         );
 
-        assert_eq!(contents, expected, "Recursive ls -Rra output did not match expected");
+        assert_eq!(
+            contents, expected,
+            "Recursive ls -Rra output did not match expected"
+        );
     }
 }

@@ -16,11 +16,7 @@ pub mod rm;
 pub mod sleep;
 pub mod touch;
 
-use std::env;
-use std::ffi::CString;
-use std::io;
-use std::ptr;
-use std::sync::atomic::Ordering;
+use std::{env, ffi::CString, io, ptr, sync::atomic::Ordering};
 
 use crate::{
     c::CURRENT_CHILD_PID,

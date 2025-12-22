@@ -7,20 +7,12 @@ use zero_shell::commands::{
 #[test]
 fn audit_question() {
     assert!(
-        mkdir(&vec![
-            String::from("mkdir"),
-            String::from("new_folder1")
-        ])
-        .is_ok(),
+        mkdir(&vec![String::from("mkdir"), String::from("new_folder1")]).is_ok(),
         "result of making `new_folder1` should be ok"
     );
 
     assert!(
-        mkdir(&vec![
-            String::from("mkdir"),
-            String::from("new_folder2")
-        ])
-        .is_ok(),
+        mkdir(&vec![String::from("mkdir"), String::from("new_folder2")]).is_ok(),
         "result of making `new_folder2` should be ok"
     );
 
@@ -31,7 +23,10 @@ fn audit_question() {
     assert!(dir2.exists(), "`new_folder2` should exist after creation");
 
     assert!(
-        touch(&vec![String::from("touch"), format!("new_folder1{}new_doc.txt", MAIN_SEPARATOR),])
+        touch(&vec![
+            String::from("touch"),
+            format!("new_folder1{}new_doc.txt", MAIN_SEPARATOR),
+        ])
         .is_ok(),
         "result of creating file should be ok"
     );

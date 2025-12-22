@@ -163,7 +163,10 @@ mod tests {
             "Expected to leave `\\n` unchanged in quotes"
         );
         assert_eq!(
-            echo(&string_vec![String::from("echo"), String::from("\"a\\\\na\"")]),
+            echo(&string_vec![
+                String::from("echo"),
+                String::from("\"a\\\\na\"")
+            ]),
             Ok(String::from("a\na\n")),
             "Expected to leave `\\\\n` unchanged in quotes"
         );

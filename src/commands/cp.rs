@@ -35,7 +35,7 @@ pub fn cp(input: &[String]) -> Result<String, String> {
                     return Err(format!(
                         "`{}` does not have a valid file name to copy",
                         source
-                    ))
+                    ));
                 }
             }
         } else {

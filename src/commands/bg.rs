@@ -1,5 +1,4 @@
-use std::collections::HashSet;
-use std::io;
+use std::{collections::HashSet, io};
 
 use crate::{
     commands::jobs::{self, Job, State},
