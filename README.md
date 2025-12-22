@@ -81,7 +81,7 @@ I've added several bonus features, including:
 - redirection
 - environment variables
 
-I've also implemented some features from the optional extra project
+I've also done the optional extension project
 [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
 
 - Ctrl+C: terminate a child process and return to the 'shell'
@@ -140,19 +140,22 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ### Job control
 
-To the best of my knowledge, my 0-shell meets the stated requirements for
-job-control, although not yet the following extra feature implied by the
-example:
-
-- redirection between file descriptors: `2>&1` (is `2>1` a typo?)
-
-While the instructions tell us to obey the same principles as 0-shell, one of
-the job-control [audit
+While the instructions tell us that our program should follow the same
+principles as 0-shell, one of the job-control [audit
 questions](https://github.com/01-edu/public/blob/master/subjects/0-shell/job-control/audit.md)
 implies that it should now launch external binaries.<sup
 id="ref-f5">[5](#f5)</sup> I've squared this circle by keeping my custom
 versions of the listed externals, and, for other externals, forking the process
 and letting the child exec itself with the given command as an argument.
+
+I've also implemented the features not mentioned in the instructions but
+implied by the example:
+
+- additional flags for `ls`:
+  - `-r`: reverse
+  - `-R`: recurse
+- redirection from file descriptor to file: `2>1`<sup
+  id="ref-f6">[6](#f6)</sup>
 
 ## Regarding the name
 
@@ -232,3 +235,6 @@ prefixing the number with `%`, thus: `kill %1` or `fg %1881893`.[↩](#ref-f4)
 
 <a id="f5" href="#ref-f5">5</a>: "then run `python &"`. I assume they didn't
 want us write our own Python.[↩](#ref-f5)
+
+<a id="f6" href="#ref-f6">6</a>: It's been suggested that this is a typo for
+`1>&2` (duplicating a file descriptor), which my 0-shell also handles.[↩](#ref-f5)

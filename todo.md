@@ -10,14 +10,6 @@
   - [Echo](#echo)
 - [Further](#further)
 
-- Implement file-descriptor redirection: `2>1 >/dev/null  &` (possible typo: `&1`?).
-  - Consider the intention.
-  - Consider the effect of my inconsistent error handling. Could/should I sent
-    my `red_println` to `stderr`?
-- Refactor `ls` and submodules, breaking up long functions.
-- Likewise `commands.rs`.
-- Consider how I'll implement piping: look out for anywhere that I've used PID where jobspec of job ID would be more appropriate.
-
 ## Job Control
 
 - Add -l and -s flags for `kill`.
@@ -28,8 +20,6 @@
 - In `check_background_jobs`, check `status` for exit codes or signals (e.g., segfaults).
 - Ensure suitable error messages if someone tries to run a builtin fron a job.
 - What should happen if `&` is the final argument for builtins?
-- Write more tests for job control as I go along.
-- Refactor again.
 - Bring together the `has_stopped` (jobs) check into one function that can be called from `repl` and `exit`. Maybe make it a method of a `Jobs` struct.
 
 ### Naming
@@ -38,6 +28,8 @@
 
 ## General
 
+- Refactor `ls` and submodules, breaking up long functions.
+- Likewise `commands.rs`.
 - Ask for code reviews.
 - Look carefully at all these refs to collections to ref types in `cat` and `ls`. Examine what they all imply and what best practice is.
 - `cat`: handle mixed sequence of filenames and dashes.
@@ -47,11 +39,13 @@
   - Make a `Jobs` struct with methods for its various functionality and possibly other fields besides the the `Vec<Job>`, such as as stack to track the last two foregrounded jobs.
 - Command chaining with `;`.
 - Consider `pipe()` and `dup2()` for pipes and redirection of file descriptors.
-- Consider a crate to abstract color handling: `colored`, `owo-colors`, or `termcolor`. But, now that I'm commited to Unix-style only, maybe I've lost the main reason for choosing such a crate over plain ANSI codes.
+- Consider a crate to abstract color handling: `colored`, `owo-colors`, or
+  `termcolor`. But, now that I'm commited to Unix-style only, maybe I've lost
+  the main reason for choosing such a crate over plain ANSI codes.
 
 ## Error handling
 
-- Overhaul error handling. `ls` alone has a menagerie of different ways. Try to normalize it. Look out first for low-g=hanging fruit.
+- Bring the error handling into line between the various commands: `ls` returns an ok variant that incorporates errors; `cat` returns a result that is either a dummy ok (that's not actually printed upstream) or an error containing all accumulated errors, including any redirection errors. `jobs` prints successes and failures, and repurposes the ok variant for testing. `echo` does things even more its own ad hoc way since this was the first; it will also need upgrading to handle multiple redirections.
 - Revisit question of capitalization patterns in error messages. Internally consistent now, I hope: but what conventions to the best-known shells use?
 - Feret out any remaining OS-specific error tests: e.g. ones that require a particular OS-generates error message. I think it's only custom error messages that are being compared in tests now; for system error, I think I'm just testing existence or non-existence.
 - Use enums for errors so that I can test for the correct variant instead of for specific strings, thus making these tests less brittle.
@@ -82,34 +76,23 @@ assert_eq!(result, "Hello, world!");`
 
 ## Redirection
 
-- Move redirection logic to the shell itself. Move parsing upsteam: have the shell extract redirection targets when it parses the input before passing it to the individual commands. Move the actual redirection downstream: have it write to file the ok resulting string returned by the command functions. That will means reorganizing `cat` and `ls` to handle redirection in the same way. It will need careful thought about where and when the formatting is done with `ls`.
-- Make redirection logic more consistent between `cat`, `ls`, `echo`, and `jobs` so that I can call a common `redirect::redirect` function from both of them. This will mean bringing the error handling into line between these two commands: `ls` returns an ok variant that incorporates errors; `cat` returns a result that is either a dummy ok (that's not actually printed upstream) or an error containing all accumulated errors, including any redirection errors. `jobs` prints successes and failures, and repurposes the ok variant for testing. `echo` does things even more its own ad hoc way since this was the first; it will also need upgrading to handle multiple redirections.
+- Apply all redirections centrally in the worker, left-to-right (including
+  optional leading fd and >&), remove redirect parsing from the individual
+  commands (cat`, `ls`, `echo`, and `jobs`), and pass them a cleaned argv so the
+  behavior matches a real shell.
+- Before starting on this task, good tests to add might be:
+  - cat with multiple redirect targets (write, append) succeeds and contents match.
+  - ls redirect to file and append works; redirect to directory yields shell-prefixed error; non-existent paths still print inline “No such file” messages.
+  - echo with multiple redirect targets (write, append) mirrors behavior, preserves newline, handles quoted args.
+  - Mixed: command with sources + redirects, ensuring sources are untouched and
+    redirects only use the targets.
 - `exit > exit` exits Zsh and creates a file called `exit` with one blank line. My 0-shell gives an error: "Too many arguments". What's the rule? Maybe I want to do it my way.
-
-Regarding the task of moving redirection into the shell, I get this AI advice:
-
-```
-Refactoring redirection into the shell is doable but non-trivial: today cat, ls, and echo each parse/handle redirection themselves (via redirect::separate_sources_from_targets), with slightly different behaviors. Moving it up means:
-
-- Parsing redirection tokens in the shell, stripping them from argv, opening/truncating/append files centrally, and wiring stdout/stderr accordingly before invoking the command.
-- Removing/redesigning per-command redirect logic (and tests) and ensuring commands return plain output strings.
-- Risk: moderate. Easy to break edge cases like multiple targets, append vs truncate, empty output, current “partial success with accumulated errors” semantics (cat, ls), and colored inline errors in ls. Also risk in piping/stream handling if added later.
-
-Before refactoring, good tests to add:
-
-- cat with multiple redirect targets (write, append) succeeds and contents match.
-- ls redirect to file and append works; redirect to directory yields shell-prefixed error; non-existent paths still print inline “No such file” messages.
-- echo with multiple redirect targets (write, append) mirrors behavior, preserves newline, handles quoted args.
-- Mixed: command with sources + redirects, ensuring sources are untouched and redirects only use the targets.
-```
 
 ### Echo
 
 - Check exact behavior of `echo` with multiple redirect arguments: multiple spaces, etc. Write more tests.
 - Check error-handling in `echo`, especially for multiple redirection targets.
 - Refactor `echo`.
-
-## Further
 
 - Piping with `|`.
 - Command chaining with `;`.
@@ -118,3 +101,7 @@ Before refactoring, good tests to add:
 - Investigate mdBook for Rust documentation.
 - Consider the Nix crate for Rust abstractions over `libc`.
 - Change prompt to `#` for superuser.
+
+```
+
+```
