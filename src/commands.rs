@@ -16,7 +16,7 @@ pub mod rm;
 pub mod sleep;
 pub mod touch;
 
-use std::{env, ffi::CString, io, ptr, sync::atomic::Ordering};
+use std::{env, ffi::CString, fs::OpenOptions, io, os::fd::AsRawFd, ptr, sync::atomic::Ordering};
 
 use crate::{
     c::CURRENT_CHILD_PID,
@@ -97,18 +97,24 @@ pub fn run_command_as_worker(args: &[String]) {
     }
 
     let command = args[2].as_str();
-    let clean_args = &args[2..];
+    let clean_args = match apply_fd_redirections(&args[2..]) {
+        Ok(filtered) => filtered,
+        Err(err) => {
+            error::handle_error(command, err);
+            return;
+        }
+    };
 
     let result = match command {
-        "cat" => cat::cat(clean_args),
-        "cp" => cp::cp(clean_args),
-        "ls" => ls::ls(clean_args),
-        "mkdir" => mkdir::mkdir(clean_args),
-        "man" => man::man(clean_args),
-        "mv" => mv::mv(clean_args),
-        "rm" => rm::rm(clean_args),
-        "sleep" => sleep::sleep(clean_args),
-        "touch" => touch::touch(clean_args),
+        "cat" => cat::cat(&clean_args),
+        "cp" => cp::cp(&clean_args),
+        "ls" => ls::ls(&clean_args),
+        "mkdir" => mkdir::mkdir(&clean_args),
+        "man" => man::man(&clean_args),
+        "mv" => mv::mv(&clean_args),
+        "rm" => rm::rm(&clean_args),
+        "sleep" => sleep::sleep(&clean_args),
+        "touch" => touch::touch(&clean_args),
         _ => Err(format!("Command not found: {}", command)),
     };
 
@@ -207,7 +213,7 @@ fn spawn_job(
             match is_background {
                 true => {
                     let id = jobs.len() + 1;
-                    let cmd_str = args.join(" ");
+                    let cmd_str = display_command(args);
                     jobs.push(Job::new(id, pid, cmd_str, State::Running));
                     *previous = *current;
                     *current = id;
@@ -251,7 +257,7 @@ fn spawn_job(
                     // table.
                     if libc::WIFSTOPPED(status) {
                         let id = jobs.len() + 1;
-                        let cmd_str = args.join(" ");
+                        let cmd_str = display_command(args);
                         jobs.push(Job::new(id, pid, cmd_str.clone(), State::Stopped));
                         *previous = *current;
                         *current = id;
@@ -262,4 +268,92 @@ fn spawn_job(
         }
     }
     Ok(String::new())
+}
+
+// Handle redirections with an explicit file descriptor (e.g. `2>&1`).
+// Returns the argv with those redirection tokens removed after applying them.
+fn apply_fd_redirections(args: &[String]) -> Result<Vec<String>, String> {
+    let mut filtered = Vec::with_capacity(args.len());
+    let mut i = 0;
+
+    while i < args.len() {
+        if i + 2 < args.len() && i > 0 {
+            if let Ok(fd) = args[i].parse::<i32>() {
+                let op = args[i + 1].as_str();
+                if op == ">" || op == ">>" {
+                    let target = &args[i + 2];
+                    apply_single_fd_redirection(fd, op, target)?;
+                    i += 3;
+                    continue;
+                }
+            }
+        }
+
+        filtered.push(args[i].clone());
+        i += 1;
+    }
+
+    Ok(filtered)
+}
+
+fn apply_single_fd_redirection(fd: i32, op: &str, target: &str) -> Result<(), String> {
+    if fd < 0 {
+        return Err(String::from("Invalid file descriptor"));
+    }
+
+    if let Some(dup_target) = target.strip_prefix('&') {
+        let target_fd = dup_target
+            .parse::<i32>()
+            .map_err(|_| format!("Bad file descriptor: {target}"))?;
+
+        let res = unsafe { libc::dup2(target_fd, fd) };
+        if res == -1 {
+            return Err(std::io::Error::last_os_error().to_string());
+        }
+        return Ok(());
+    }
+
+    let mut options = OpenOptions::new();
+    options.write(true).create(true);
+
+    if op == ">>" {
+        options.append(true);
+    } else {
+        options.truncate(true);
+    }
+
+    let file = options
+        .open(target)
+        .map_err(|e| format!("Failed to open redirect target `{target}`: {e}"))?;
+
+    let res = unsafe { libc::dup2(file.as_raw_fd(), fd) };
+    if res == -1 {
+        return Err(std::io::Error::last_os_error().to_string());
+    }
+
+    Ok(())
+}
+
+// Best-effort pretty-printer for job display to avoid showing spaced-out fd redirections.
+fn display_command(args: &[String]) -> String {
+    let mut display_parts: Vec<String> = Vec::with_capacity(args.len());
+    let mut i = 0;
+
+    while i < args.len() {
+        if i + 2 < args.len() {
+            if args[i].parse::<i32>().is_ok() {
+                let op = args[i + 1].as_str();
+                if (op == ">" || op == ">>") && !args[i + 2].is_empty() {
+                    display_parts.push(format!("{}{}{}", args[i], op, args[i + 2]));
+                    i += 3;
+                    continue;
+                }
+            }
+        }
+
+        display_parts.push(args[i].clone());
+        i += 1;
+    }
+
+    display_parts.join(" ")
 }
