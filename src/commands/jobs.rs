@@ -174,14 +174,6 @@ pub fn resolve_jobspec(spec: &str, current: usize, previous: usize) -> Result<us
         .map_err(|_| format!("Invalid job ID: {}", spec))
 }
 
-pub fn resolve_jobspec_or_pid(
-    spec: &str,
-    current: usize,
-    previous: usize,
-) -> Result<usize, String> {
-    resolve_jobspec(spec, current, previous)
-}
-
 impl std::fmt::Display for JobDisplay<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let state_str = self.job.state.to_string();
