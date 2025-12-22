@@ -2,7 +2,7 @@ use std::{io, time::Duration};
 
 use crate::commands::jobs::{self, Job, State};
 
-pub const USAGE: &str = "Usage:\tkill <PID>|%[+|-|%%|<JOB_ID>]";
+pub const USAGE: &str = "Usage:\tkill <LEADER_PID>|%[+|-|%%|<PGID>]";
 
 pub fn kill(
     input: &[String],
@@ -30,8 +30,8 @@ pub fn kill(
     if arg.starts_with('%') {
         let job_id = jobs::resolve_jobspec(arg, *current, *previous)?;
 
-        if let Some(job) = jobs.iter().find(|j| j.id == job_id) {
-            pid_to_kill = job.pid;
+        if let Some(job) = jobs.iter().find(|j| j.pgid == job_id) {
+            pid_to_kill = job.leader_pid;
             if matches!(job.state, State::Stopped) {
                 is_stopped = true;
             }
@@ -41,13 +41,13 @@ pub fn kill(
     } else {
         pid_to_kill = arg
             .parse::<i32>()
-            .map_err(|e| format!("Failed to parse PID: {}\n{}", e, arg))?;
+            .map_err(|e| format!("Failed to parse ID: {}\r\n{}\r\n{}", e, arg, USAGE))?;
 
         if pid_to_kill <= 0 {
-            return Err(String::from("PID must be positive"));
+            return Err(String::from("ID must be positive"));
         }
 
-        if let Some(job) = jobs.iter().find(|j| j.pid == pid_to_kill) {
+        if let Some(job) = jobs.iter().find(|j| j.leader_pid == pid_to_kill) {
             if matches!(job.state, State::Stopped) {
                 is_stopped = true;
             }
@@ -82,7 +82,7 @@ pub fn kill(
     // Poll briefly so we don't block indefinitely if the process ignores SIGTERM.
     for _ in 0..5 {
         jobs::check_background_jobs(jobs, current, previous);
-        if jobs.iter().all(|j| j.pid != pid_to_kill) {
+        if jobs.iter().all(|j| j.leader_pid != pid_to_kill) {
             break;
         }
         std::thread::sleep(Duration::from_millis(1));

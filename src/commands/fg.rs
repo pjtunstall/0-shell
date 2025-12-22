@@ -17,7 +17,7 @@ pub fn fg(
 
     let job_id = if args.len() < 2 {
         if let Some(last) = jobs.last() {
-            last.id
+            last.pgid
         } else {
             return Err(String::from("Current: no such job"));
         }
@@ -28,10 +28,10 @@ pub fn fg(
 
     let index = jobs
         .iter()
-        .position(|j| j.id == job_id)
+        .position(|j| j.pgid == job_id)
         .ok_or_else(|| format!("No such job ID: {}", job_id))?;
 
-    let pid = jobs[index].pid;
+    let pid = jobs[index].leader_pid;
     let command_text = jobs[index].command.clone();
 
     *previous = *current;

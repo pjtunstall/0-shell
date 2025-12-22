@@ -26,18 +26,18 @@ impl Default for JobOptions {
 }
 
 pub struct Job {
-    pub id: usize,
-    pub pid: i32,
+    pub pgid: usize,
+    pub leader_pid: i32,
     pub command: String,
     pub state: State,
 }
 
 impl Job {
-    pub fn new(jobs_total: usize, pid: i32, command: String, state: State) -> Self {
-        assert!(pid > 0, "`pid` must be positive");
+    pub fn new(pgid: usize, leader_pid: i32, command: String, state: State) -> Self {
+        assert!(leader_pid > 0, "`leader_pid` must be positive");
         Self {
-            id: jobs_total,
-            pid,
+            pgid,
+            leader_pid,
             command,
             state,
         }
@@ -111,7 +111,7 @@ pub fn format_jobs<T: Borrow<Job>>(
         let job = item.borrow();
 
         // Filter by specific Job IDs (if user asked for specific jobs).
-        if !filter_ids.is_empty() && !filter_ids.contains(&job.id) {
+        if !filter_ids.is_empty() && !filter_ids.contains(&job.pgid) {
             continue;
         }
 
@@ -126,13 +126,13 @@ pub fn format_jobs<T: Borrow<Job>>(
 
         // Mode: -p (PIDs only).
         if opts.pid_only {
-            output.push_str(&format!("{}\n", job.pid));
+            output.push_str(&format!("{}\n", job.leader_pid));
             continue;
         }
 
-        let sign = if job.id == current {
+        let sign = if job.pgid == current {
             "+"
-        } else if job.id == previous {
+        } else if job.pgid == previous {
             "-"
         } else {
             " "
@@ -190,9 +190,9 @@ impl std::fmt::Display for JobDisplay<'_> {
             write!(
                 f,
                 "[{}]{} {:<5} {:<width$} {}{}",
-                self.job.id,
+                self.job.pgid,
                 self.sign,
-                self.job.pid,
+                self.job.leader_pid,
                 state_str,
                 self.job.command,
                 ampersand,
@@ -202,7 +202,7 @@ impl std::fmt::Display for JobDisplay<'_> {
             write!(
                 f,
                 "[{}]{}  {:<width$} {}{}",
-                self.job.id,
+                self.job.pgid,
                 self.sign,
                 state_str,
                 self.job.command,
@@ -232,16 +232,16 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>, current: &mut usize, previous:
             break; // No more children have changed state.
         }
 
-        if let Some(index) = jobs.iter().position(|j| j.pid == pid) {
+        if let Some(index) = jobs.iter().position(|j| j.leader_pid == pid) {
             if libc::WIFSTOPPED(status) {
                 // The kernel stopped the process (e.g. Python background input).
                 if jobs[index].state != State::Stopped {
                     jobs[index].state = State::Stopped;
                     *previous = *current;
-                    *current = jobs[index].id;
+                    *current = jobs[index].pgid;
                     println!(
                         "\n[{}]+\tStopped\t\t{}",
-                        jobs[index].id, jobs[index].command
+                        jobs[index].pgid, jobs[index].command
                     );
                 }
             } else if libc::WIFEXITED(status) || libc::WIFSIGNALED(status) {
@@ -249,17 +249,17 @@ pub fn check_background_jobs(jobs: &mut Vec<Job>, current: &mut usize, previous:
                 let job = &jobs[index];
 
                 if libc::WIFSIGNALED(status) {
-                    println!("[{}]+\tTerminated\t{}", job.id, job.command);
+                    println!("[{}]+\tTerminated\t{}", job.pgid, job.command);
                 } else {
                     let code = libc::WEXITSTATUS(status);
                     if code == 0 {
-                        println!("[{}]+\tDone\t\t{}", job.id, job.command);
+                        println!("[{}]+\tDone\t\t{}", job.pgid, job.command);
                     } else {
-                        println!("[{}]+\tExit {}\t\t{}", job.id, code, job.command);
+                        println!("[{}]+\tExit {}\t\t{}", job.pgid, code, job.command);
                     }
                 }
 
-                let removed_id = job.id;
+                let removed_id = job.pgid;
                 jobs.remove(index);
 
                 // Update pointers if the removed job was the current or
@@ -282,8 +282,8 @@ mod tests {
     #[test]
     fn short_form_pads_state_column_and_adds_ampersand() {
         let job = Job {
-            id: 2,
-            pid: 9999,
+            pgid: 2,
+            leader_pid: 9999,
             command: String::from("sleep 50"),
             state: State::Running,
         };
@@ -310,8 +310,8 @@ mod tests {
     #[test]
     fn stopped_job_has_no_ampersand() {
         let job = Job {
-            id: 2,
-            pid: 9999,
+            pgid: 2,
+            leader_pid: 9999,
             command: String::from("sleep 50"),
             state: State::Stopped,
         };
@@ -338,8 +338,8 @@ mod tests {
     #[test]
     fn long_form_pads_state_and_pid_columns() {
         let job = Job {
-            id: 1,
-            pid: 8287,
+            pgid: 1,
+            leader_pid: 8287,
             command: String::from("ls ..."),
             state: State::Stopped,
         };

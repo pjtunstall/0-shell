@@ -19,7 +19,7 @@
 
 ## Job Control
 
-- Rename `JOB_ID` and consider name of `job.id`. Should it be `job_number` or simply `number`?
+- Rename `JOB_ID` and consider name of `job.pgid`. Should it be `job_number` or simply `number`?
 - Add -l and -s flags for `kill`.
 - Add -n (new only) and -x (replace and execute) flags for `jobs`.
 - Thoroughly check all existing and new behavior since adding elements of job-control.

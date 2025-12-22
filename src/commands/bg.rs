@@ -79,31 +79,31 @@ fn bg_with_resumer(
     }
 
     for job in jobs.iter_mut() {
-        if target_ids.contains(&job.id) {
+        if target_ids.contains(&job.pgid) {
             if matches!(job.state, State::Stopped) {
                 // Send SIGCONT to the process group (negative PID)
                 // so that all members of a pipeline resume together.
-                if let Err(err) = resumer.resume(job.pid) {
+                if let Err(err) = resumer.resume(job.leader_pid) {
                     failures.push_str(&format!(
                         "Failed to resume job {} (pid {}): {}\n",
-                        job.id, job.pid, err
+                        job.pgid, job.leader_pid, err
                     ));
                     failure_count += 1;
-                    target_ids.remove(&job.id);
+                    target_ids.remove(&job.pgid);
                     continue;
                 }
                 job.state = State::Running;
-                if job.id != *current {
+                if job.pgid != *current {
                     *previous = *current;
-                    *current = job.id;
+                    *current = job.pgid;
                 }
                 success_count += 1;
                 successes.push(&*job);
             } else {
-                failures.push_str(&format!("Job is not stopped: {}\n", job.id));
+                failures.push_str(&format!("Job is not stopped: {}\n", job.pgid));
                 failure_count += 1;
             }
-            target_ids.remove(&job.id);
+            target_ids.remove(&job.pgid);
         }
     }
 
@@ -113,7 +113,7 @@ fn bg_with_resumer(
     }
 
     for job in successes {
-        println!("[{}]+\t{} &", job.id, job.command);
+        println!("[{}]+\t{} &", job.pgid, job.command);
     }
 
     if !failures.is_empty() {
@@ -139,14 +139,14 @@ mod tests {
     fn test_bg_updates_stopped_jobs() {
         let mut jobs = vec![
             Job {
-                id: 1,
-                pid: 101,
+                pgid: 1,
+                leader_pid: 101,
                 state: State::Stopped,
                 command: String::from("sleep 100"),
             },
             Job {
-                id: 2,
-                pid: 102,
+                pgid: 2,
+                leader_pid: 102,
                 state: State::Running,
                 command: String::from("ls"),
             },
@@ -169,14 +169,14 @@ mod tests {
     fn test_bg_no_args_resumes_current() {
         let mut jobs = vec![
             Job {
-                id: 1,
-                pid: 101,
+                pgid: 1,
+                leader_pid: 101,
                 state: State::Stopped,
                 command: String::from("sleep 100"),
             },
             Job {
-                id: 2,
-                pid: 102,
+                pgid: 2,
+                leader_pid: 102,
                 state: State::Stopped,
                 command: String::from("sleep 200"),
             },
@@ -197,8 +197,8 @@ mod tests {
     #[test]
     fn test_bg_supports_percent_syntax() {
         let mut jobs = vec![Job {
-            id: 1,
-            pid: 101,
+            pgid: 1,
+            leader_pid: 101,
             state: State::Stopped,
             command: String::from("sleep 100"),
         }];
@@ -217,8 +217,8 @@ mod tests {
     #[test]
     fn test_bg_ignores_missing_pids() {
         let mut jobs = vec![Job {
-            id: 1,
-            pid: 101,
+            pgid: 1,
+            leader_pid: 101,
             state: State::Stopped,
             command: String::from("sleep"),
         }];
@@ -237,14 +237,14 @@ mod tests {
     fn test_generates_correct_number_of_failure_messages() {
         let mut jobs = vec![
             Job {
-                id: 1,
-                pid: 101,
+                pgid: 1,
+                leader_pid: 101,
                 state: State::Stopped,
                 command: String::from("sleep"),
             },
             Job {
-                id: 2,
-                pid: 102,
+                pgid: 2,
+                leader_pid: 102,
                 state: State::Running,
                 command: String::from("ls"),
             },
