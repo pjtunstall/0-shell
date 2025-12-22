@@ -19,8 +19,10 @@ pub mod touch;
 use std::{env, ffi::CString, fs::OpenOptions, io, os::fd::AsRawFd, ptr, sync::atomic::Ordering};
 
 use crate::{
-    c::CURRENT_CHILD_PID,
-    commands::jobs::{Job, State},
+    commands::{
+        fg::CURRENT_CHILD_PID,
+        jobs::{Job, State},
+    },
     error,
 };
 
@@ -187,18 +189,12 @@ fn run_child(ptrs: Vec<*const i8>, is_background: bool, c_strings: Vec<CString>)
             libc::tcsetpgrp(libc::STDIN_FILENO, child_pid);
         }
 
-        // Reset any signal handlers we've customized back to their default
-        // behavior:
-
-        // Let Ctrl+C use the default in children.
-        libc::signal(libc::SIGINT, libc::SIG_DFL);
-
-        // Let Ctrl+Z use the default in children.
-        libc::signal(libc::SIGTSTP, libc::SIG_DFL);
-
+        // Restore default signal handlers.
+        libc::signal(libc::SIGINT, libc::SIG_DFL); // Ctrl+C
+        libc::signal(libc::SIGTSTP, libc::SIG_DFL); // Ctrl+Z
+        libc::signal(libc::SIGQUIT, libc::SIG_DFL); // Ctrl+\
         // Default: stop if background job reads the TTY.
         libc::signal(libc::SIGTTIN, libc::SIG_DFL);
-
         // Default: stop if background job writes the TTY.
         libc::signal(libc::SIGTTOU, libc::SIG_DFL);
 
@@ -221,7 +217,7 @@ fn run_parent(
     child_pid: i32,
 ) -> Result<String, String> {
     unsafe {
-        // Ensure the child is its own process group leader.
+        // Make the child the leader of a new process group.
         libc::setpgid(child_pid, child_pid);
 
         match is_background {
@@ -235,31 +231,15 @@ fn run_parent(
             }
             false => {
                 // Hand terminal control to the foreground child.
+                // It will now be be the recipient of any SIGINT or SIGTSTP.
                 libc::tcsetpgrp(libc::STDIN_FILENO, child_pid);
                 CURRENT_CHILD_PID.store(child_pid, Ordering::SeqCst);
 
-                let mut status = 0;
-                loop {
-                    // Wait, but also return if the child stops (Ctrl+Z).
-                    let res = libc::waitpid(child_pid, &mut status, libc::WUNTRACED);
-                    if res == child_pid {
-                        break;
-                    }
-                    if res == -1 {
-                        let err = io::Error::last_os_error();
-                        if err.raw_os_error() == Some(libc::EINTR) {
-                            // Retry if interrupted by a signal.
-                            continue;
-                        }
-                        return Err(format!("waitpid failed: {}", err));
-                    }
-                    return Err(format!("waitpid returned unexpected pid: {}", res));
-                }
+                let status = wait_for_foreground_child(child_pid)?;
 
-                // If the child died from SIGINT, tidy the prompt placement.
+                // If the child was terminated by SIGINT, the cursor to the next
+                // line so that the prompt doesn't overwrite the `^C`.
                 if libc::WIFSIGNALED(status) && libc::WTERMSIG(status) == libc::SIGINT {
-                    // Move the cursor to the next line so that the prompt
-                    // doesn't overwrite the `^C`.
                     println!();
                 }
 
@@ -267,8 +247,7 @@ fn run_parent(
                 libc::tcsetpgrp(libc::STDIN_FILENO, libc::getpgrp());
                 CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
 
-                // Child was stopped (e.g., Ctrl+Z), keep it in the jobs
-                // table.
+                // The child was stopped: keep it in the jobs table.
                 if libc::WIFSTOPPED(status) {
                     let id = jobs.len() + 1;
                     let cmd_str = display_command(args);
@@ -309,6 +288,43 @@ fn apply_fd_redirections(args: &[String]) -> Result<Vec<String>, String> {
     Ok(filtered)
 }
 
+// Blocks the shell process until the specific foreground child `child_pid`
+// changes state. This handles both termination (exit) and suspension (Ctrl+Z).
+fn wait_for_foreground_child(child_pid: i32) -> Result<i32, String> {
+    let mut status = 0;
+
+    loop {
+        // `waitpid` normally only returns when a child terminates.
+        // `WUNTRACED` tells it to also return if the child is stopped by a signal
+        // (e.g., if the user hits Ctrl+Z). This is essential for Job Control.
+        let res = unsafe { libc::waitpid(child_pid, &mut status, libc::WUNTRACED) };
+
+        // Success: the specific child we were waiting for has changed state.
+        if res == child_pid {
+            return Ok(status);
+        }
+
+        // Failure or interruption
+        if res == -1 {
+            let err = io::Error::last_os_error();
+
+            // EINTR means the `waitpid` system call itself was interrupted by a
+            // signal caught by the shell (e.g., SIGWINCH or a SIGCHLD from a
+            // distinct background process). This is temporary; we simply retry.
+            if err.raw_os_error() == Some(libc::EINTR) {
+                continue;
+            }
+
+            // Real failure (e.g., the child does not exist).
+            return Err(format!("waitpid failed: {}", err));
+        }
+
+        // Unexpected: waitpid returned a PID we didn't ask for.
+        // (This should technically be impossible when passing a positive PID).
+        return Err(format!("waitpid returned unexpected pid: {}", res));
+    }
+}
+
 fn apply_single_fd_redirection(fd: i32, op: &str, target: &str) -> Result<(), String> {
     if fd < 0 {
         return Err(String::from("Invalid file descriptor"));
@@ -347,7 +363,6 @@ fn apply_single_fd_redirection(fd: i32, op: &str, target: &str) -> Result<(), St
     Ok(())
 }
 
-// Best-effort pretty-printer for job display to avoid showing spaced-out fd redirections.
 fn display_command(args: &[String]) -> String {
     let mut display_parts: Vec<String> = Vec::with_capacity(args.len());
     let mut i = 0;

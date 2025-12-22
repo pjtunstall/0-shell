@@ -1,10 +1,10 @@
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicI32, Ordering};
 
-use crate::{
-    c::CURRENT_CHILD_PID,
-    commands::jobs::{self, Job},
-};
+use crate::commands::jobs::{self, Job};
 
+// Store the PID of the currently running foreground process.
+// 0 means "no job running" (we're at the prompt).
+pub static CURRENT_CHILD_PID: AtomicI32 = AtomicI32::new(0);
 pub const USAGE: &str = "Usage:\tfg [jobspec]";
 
 pub fn fg(
