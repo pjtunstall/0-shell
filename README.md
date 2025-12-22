@@ -18,22 +18,9 @@
 
 This is my take on the [01-Founders/01-Edu project of the same
 name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit
-b0b9f3d). The object of the exercise is to learn about shells by mimicking
-essential Unix shell behaviors without using external binaries or existing shell
-utilitie## Regarding the name
-
-The root directory and repo are named `0-shell`, as required by the brief.
-Unfortunately clashing conventions have resulted in almost the maximum
-conceivable variants! Rust's build tool, Cargo, doesn't allow a package name to
-begin with a numeral, hence the package is called `zero-shell` and the lib and
-bin crates `zero_shell` according to Rust convention. When you build the
-project, either with `cargo run` (to build and run in one step) or `cargo build`
-(to build only) or `cargo build --release` (to build in release mode), a build
-script will rename the binary `0_shell`. It insists on an underscore in place of
-the dash. This makes the name more broadly compatible across operating systems,
-so I've decided not to process it further (e.g. wrapping the call to Cargo in a
-shell script, or using a Cargo extension or a build system like `make`). s.<sup
-id="ref-f1">[1](#f1)</sup>
+b0b9f3d). The object of the exercise is to learn about shells by
+mimicking essential Unix shell behaviors without using external binaries or
+existing shell utilities.<sup id="ref-f1">[1](#f1)</sup>
 
 We're required to recreate at least the following ten commands:
 
@@ -57,17 +44,9 @@ Also, `Ctrl + D` to exit our 'shell'.
 
 We're told:
 
-> Through the 0-shell you will get to the core of the Unix system and explore an
-> important part of this system’s API which is the process creation and
-> synchronization. Executing a command inside a shell implies creating a new
-> process, which execution and final state will be monitored by its parents
-> processes. This set of functions will be the key to success for your project.
+> Through the 0-shell you will get to the core of the Unix system and explore an important part of this system’s API which is the process creation and synchronization. Executing a command inside a shell implies creating a new process, which execution and final state will be monitored by its parents processes. This set of functions will be the key to success for your project.
 
-For the external commands above, I following the hint to take
-[BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example. When such a
-command is entered, the shell forks. Its child then execs itself with the
-command as an argument. On finding itself launched with such an argument, the
-program calls the relevant function.<sup id="ref-f3">[3](#f3)</sup>
+For the external commands above, I following the hint to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example. When such a command is entered, the shell forks. Its child then execs itself with the command as an argument. On finding itself launched with such an argument, the program calls the relevant function.<sup id="ref-f3">[3](#f3)</sup>
 
 I've added several bonus features, including:
 
@@ -81,14 +60,12 @@ I've added several bonus features, including:
 - redirection
 - environment variables
 
-I've also done the optional extension project
-[job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
+I've also implemented some features from the optional extra project [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
 
 - Ctrl+C: terminate a child process and return to the 'shell'
 - Ctrl+Z: pause a child process and return to the 'shell'
 - jobs: list background processes
-- fg: restart a paused child process in the foreground<sup
-  id="ref-f4">[4](#f4)</sup>
+- fg: restart a paused child process in the foreground<sup id="ref-f4">[4](#f4)</sup>
 - bg: restart one or more child processes in the background
 - kill: terminate a process
 
@@ -100,39 +77,18 @@ See further: [Audit: Job control](#job-control).
 
 One of the audit instructions is:
 
-**Try to run the command "echo "something!"". Do the same in your computer
-terminal.**
+**Try to run the command "echo "something!"". Do the same in your computer terminal.**
 
-It then asks, "Can you confirm that the displayed message of the project is
-exactly the same as the computer terminal?" I've made the following assumptions
-about the text to be entered, besides the obvious one that "your computer
-terminal" is not also running 0-shell! (Basically, your milage may vary,
-depending on your shell and how it's configured.)
+It then asks, "Can you confirm that the displayed message of the project is exactly the same as the computer terminal?" I've made the following assumptions about the text to be entered, besides the obvious one that "your computer terminal" is not also running 0-shell! (Basically, your milage may vary, depending on your shell and how it's configured.)
 
 - The outer quotes are to be omitted, as in the instruction for the next item.
-- The text inside those outer quotes is to be entered unchanged in shells which
-  don't use `!` as a special character for history expension, such as PowerShell
-  and fish.
-- In shells with default history expension (such as Zsh, csh, and tcsh), the `!`
-  is to be escaped with a preceding `\`. Otherwise, these shells will display
-  `dquote>` in response to any input till you close the inner quotes. In Bash,
-  history expansion is disabled in non-interactive mode (e.g. `bash -c 'echo
-"something!"'`), so the bang works unescaped; in interactive Bash it only
-  needs escaping if `histexpand` is enabled (the usual default), otherwise `echo
-"something!"` works as-is.
-  - It works as is with the default settings for Bash in my current version of
-    VS Code, for example.
-- In POSIX shell (sh), dash, and ksh, that have optional history expansion, the
-  text should be entered depending on which option is currently selected. I
-  gather the default is no history expansion with `!`.
-- It's my understanding that BusyBox's default shell (ash) does not treat `!` as
-  special (it lacks history expansion by default, similar to dash). However, if
-  built with hush (another shell included in BusyBox), history expansion with
-  `!` can be optionally enabled.
+- The text inside those outer quotes is to be entered unchanged in shells which don't use `!` as a special character for history expension, such as PowerShell and fish.
+- In shells with default history expension (such as Zsh, csh, and tcsh), the `!` is to be escaped with a preceding `\`. Otherwise, these shells will display `dquote>` in response to any input till you close the inner quotes. In Bash, history expansion is disabled in non-interactive mode (e.g. `bash -c 'echo "something!"'`), so the bang works unescaped; in interactive Bash it only needs escaping if `histexpand` is enabled (the usual default), otherwise `echo "something!"` works as-is.
+  - It works as is with the default settings for Bash in my current version of VS Code, for example.
+- In POSIX shell (sh), dash, and ksh, that have optional history expansion, the text should be entered depending on which option is currently selected. I gather the default is no history expansion with `!`.
+- It's my understanding that BusyBox's default shell (ash) does not treat `!` as special (it lacks history expansion by default, similar to dash). However, if built with hush (another shell included in BusyBox), history expansion with `!` can be optionally enabled.
 
-Since there's no requirement to implement special behavior for `!` or guidance
-on which shell to use as a standard (unless we can take the mention on BusyBox
-as a hint), I consider this is an oversight.
+Since there's no requirement to implement special behavior for `!` or guidance on which shell to use as a standard (unless we can take the mention on BusyBox as a hint), I consider this is an oversight.
 
 ### Last orders, please
 
@@ -144,7 +100,7 @@ While the instructions tell us that our program should follow the same
 principles as 0-shell, one of the job-control [audit
 questions](https://github.com/01-edu/public/blob/master/subjects/0-shell/job-control/audit.md)
 implies that it should now launch external binaries.<sup
-id="ref-f5">[5](#f5)</sup> I've squared this circle by keeping my custom
+id="ref-f4">[4](#f5)</sup> I've squared this circle by keeping my custom
 versions of the listed externals, and, for other externals, forking the process
 and letting the child exec itself with the given command as an argument.
 
@@ -155,7 +111,7 @@ implied by the example:
   - `-r`: reverse
   - `-R`: recurse
 - redirection from file descriptor to file: `2>1`<sup
-  id="ref-f6">[6](#f6)</sup>
+  id="ref-f6">[5](#f5)</sup>
 
 ## Regarding the name
 
@@ -228,13 +184,8 @@ given shell, you can enter `type <command>`.[↩](#ref-f2)
 for example, `/bin/ls` a symbolic link pointing to `/bin/0_shell`, allowing it
 act in place of a default shell. I haven't gone this far.[↩](#ref-f3)
 
-<a id="f4" href="#ref-f4">4</a>: As in Bash, the arguments to `fg` and `bg` are
-job numbers (1, 2, ...) while `kill` expects a system-wide PID (process ID),
-such as `1881893`; the convention can be reversed, for any of these commands, by
-prefixing the number with `%`, thus: `kill %1` or `fg %1881893`.[↩](#ref-f4)
+<a id="f4" href="#ref-f4">4</a>: "then run `python &"`. I assume they didn't
+want us write our own Python.[↩](#ref-f4)
 
-<a id="f5" href="#ref-f5">5</a>: "then run `python &"`. I assume they didn't
-want us write our own Python.[↩](#ref-f5)
-
-<a id="f6" href="#ref-f6">6</a>: It's been suggested that this is a typo for
+<a id="f5" href="#ref-f5">5</a>: It's been suggested that this is a typo for
 `1>&2` (duplicating a file descriptor), which my 0-shell also handles.[↩](#ref-f5)
