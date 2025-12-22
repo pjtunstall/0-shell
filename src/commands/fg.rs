@@ -29,7 +29,7 @@ pub fn fg(
     let index = jobs
         .iter()
         .position(|j| j.pgid == job_id)
-        .ok_or_else(|| format!("No such job ID: {}", job_id))?;
+        .ok_or_else(|| format!("No such job ID: {job_id}"))?;
 
     let pid = jobs[index].leader_pid;
     let command_text = jobs[index].command.clone();
@@ -55,9 +55,9 @@ pub fn fg(
                 if err.raw_os_error() == Some(libc::EINTR) {
                     continue;
                 }
-                return Err(format!("waitpid failed: {}", err));
+                return Err(format!("waitpid failed: {err}"));
             }
-            return Err(format!("waitpid returned unexpected pid: {}", res));
+            return Err(format!("waitpid returned unexpected pid: {res}"));
         }
         libc::tcsetpgrp(libc::STDIN_FILENO, libc::getpgrp());
         CURRENT_CHILD_PID.store(0, Ordering::SeqCst);

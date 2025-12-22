@@ -13,11 +13,11 @@ pub fn kill(
     jobs::check_background_jobs(jobs, current, previous);
 
     if input.len() > 2 {
-        return Err(format!("Too many arguments\n{}", USAGE));
+        return Err(format!("Too many arguments\n{USAGE}"));
     }
 
     if input.len() < 2 {
-        return Err(format!("Not enough arguments\n{}", USAGE));
+        return Err(format!("Not enough arguments\n{USAGE}"));
     }
 
     let arg = &input[1];
@@ -36,12 +36,12 @@ pub fn kill(
                 is_stopped = true;
             }
         } else {
-            return Err(format!("No such job ID: {}", arg));
+            return Err(format!("No such job ID: {arg}"));
         }
     } else {
         pid_to_kill = arg
             .parse::<i32>()
-            .map_err(|e| format!("Failed to parse ID: {}\r\n{}\r\n{}", e, arg, USAGE))?;
+            .map_err(|e| format!("Failed to parse ID: {e}\r\n{arg}\r\n{USAGE}"))?;
 
         if pid_to_kill <= 0 {
             return Err(String::from("ID must be positive"));
@@ -62,7 +62,7 @@ pub fn kill(
         // leader.
         if libc::kill(-pid_to_kill, libc::SIGTERM) == -1 {
             let err = io::Error::last_os_error();
-            return Err(format!("Failed to kill {}: {}", pid_to_kill, err));
+            return Err(format!("Failed to kill {pid_to_kill}: {err}"));
         }
 
         // Restart a stopped job so that it can receive the queued signal to
@@ -71,8 +71,7 @@ pub fn kill(
             if libc::kill(-pid_to_kill, libc::SIGCONT) == -1 {
                 let err = io::Error::last_os_error();
                 return Err(format!(
-                    "Failed to resume {} for termination: {}",
-                    pid_to_kill, err
+                    "Failed to resume {pid_to_kill} for termination: {err}"
                 ));
             }
         }

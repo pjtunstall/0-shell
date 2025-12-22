@@ -138,14 +138,14 @@ pub fn repl() {
                     // Ctrl+D.
                     let has_stopped = jobs.iter().any(|j| j.state == jobs::State::Stopped);
                     if has_stopped && !exit_attempted {
-                        error::red_println(&format!("exit: {}", STOPPED_JOBS_WARNING));
+                        error::red_println(&format!("exit: {STOPPED_JOBS_WARNING}"));
                         exit_attempted = true;
                         continue;
                     }
                     break;
                 }
                 Err(err) => {
-                    error::red_println(&format!("0-shell: Failed to get input: {}", err));
+                    error::red_println(&format!("0-shell: Failed to get input: {err}"));
                     continue;
                 }
             };
@@ -160,7 +160,7 @@ pub fn repl() {
             match input::split::split(&input_string) {
                 Ok(res) => input_after_splitting = res,
                 Err(err) => {
-                    error::red_println(&format!("0-shell: {}", &err));
+                    error::red_println(&format!("0-shell: {err}"));
                     continue;
                 }
             }

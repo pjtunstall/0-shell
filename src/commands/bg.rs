@@ -71,7 +71,7 @@ fn bg_with_resumer(
                     target_ids.insert(id);
                 }
                 Err(e) => {
-                    failures.push_str(&format!("{}\n", e));
+                    failures.push_str(&format!("{e}\n"));
                     failure_count += 1
                 }
             }
@@ -79,36 +79,38 @@ fn bg_with_resumer(
     }
 
     for job in jobs.iter_mut() {
-        if target_ids.contains(&job.pgid) {
+        let pgid = job.pgid;
+        let leader_pid = job.leader_pid;
+
+        if target_ids.contains(&pgid) {
             if matches!(job.state, State::Stopped) {
                 // Send SIGCONT to the process group (negative PID)
                 // so that all members of a pipeline resume together.
-                if let Err(err) = resumer.resume(job.leader_pid) {
+                if let Err(err) = resumer.resume(leader_pid) {
                     failures.push_str(&format!(
-                        "Failed to resume job {} (pid {}): {}\n",
-                        job.pgid, job.leader_pid, err
+                        "Failed to resume job {pgid} (pid {leader_pid}): {err}\n"
                     ));
                     failure_count += 1;
-                    target_ids.remove(&job.pgid);
+                    target_ids.remove(&pgid);
                     continue;
                 }
                 job.state = State::Running;
-                if job.pgid != *current {
+                if pgid != *current {
                     *previous = *current;
-                    *current = job.pgid;
+                    *current = pgid;
                 }
                 success_count += 1;
                 successes.push(&*job);
             } else {
-                failures.push_str(&format!("Job is not stopped: {}\n", job.pgid));
+                failures.push_str(&format!("Job is not stopped: {pgid}\n"));
                 failure_count += 1;
             }
-            target_ids.remove(&job.pgid);
+            target_ids.remove(&pgid);
         }
     }
 
     for id in target_ids {
-        failures.push_str(&format!("No such job ID: {}\n", id));
+        failures.push_str(&format!("No such job ID: {id}\n"));
         failure_count += 1;
     }
 
@@ -120,7 +122,7 @@ fn bg_with_resumer(
         error::red_println(&failures.trim_end_matches('\n'));
     }
 
-    Ok(format!("{}:{}", success_count, failure_count))
+    Ok(format!("{success_count}:{failure_count}"))
 }
 
 #[cfg(test)]

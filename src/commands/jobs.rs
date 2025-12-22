@@ -85,7 +85,7 @@ pub fn jobs(
                     'p' => opts.pid_only = true,
                     'r' => opts.running_only = true,
                     's' => opts.stopped_only = true,
-                    _ => return Err(format!("Invalid option -- '{}'\n{}", c, USAGE)),
+                    _ => return Err(format!("Invalid option -- '{c}'\n{USAGE}")),
                 }
             }
         } else {
@@ -126,7 +126,8 @@ pub fn format_jobs<T: Borrow<Job>>(
 
         // Mode: -p (PIDs only).
         if opts.pid_only {
-            output.push_str(&format!("{}\n", job.leader_pid));
+            let leader_pid = job.leader_pid;
+            output.push_str(&format!("{leader_pid}\n"));
             continue;
         }
 
@@ -139,7 +140,7 @@ pub fn format_jobs<T: Borrow<Job>>(
         };
 
         let display = JobDisplay { job, sign, opts };
-        output.push_str(&format!("{}\n", display));
+        output.push_str(&format!("{display}\n"));
     }
 
     output
@@ -171,7 +172,7 @@ pub fn resolve_jobspec(spec: &str, current: usize, previous: usize) -> Result<us
     };
 
     raw.parse::<usize>()
-        .map_err(|_| format!("Invalid job ID: {}", spec))
+        .map_err(|_| format!("Invalid job ID: {spec}"))
 }
 
 impl std::fmt::Display for JobDisplay<'_> {
