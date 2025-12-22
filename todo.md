@@ -10,12 +10,12 @@
   - [Echo](#echo)
 - [Further](#further)
 
-- Consider how I'll implement piping: look out for anywhere that I've used PID where jobspec of job ID would be more appropriate.
 - Implement file-descriptor redirection: `2>1 >/dev/null  &` (possible typo: `&1`?).
   - Consider the intention.
   - Consider the effect of my inconsistent error handling. Could/should I sent
     my `red_println` to `stderr`?
 - Refactor `ls` and submodules, breaking up long functions.
+- Consider how I'll implement piping: look out for anywhere that I've used PID where jobspec of job ID would be more appropriate.
 
 ## Job Control
 
