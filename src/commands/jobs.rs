@@ -25,6 +25,47 @@ impl Default for JobOptions {
     }
 }
 
+pub struct Job {
+    pub id: usize,
+    pub pid: i32,
+    pub command: String,
+    pub state: State,
+}
+
+impl Job {
+    pub fn new(jobs_total: usize, pid: i32, command: String, state: State) -> Self {
+        assert!(pid > 0, "`pid` must be positive");
+        Self {
+            id: jobs_total,
+            pid,
+            command,
+            state,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum State {
+    Running,
+    Stopped,
+}
+
+impl std::fmt::Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            State::Running => "Running",
+            State::Stopped => "Stopped",
+        };
+        f.write_str(s)
+    }
+}
+
+pub struct JobDisplay<'a> {
+    pub job: &'a Job,
+    pub sign: &'a str,
+    pub opts: JobOptions,
+}
+
 pub fn jobs(
     input: &[String],
     jobs: &mut Vec<Job>,
@@ -102,47 +143,6 @@ pub fn format_jobs<T: Borrow<Job>>(
     }
 
     output
-}
-
-pub struct Job {
-    pub id: usize,
-    pub pid: i32,
-    pub command: String,
-    pub state: State,
-}
-
-impl Job {
-    pub fn new(jobs_total: usize, pid: i32, command: String, state: State) -> Self {
-        assert!(pid > 0, "`pid` must be positive");
-        Self {
-            id: jobs_total,
-            pid,
-            command,
-            state,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum State {
-    Running,
-    Stopped,
-}
-
-impl std::fmt::Display for State {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            State::Running => "Running",
-            State::Stopped => "Stopped",
-        };
-        f.write_str(s)
-    }
-}
-
-pub struct JobDisplay<'a> {
-    pub job: &'a Job,
-    pub sign: &'a str,
-    pub opts: JobOptions,
 }
 
 pub fn resolve_jobspec(spec: &str, current: usize, previous: usize) -> Result<usize, String> {
