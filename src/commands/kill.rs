@@ -21,6 +21,9 @@ pub fn kill(
     }
 
     let arg = &input[1];
+    // May represent the PGID of the group or the PID of the group leader,
+    // depending on whether the value passed to `job` is prefixed with `%` (in
+    // which case `-pid_to_kill` is passed to `libc::kill`.)
     let pid_to_kill: i32;
     let mut is_stopped = false;
 
@@ -52,15 +55,18 @@ pub fn kill(
     }
 
     unsafe {
-        // Use negative PID to target the process group leader and all its children.
-        // If the job is running, this kills it immediately.
-        // If the job is stopped, the signal is queued.
+        // If the job is running, this kills it immediately. If the job is
+        // stopped, the signal is queued. Use a negative value for the first
+        // argument to target the process group leader and all its children;
+        // `libc::kill` interprets a positive value as the PID of thegroup
+        // leader.
         if libc::kill(-pid_to_kill, libc::SIGTERM) == -1 {
             let err = io::Error::last_os_error();
             return Err(format!("Failed to kill {}: {}", pid_to_kill, err));
         }
 
-        // Restart a stopped job so that it can receive the queued signal to terminate.
+        // Restart a stopped job so that it can receive the queued signal to
+        // terminate.
         if is_stopped {
             if libc::kill(-pid_to_kill, libc::SIGCONT) == -1 {
                 let err = io::Error::last_os_error();

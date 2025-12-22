@@ -16,7 +16,24 @@
 
 ## What is this?
 
-This is my take on the [01-Founders/01-Edu project of the same name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit b0b9f3d). The object of the exercise is to learn about shells by mimicking essential Unix shell behaviors without using external binaries or existing shell utilities.<sup id="ref-f1">[1](#f1)</sup>
+This is my take on the [01-Founders/01-Edu project of the same
+name](https://github.com/01-edu/public/tree/master/subjects/0-shell) (commit
+b0b9f3d). The object of the exercise is to learn about shells by mimicking
+essential Unix shell behaviors without using external binaries or existing shell
+utilitie## Regarding the name
+
+The root directory and repo are named `0-shell`, as required by the brief.
+Unfortunately clashing conventions have resulted in almost the maximum
+conceivable variants! Rust's build tool, Cargo, doesn't allow a package name to
+begin with a numeral, hence the package is called `zero-shell` and the lib and
+bin crates `zero_shell` according to Rust convention. When you build the
+project, either with `cargo run` (to build and run in one step) or `cargo build`
+(to build only) or `cargo build --release` (to build in release mode), a build
+script will rename the binary `0_shell`. It insists on an underscore in place of
+the dash. This makes the name more broadly compatible across operating systems,
+so I've decided not to process it further (e.g. wrapping the call to Cargo in a
+shell script, or using a Cargo extension or a build system like `make`). s.<sup
+id="ref-f1">[1](#f1)</sup>
 
 We're required to recreate at least the following ten commands:
 
@@ -40,9 +57,17 @@ Also, `Ctrl + D` to exit our 'shell'.
 
 We're told:
 
-> Through the 0-shell you will get to the core of the Unix system and explore an important part of this system’s API which is the process creation and synchronization. Executing a command inside a shell implies creating a new process, which execution and final state will be monitored by its parents processes. This set of functions will be the key to success for your project.
+> Through the 0-shell you will get to the core of the Unix system and explore an
+> important part of this system’s API which is the process creation and
+> synchronization. Executing a command inside a shell implies creating a new
+> process, which execution and final state will be monitored by its parents
+> processes. This set of functions will be the key to success for your project.
 
-For the external commands above, I following the hint to take [BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example. When such a command is entered, the shell forks. Its child then execs itself with the command as an argument. On finding itself launched with such an argument, the program calls the relevant function.<sup id="ref-f3">[3](#f3)</sup>
+For the external commands above, I following the hint to take
+[BusyBox](https://en.wikipedia.org/wiki/BusyBox) as an example. When such a
+command is entered, the shell forks. Its child then execs itself with the
+command as an argument. On finding itself launched with such an argument, the
+program calls the relevant function.<sup id="ref-f3">[3](#f3)</sup>
 
 I've added several bonus features, including:
 
@@ -56,16 +81,19 @@ I've added several bonus features, including:
 - redirection
 - environment variables
 
-I've also implemented some features from the optional extra project [job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
+I've also implemented some features from the optional extra project
+[job-control](https://github.com/01-edu/public/tree/master/subjects/0-shell/job-control):
 
 - Ctrl+C: terminate a child process and return to the 'shell'
 - Ctrl+Z: pause a child process and return to the 'shell'
 - jobs: list background processes
-- fg: restart a paused child process in the foreground<sup id="ref-f4">[4](#f4)</sup>
+- fg: restart a paused child process in the foreground<sup
+  id="ref-f4">[4](#f4)</sup>
 - bg: restart one or more child processes in the background
 - kill: terminate a process
 
-As yet, I'm assuming one process per job. Eventually, I'll add piping to allow for more. See further: [Audit: Job control](#job-control).
+As yet, I'm assuming one process per job. Eventually, I'll add piping to allow
+for more. See further: [Audit: Job control](#job-control).
 
 ## Audit
 
@@ -73,18 +101,39 @@ As yet, I'm assuming one process per job. Eventually, I'll add piping to allow f
 
 One of the audit instructions is:
 
-**Try to run the command "echo "something!"". Do the same in your computer terminal.**
+**Try to run the command "echo "something!"". Do the same in your computer
+terminal.**
 
-It then asks, "Can you confirm that the displayed message of the project is exactly the same as the computer terminal?" I've made the following assumptions about the text to be entered, besides the obvious one that "your computer terminal" is not also running 0-shell! (Basically, your milage may vary, depending on your shell and how it's configured.)
+It then asks, "Can you confirm that the displayed message of the project is
+exactly the same as the computer terminal?" I've made the following assumptions
+about the text to be entered, besides the obvious one that "your computer
+terminal" is not also running 0-shell! (Basically, your milage may vary,
+depending on your shell and how it's configured.)
 
 - The outer quotes are to be omitted, as in the instruction for the next item.
-- The text inside those outer quotes is to be entered unchanged in shells which don't use `!` as a special character for history expension, such as PowerShell and fish.
-- In shells with default history expension (such as Zsh, csh, and tcsh), the `!` is to be escaped with a preceding `\`. Otherwise, these shells will display `dquote>` in response to any input till you close the inner quotes. In Bash, history expansion is disabled in non-interactive mode (e.g. `bash -c 'echo "something!"'`), so the bang works unescaped; in interactive Bash it only needs escaping if `histexpand` is enabled (the usual default), otherwise `echo "something!"` works as-is.
-  - It works as is with the default settings for Bash in my current version of VS Code, for example.
-- In POSIX shell (sh), dash, and ksh, that have optional history expansion, the text should be entered depending on which option is currently selected. I gather the default is no history expansion with `!`.
-- It's my understanding that BusyBox's default shell (ash) does not treat `!` as special (it lacks history expansion by default, similar to dash). However, if built with hush (another shell included in BusyBox), history expansion with `!` can be optionally enabled.
+- The text inside those outer quotes is to be entered unchanged in shells which
+  don't use `!` as a special character for history expension, such as PowerShell
+  and fish.
+- In shells with default history expension (such as Zsh, csh, and tcsh), the `!`
+  is to be escaped with a preceding `\`. Otherwise, these shells will display
+  `dquote>` in response to any input till you close the inner quotes. In Bash,
+  history expansion is disabled in non-interactive mode (e.g. `bash -c 'echo
+"something!"'`), so the bang works unescaped; in interactive Bash it only
+  needs escaping if `histexpand` is enabled (the usual default), otherwise `echo
+"something!"` works as-is.
+  - It works as is with the default settings for Bash in my current version of
+    VS Code, for example.
+- In POSIX shell (sh), dash, and ksh, that have optional history expansion, the
+  text should be entered depending on which option is currently selected. I
+  gather the default is no history expansion with `!`.
+- It's my understanding that BusyBox's default shell (ash) does not treat `!` as
+  special (it lacks history expansion by default, similar to dash). However, if
+  built with hush (another shell included in BusyBox), history expansion with
+  `!` can be optionally enabled.
 
-Since there's no requirement to implement special behavior for `!` or guidance on which shell to use as a standard (unless we can take the mention on BusyBox as a hint), I consider this is an oversight.
+Since there's no requirement to implement special behavior for `!` or guidance
+on which shell to use as a standard (unless we can take the mention on BusyBox
+as a hint), I consider this is an oversight.
 
 ### Last orders, please
 
@@ -92,16 +141,30 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ### Job control
 
-To the best of my knowledge, my 0-shell meets the stated requirements for job-control, although not yet the following extra features implied by the example:
+To the best of my knowledge, my 0-shell meets the stated requirements for
+job-control, although not yet the following extra features implied by the
+example:
 
 - two additional flags for `ls`, namely `-r` (reverse) and `-R` (recursive)
 - redirection between file descriptors: `2>&1` (is `2>1` a typo?)
 
-While the instructions tell us to obey the same principles as 0-shell, one of the job-control [audit questions](https://github.com/01-edu/public/blob/master/subjects/0-shell/job-control/audit.md) implies that it should now launch external binaries.<sup id="ref-f5">[5](#f5)</sup> I've squared this circle by keeping my custom versions of the listed externals, and, for other externals, forking the process and letting the child exec itself with the given command as an argument.
+While the instructions tell us to obey the same principles as 0-shell, one of
+the job-control [audit
+questions](https://github.com/01-edu/public/blob/master/subjects/0-shell/job-control/audit.md)
+implies that it should now launch external binaries.<sup
+id="ref-f5">[5](#f5)</sup> I've squared this circle by keeping my custom
+versions of the listed externals, and, for other externals, forking the process
+and letting the child exec itself with the given command as an argument.
 
 ## Regarding the name
 
-The root directory and repo are named `0-shell`, as required by the brief. Unfortunately clashing conventions have resulted in almost the maximum conceivable variants! Rust's build tool, Cargo, doesn't allow a package name to begin with a numeral, hence the package is called `zero-shell` and the lib and bin crates `zero_shell` according to Rust convention. When you build the project, either with `cargo run` (to build and run in one step) or `cargo build` (to build only) or `cargo build --release` (to build in release mode), a build script will rename the binary `0_shell`. It insists on an underscore in place of the dash. This makes the name more broadly compatible across operating systems, so I've decided not to process it further (e.g. wrapping the call to Cargo in a shell script, or using a Cargo extension or a build system like `make`).
+The root directory and repo are named `0-shell`, as required by the brief.
+Unfortunately clashing conventions have resulted in almost the maximum
+conceivable variants! Rust's build tool, Cargo, doesn't allow a package name to
+begin with a numeral, hence the package is called `zero-shell` and the lib crate
+`zero_shell` according to Rust convention. The binary is explicitly named
+`0-shell` in `Cargo.toml`, so building via `cargo run`, `cargo build`, or `cargo
+build --release` produces a `0-shell` executable in `target`.
 
 ## Testing
 
@@ -111,13 +174,34 @@ Tests should be run in single-threaded mode ...
 cargo test -- --test-threads=1
 ```
 
-... rather than in the default parallel mode, `cargo test`. This is necessary to prevent tests that change the current directory from interfering with tests that check the identity of the current ditectory, or the existence or nonexistence or contents of files they've created in it. The success test for `pwd`, for example, expects the current directory to be `0-shell`, but the `cd` test temporarily changes the current directory. The integration test in `integration.rs` also changes the current directory briefly. If it was just one or two such clashes, they could be guarded with a mutex, but relying on a mutex would put the burdon on anyone adding a test to any of the modules to remember to use it. It seems more robust to just run them all sequentially.
+... rather than in the default parallel mode, `cargo test`. This is necessary to
+prevent tests that change the current directory from interfering with tests that
+check the identity of the current ditectory, or the existence or nonexistence or
+contents of files they've created in it. The success test for `pwd`, for
+example, expects the current directory to be `0-shell`, but the `cd` test
+temporarily changes the current directory. The integration test in
+`integration.rs` also changes the current directory briefly. If it was just one
+or two such clashes, they could be guarded with a mutex, but relying on a mutex
+would put the burdon on anyone adding a test to any of the modules to remember
+to use it. It seems more robust to just run them all sequentially.
 
 ## Deviations
 
-There are many trivial deviations from Zsh (my default shell at the time when I made my orignal version of the core project), even among the few items that I've implemented: bold text, different prompts, use of red for error messages, ... Lack of `!` for history expansion is discussed above. In Zsh, if you try to `cat` to a directory and a file, the operation fails completely and doesn't concatenated to the file. In my shell, it does what it can and reports any failures. That's more consistent with how Zsh behaves with `rm`, say.
+There are many trivial deviations from Zsh (my default shell at the time when I
+made my orignal version of the core project), even among the few items that I've
+implemented: bold text, different prompts, use of red for error messages, ...
+Lack of `!` for history expansion is discussed above. In Zsh, if you try to
+`cat` to a directory and a file, the operation fails completely and doesn't
+concatenated to the file. In my shell, it does what it can and reports any
+failures. That's more consistent with how Zsh behaves with `rm`, say.
 
-I've not been meticulous in mimicking the wording, word order, or capitalization of error messages. In some cases, I've aimed for greater consistency than I found in Zsh. Thus, Zsh and Bash both have `cat: tests: Is a directory` when one of the sources is a directory, while I have `cat: Is a directory: tests`. But I also capitalize when one of the targets is a directory--`0-shell: Is a directory: tests`--unlike Zsh: `zsh: is a directory: tests`. In this case, Bash follows yet another pattern: `bash: line 1: tests: Is a directory`.
+I've not been meticulous in mimicking the wording, word order, or capitalization
+of error messages. In some cases, I've aimed for greater consistency than I
+found in Zsh. Thus, Zsh and Bash both have `cat: tests: Is a directory` when one
+of the sources is a directory, while I have `cat: Is a directory: tests`. But I
+also capitalize when one of the targets is a directory--`0-shell: Is a
+directory: tests`--unlike Zsh: `zsh: is a directory: tests`. In this case, Bash
+follows yet another pattern: `bash: line 1: tests: Is a directory`.
 
 You'll likely find other examples.
 
@@ -127,12 +211,26 @@ See [todo.md](todo.md) for possible further developments and topics to explore.
 
 ## Notes
 
-<a id="f1" href="#ref-f1">1</a>: I've written my code for a Unix-like OS. This assumption is implicit in my handling of process groups and signals, and associated use of `libc`, for example. An earlier version (from before I implemented job control) did aim to be platform-agnostic, hence the Windows variants for obtaining fs metadata the `ls::system` module.[↩](#ref-f1)
+<a id="f1" href="#ref-f1">1</a>: I've written my code for a Unix-like OS. This
+assumption is implicit in my handling of process groups and signals, and
+associated use of `libc`, for example. An earlier version (from before I
+implemented job control) did aim to be platform-agnostic, hence the Windows
+variants for obtaining fs metadata the `ls::system` module.[↩](#ref-f1)
 
-<a id="f2" href="#ref-f2">2</a>: A traditional Unix shell, such as Bash, treats certain commands as built-in utilities: `cd`, `exit`, `pwd`, `echo` (the first two of necessity built-in). Other commands launch external binaries: `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir`. To check whether a command is built-in for a given shell, you can enter `type <command>`.[↩](#ref-f2)
+<a id="f2" href="#ref-f2">2</a>: A traditional Unix shell, such as Bash, treats
+certain commands as built-in utilities: `cd`, `exit`, `pwd`, `echo` (the first
+two of necessity built-in). Other commands launch external binaries: `ls`,
+`cat`, `cp`, `rm`, `mv`, `mkdir`. To check whether a command is built-in for a
+given shell, you can enter `type <command>`.[↩](#ref-f2)
 
-<a id="f3" href="#ref-f3">3</a>: On installation, I gather that Busybox makes, for example, `/bin/ls` a symbolic link pointing to `/bin/0_shell`, allowing it act in place of a default shell. I haven't gone this far.[↩](#ref-f3)
+<a id="f3" href="#ref-f3">3</a>: On installation, I gather that Busybox makes,
+for example, `/bin/ls` a symbolic link pointing to `/bin/0_shell`, allowing it
+act in place of a default shell. I haven't gone this far.[↩](#ref-f3)
 
-<a id="f4" href="#ref-f4">4</a>: As in Bash, the arguments to `fg` and `bg` are job numbers (1, 2, ...) while `kill` expects a system-wide PID (process ID), such as `1881893`; the convention can be reversed, for any of these commands, by prefixing the number with `%`, thus: `kill %1` or `fg %1881893`.[↩](#ref-f4)
+<a id="f4" href="#ref-f4">4</a>: As in Bash, the arguments to `fg` and `bg` are
+job numbers (1, 2, ...) while `kill` expects a system-wide PID (process ID),
+such as `1881893`; the convention can be reversed, for any of these commands, by
+prefixing the number with `%`, thus: `kill %1` or `fg %1881893`.[↩](#ref-f4)
 
-<a id="f5" href="#ref-f5">5</a>: "then run `python &"`. I assume they didn't want us write our own Python.[↩](#ref-f5)
+<a id="f5" href="#ref-f5">5</a>: "then run `python &"`. I assume they didn't
+want us write our own Python.[↩](#ref-f5)

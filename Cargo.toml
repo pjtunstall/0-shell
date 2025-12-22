@@ -2,7 +2,10 @@
 name = "zero-shell"
 version = "0.1.0"
 edition = "2024"
-build = "build.rs"
+
+[[bin]]
+name = "0-shell"
+path = "src/main.rs"
 
 [dependencies]
 chrono = "0.4.39"

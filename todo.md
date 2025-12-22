@@ -10,14 +10,12 @@
   - [Echo](#echo)
 - [Further](#further)
 
-- Read up on theory: shell, terminal, signals, tty.
-- Correct my interchangeable use of the terms job and process. Check how I'm using the term child.
-  - Consider how I'll implement piping: look out for anywhere that I've used PID where jobspec of job ID would be more appropriate.
-- Comment all unsafe blocks and C code.
+- Consider how I'll implement piping: look out for anywhere that I've used PID where jobspec of job ID would be more appropriate.
 - Implement file-descriptor redirection: `2>1 >/dev/null  &` (possible typo: `&1`?).
   - Consider the intention.
-  - Consider the effect of my inconsistent error handling. Could/should I sent my `red_println` to `stderr`?
-  - Refactor `ls` and submodules, breaking up long functions.
+  - Consider the effect of my inconsistent error handling. Could/should I sent
+    my `red_println` to `stderr`?
+- Refactor `ls` and submodules, breaking up long functions.
 
 ## Job Control
 

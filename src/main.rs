@@ -12,7 +12,8 @@ fn main() {
             return;
         }
     } else if args.len() > 1 {
-        // TODO: If I implement scripting, replace this error with e.g. `run_script(&args[1]);`
+        // TODO: If I implement scripting, replace this error with e.g.
+        // `run_script(&args[1]);`
         error::red_println("Usage: ./0_shell");
         return;
     } else {
