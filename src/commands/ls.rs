@@ -435,4 +435,129 @@ mod tests {
             "Contents of existing target file `v` did not match expected"
         );
     }
+
+    #[test]
+    fn ls_recursive_basic() {
+        let temp_store = TempStore::new(1);
+        let root = Path::new(&temp_store.store[0]);
+
+        fs::create_dir_all(root.join("dir_a").join("dir_aa")).expect("failed to create dirs");
+        fs::create_dir_all(root.join("dir_b")).expect("failed to create dirs");
+        fs::write(root.join("file_root"), "").expect("failed to create file");
+        fs::write(root.join("dir_a").join("file_a1"), "").expect("failed to create file");
+
+        let out_path = root.join("out");
+        let root_abs = fs::canonicalize(root).expect("failed to canonicalize root");
+        let input: Vec<String> = vec![
+            "ls",
+            "-R",
+            root_abs.to_string_lossy().as_ref(),
+            ">",
+            out_path.to_string_lossy().as_ref(),
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
+        let result = ls(&input);
+        assert!(result.is_ok(), "`ls -R` should succeed on populated tree");
+
+        let mut contents =
+            fs::read_to_string(&out_path).expect("failed to read redirected ls output");
+        contents = contents.replace("\r\n", "\n");
+
+        let dir_a = root_abs.join("dir_a");
+        let dir_b = root_abs.join("dir_b");
+        let dir_aa = dir_a.join("dir_aa");
+
+        let expected = format!(
+            "{root}:\n\
+dir_a\n\
+dir_b\n\
+file_root\n\
+\n\
+{dir_a}:\n\
+dir_aa\n\
+file_a1\n\
+\n\
+{dir_b}:\n\
+\n\
+{dir_aa}:\n",
+            root = root_abs.display(),
+            dir_a = dir_a.display(),
+            dir_b = dir_b.display(),
+            dir_aa = dir_aa.display(),
+        );
+
+        assert_eq!(contents, expected, "Recursive ls output did not match expected");
+    }
+
+    #[test]
+    fn ls_recursive_reverse_and_hidden() {
+        let temp_store = TempStore::new(1);
+        let root = Path::new(&temp_store.store[0]);
+
+        fs::create_dir_all(root.join("dir_a").join("dir_aa")).expect("failed to create dirs");
+        fs::create_dir_all(root.join("dir_b")).expect("failed to create dirs");
+        fs::write(root.join("file_root"), "").expect("failed to create file");
+        fs::write(root.join("dir_a").join("file_a1"), "").expect("failed to create file");
+        fs::write(root.join("dir_b").join(".hidden_b"), "").expect("failed to create file");
+
+        let out_path = root.join("out_hidden");
+        let root_abs = fs::canonicalize(root).expect("failed to canonicalize root");
+        let input: Vec<String> = vec![
+            "ls",
+            "-Rra",
+            root_abs.to_string_lossy().as_ref(),
+            ">",
+            out_path.to_string_lossy().as_ref(),
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
+        let result = ls(&input);
+        assert!(result.is_ok(), "`ls -Rra` should succeed on populated tree");
+
+        let mut contents =
+            fs::read_to_string(&out_path).expect("failed to read redirected ls output");
+        contents = contents.replace("\r\n", "\n");
+
+        let dir_a = root_abs.join("dir_a");
+        let dir_b = root_abs.join("dir_b");
+        let dir_aa = dir_a.join("dir_aa");
+
+        let expected = format!(
+            "{root}:\n\
+file_root\n\
+{dir_b_name}\n\
+{dir_a_name}\n\
+..\n\
+.\n\
+\n\
+{dir_b}:\n\
+.hidden_b\n\
+..\n\
+.\n\
+\n\
+{dir_a}:\n\
+file_a1\n\
+{dir_aa_name}\n\
+..\n\
+.\n\
+\n\
+{dir_aa}:\n\
+..\n\
+.\n",
+            root = root_abs.display(),
+            dir_b = dir_b.display(),
+            dir_a = dir_a.display(),
+            dir_aa = dir_aa.display(),
+            dir_b_name = dir_b.file_name().unwrap().to_string_lossy(),
+            dir_a_name = dir_a.file_name().unwrap().to_string_lossy(),
+            dir_aa_name = dir_aa.file_name().unwrap().to_string_lossy(),
+        );
+
+        assert_eq!(contents, expected, "Recursive ls -Rra output did not match expected");
+    }
 }
