@@ -1,7 +1,7 @@
 pub mod ansi;
-pub mod c;
 pub mod commands;
 pub mod error;
+pub mod fork;
 pub mod input;
 pub mod redirect;
 pub mod repl;

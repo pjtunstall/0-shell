@@ -16,15 +16,9 @@ pub mod rm;
 pub mod sleep;
 pub mod touch;
 
-use std::{env, ffi::CString, fs::OpenOptions, io, os::fd::AsRawFd, ptr, sync::atomic::Ordering};
+use std::{fs::OpenOptions, os::fd::AsRawFd};
 
-use crate::{
-    commands::{
-        fg::CURRENT_CHILD_PID,
-        jobs::{Job, State},
-    },
-    error,
-};
+use crate::{commands::jobs::Job, error, fork::spawn_job};
 
 pub fn run_command(
     args: &[String],
@@ -142,167 +136,6 @@ pub fn run_command_as_worker(args: &[String]) {
     }
 }
 
-fn spawn_job(
-    args: &[String],
-    jobs: &mut Vec<Job>,
-    is_background_launch: bool,
-    is_worker: bool,
-    current: &mut usize,
-    previous: &mut usize,
-) -> Result<String, String> {
-    // Build argv up front so that the child doesn't have to allocate after the
-    // fork.
-    let exec_args: Vec<String> = if is_worker {
-        let self_path = env::current_exe()
-            .unwrap_or_else(|_| std::path::PathBuf::from("./0_shell"))
-            .to_string_lossy()
-            .into_owned();
-        let mut v = vec![self_path, String::from("--internal-worker")];
-        v.extend_from_slice(args);
-        v
-    } else {
-        args.to_vec()
-    };
-
-    let c_strings: Vec<CString> = exec_args
-        .into_iter()
-        .map(|s| {
-            CString::new(s).unwrap_or_else(|_| {
-                eprintln!("0-shell: argument contains interior NUL byte");
-                std::process::exit(1);
-            })
-        })
-        .collect();
-    let mut ptrs: Vec<*const i8> = c_strings.iter().map(|s| s.as_ptr()).collect();
-    ptrs.push(ptr::null());
-
-    let pid = unsafe { libc::fork() };
-
-    match pid {
-        -1 => Err(String::from("Fork failed")),
-        0 => {
-            run_child(ptrs, c_strings);
-            unreachable!();
-        }
-        child_pid => run_parent(
-            args,
-            jobs,
-            is_background_launch,
-            current,
-            previous,
-            child_pid,
-        ),
-    }
-}
-
-fn run_child(ptrs: Vec<*const i8>, c_strings: Vec<CString>) {
-    unsafe {
-        let child_pid = libc::getpid(); // The child learns its own PID.
-
-        // Make the child the leader of a new process group. We place this line
-        // in both parent and child code because we don't know which the OS will
-        // choose to run first.
-        libc::setpgid(child_pid, child_pid);
-
-        restore_default_signal_handlers(); // Stop ignoring signals.
-
-        // Replace the current process image with the target program, keeping
-        // the same PID. (V = vector args; P = path lookup.)
-        libc::execvp(ptrs[0], ptrs.as_ptr());
-
-        // If we reach this line, `execvp` failed.
-        error::print_exec_failure(c_strings[0].as_bytes());
-        std::process::exit(1);
-    }
-}
-
-fn restore_default_signal_handlers() {
-    unsafe {
-        libc::signal(libc::SIGINT, libc::SIG_DFL); // Ctrl+C
-        libc::signal(libc::SIGTSTP, libc::SIG_DFL); // Ctrl+Z
-        libc::signal(libc::SIGQUIT, libc::SIG_DFL); // Ctrl+\
-
-        // Allow SIGTTIN to suspend us if we try to read from the TTY while in
-        // the background.
-        libc::signal(libc::SIGTTIN, libc::SIG_DFL);
-
-        // Allow SIGTTOU to suspend us if we try to write to the TTY or take
-        // control of the terminal while in the background.
-        libc::signal(libc::SIGTTOU, libc::SIG_DFL);
-    }
-}
-
-fn run_parent(
-    args: &[String],
-    jobs: &mut Vec<Job>,
-    is_background_launch: bool,
-    current: &mut usize,
-    previous: &mut usize,
-    child_pid: i32,
-) -> Result<String, String> {
-    unsafe {
-        // Make the child the leader of a new process group. We place this line
-        // in both parent and child code because we don't know which the OS will
-        // choose to run first.
-        libc::setpgid(child_pid, child_pid);
-
-        match is_background_launch {
-            true => {
-                let id = jobs.len() + 1;
-                let cmd_str = display_command(args);
-                jobs.push(Job::new(id, child_pid, cmd_str, State::Running));
-                *previous = *current;
-                *current = id;
-                return Ok(format!("[{}] {}\n", id, child_pid));
-            }
-            false => {
-                // Snapshot the shell's current terminal settings in case a
-                // child process crashes, leaving the terminal in some other
-                // state (e.g., cooked vs. raw mode, or perhaps a different
-                // flavor of raw to that of my shell).
-                let mut shell_termios: libc::termios = std::mem::zeroed();
-                libc::tcgetattr(libc::STDIN_FILENO, &mut shell_termios);
-
-                // Hand terminal control to the foreground child's group.
-                // It will now be be the recipient of any SIGINT or SIGTSTP.
-                libc::tcsetpgrp(libc::STDIN_FILENO, child_pid);
-                CURRENT_CHILD_PID.store(child_pid, Ordering::SeqCst);
-
-                let status = wait_for_foreground_child(child_pid)?;
-
-                // If the child was terminated by SIGINT, the cursor to the next
-                // line so that the prompt doesn't overwrite the `^C`.
-                if libc::WIFSIGNALED(status) && libc::WTERMSIG(status) == libc::SIGINT {
-                    println!();
-                }
-
-                // Reclaim the terminal for the shell. At this point, since the
-                // child is in the foreground, we're in the background. So, we
-                // receive a SIGTTOU when we try to take back control, but
-                // that's ok. In `repl::repl`, we set the action to
-                // "ignore", so the SIGTTOU doesn't stop us.
-                libc::tcsetpgrp(libc::STDIN_FILENO, libc::getpgrp());
-                CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
-
-                // Force terminal back to the shell's settings. `TCSADRAIN`
-                // ensures all output has been transmitted before the change.
-                libc::tcsetattr(libc::STDIN_FILENO, libc::TCSADRAIN, &shell_termios);
-
-                // The child was stopped: keep it in the jobs table.
-                if libc::WIFSTOPPED(status) {
-                    let id = jobs.len() + 1;
-                    let cmd_str = display_command(args);
-                    jobs.push(Job::new(id, child_pid, cmd_str.clone(), State::Stopped));
-                    *previous = *current;
-                    *current = id;
-                    println!("\n[{}]+\tStopped\t\t{}", id, cmd_str);
-                }
-            }
-        }
-    }
-    Ok(String::new())
-}
-
 // Handle redirections with an explicit file descriptor (e.g. `2>&1`).
 // Returns the argv with those redirection tokens removed after applying them.
 fn apply_fd_redirections(args: &[String]) -> Result<Vec<String>, String> {
@@ -327,43 +160,6 @@ fn apply_fd_redirections(args: &[String]) -> Result<Vec<String>, String> {
     }
 
     Ok(filtered)
-}
-
-// Blocks the shell process until the specific foreground child `child_pid`
-// changes state. This handles both termination (exit) and suspension (Ctrl+Z).
-fn wait_for_foreground_child(child_pid: i32) -> Result<i32, String> {
-    let mut status = 0;
-
-    loop {
-        // `waitpid` normally only returns when a child terminates.
-        // `WUNTRACED` tells it to also return if the child is stopped by a signal
-        // (e.g., if the user hits Ctrl+Z). This is essential for Job Control.
-        let res = unsafe { libc::waitpid(child_pid, &mut status, libc::WUNTRACED) };
-
-        // Success: the specific child we were waiting for has changed state.
-        if res == child_pid {
-            return Ok(status);
-        }
-
-        // Failure or interruption
-        if res == -1 {
-            let err = io::Error::last_os_error();
-
-            // EINTR means the `waitpid` system call itself was interrupted by a
-            // signal caught by the shell (e.g., SIGWINCH or a SIGCHLD from a
-            // distinct background process). This is temporary; we simply retry.
-            if err.raw_os_error() == Some(libc::EINTR) {
-                continue;
-            }
-
-            // Real failure (e.g., the child does not exist).
-            return Err(format!("waitpid failed: {}", err));
-        }
-
-        // Unexpected: waitpid returned a PID we didn't ask for.
-        // (This should technically be impossible when passing a positive PID).
-        return Err(format!("waitpid returned unexpected pid: {}", res));
-    }
 }
 
 fn apply_single_fd_redirection(fd: i32, op: &str, target: &str) -> Result<(), String> {
@@ -402,27 +198,4 @@ fn apply_single_fd_redirection(fd: i32, op: &str, target: &str) -> Result<(), St
     }
 
     Ok(())
-}
-
-fn display_command(args: &[String]) -> String {
-    let mut display_parts: Vec<String> = Vec::with_capacity(args.len());
-    let mut i = 0;
-
-    while i < args.len() {
-        if i + 2 < args.len() {
-            if args[i].parse::<i32>().is_ok() {
-                let op = args[i + 1].as_str();
-                if (op == ">" || op == ">>") && !args[i + 2].is_empty() {
-                    display_parts.push(format!("{}{}{}", args[i], op, args[i + 2]));
-                    i += 3;
-                    continue;
-                }
-            }
-        }
-
-        display_parts.push(args[i].clone());
-        i += 1;
-    }
-
-    display_parts.join(" ")
 }
