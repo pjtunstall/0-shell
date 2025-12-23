@@ -2,7 +2,7 @@ use std::ffi::CString;
 
 use crate::error;
 
-pub fn run_child(ptrs: Vec<*const i8>, c_strings: Vec<CString>) {
+pub unsafe fn run_child(ptrs: Vec<*const i8>, c_strings: Vec<CString>) {
     unsafe {
         let child_pid = libc::getpid(); // The child learns its own PID.
 
