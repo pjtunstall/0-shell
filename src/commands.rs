@@ -37,7 +37,7 @@ pub fn run_command(
         return (None, Ok(String::new()));
     }
 
-    let (clean_args, is_background) = if let Some(last) = args.last() {
+    let (clean_args, is_background_launch) = if let Some(last) = args.last() {
         if last == "&" {
             (&args[..args.len() - 1], true)
         } else {
@@ -80,13 +80,25 @@ pub fn run_command(
 
         // Custom commands: fork and let the child exec this program (plus
         // command name and other args).
-        "cat" | "cp" | "ls" | "mkdir" | "man" | "mv" | "rm" | "sleep" | "touch" => {
-            spawn_job(clean_args, jobs, is_background, true, current, previous)
-        }
+        "cat" | "cp" | "ls" | "mkdir" | "man" | "mv" | "rm" | "sleep" | "touch" => spawn_job(
+            clean_args,
+            jobs,
+            is_background_launch,
+            true,
+            current,
+            previous,
+        ),
 
         // External commands: fork and let the child exec the external binary
         // (plus other args).
-        _ => spawn_job(clean_args, jobs, is_background, false, current, previous),
+        _ => spawn_job(
+            clean_args,
+            jobs,
+            is_background_launch,
+            false,
+            current,
+            previous,
+        ),
     };
 
     (exit_code, result)
@@ -133,7 +145,7 @@ pub fn run_command_as_worker(args: &[String]) {
 fn spawn_job(
     args: &[String],
     jobs: &mut Vec<Job>,
-    is_background: bool,
+    is_background_launch: bool,
     is_worker: bool,
     current: &mut usize,
     previous: &mut usize,
@@ -169,58 +181,72 @@ fn spawn_job(
     match pid {
         -1 => Err(String::from("Fork failed")),
         0 => {
-            run_child(ptrs, is_background, c_strings);
+            run_child(ptrs, c_strings);
             unreachable!();
         }
-        child_pid => run_parent(args, jobs, is_background, current, previous, child_pid),
+        child_pid => run_parent(
+            args,
+            jobs,
+            is_background_launch,
+            current,
+            previous,
+            child_pid,
+        ),
     }
 }
 
-fn run_child(ptrs: Vec<*const i8>, is_background: bool, c_strings: Vec<CString>) {
+fn run_child(ptrs: Vec<*const i8>, c_strings: Vec<CString>) {
     unsafe {
-        // Child learns its own PID.
-        let child_pid = libc::getpid();
+        let child_pid = libc::getpid(); // The child learns its own PID.
 
-        // Put child in its own process group (pgid = pid).
-        libc::setpgid(0, 0);
+        // Make the child the leader of a new process group. We place this line
+        // in both parent and child code because we don't know which the OS will
+        // choose to run first.
+        libc::setpgid(child_pid, child_pid);
 
-        if !is_background {
-            // Take control of the TTY for foreground jobs.
-            libc::tcsetpgrp(libc::STDIN_FILENO, child_pid);
-        }
+        restore_default_signal_handlers(); // Stop ignoring signals.
 
-        // Restore default signal handlers.
+        // Replace the current process image with the target program, keeping
+        // the same PID. (V = vector args; P = path lookup.)
+        libc::execvp(ptrs[0], ptrs.as_ptr());
+
+        // If we reach this line, `execvp` failed.
+        error::print_exec_failure(c_strings[0].as_bytes());
+        std::process::exit(1);
+    }
+}
+
+fn restore_default_signal_handlers() {
+    unsafe {
         libc::signal(libc::SIGINT, libc::SIG_DFL); // Ctrl+C
         libc::signal(libc::SIGTSTP, libc::SIG_DFL); // Ctrl+Z
         libc::signal(libc::SIGQUIT, libc::SIG_DFL); // Ctrl+\
-        // Default: stop if background job reads the TTY.
+
+        // Allow SIGTTIN to suspend us if we try to read from the TTY while in
+        // the background.
         libc::signal(libc::SIGTTIN, libc::SIG_DFL);
-        // Default: stop if background job writes the TTY.
+
+        // Allow SIGTTOU to suspend us if we try to write to the TTY or take
+        // control of the terminal while in the background.
         libc::signal(libc::SIGTTOU, libc::SIG_DFL);
-
-        // Exec vector args + PATH lookup: that is, replace the current
-        // process image with the target program, keeping the same PID.
-        libc::execvp(ptrs[0], ptrs.as_ptr());
-
-        // Only runs if `execvp` fails.
-        error::print_exec_failure(c_strings[0].as_bytes());
-        std::process::exit(1);
     }
 }
 
 fn run_parent(
     args: &[String],
     jobs: &mut Vec<Job>,
-    is_background: bool,
+    is_background_launch: bool,
     current: &mut usize,
     previous: &mut usize,
     child_pid: i32,
 ) -> Result<String, String> {
     unsafe {
-        // Make the child the leader of a new process group.
+        // Make the child the leader of a new process group. We place this line
+        // in both parent and child code because we don't know which the OS will
+        // choose to run first.
         libc::setpgid(child_pid, child_pid);
 
-        match is_background {
+        match is_background_launch {
             true => {
                 let id = jobs.len() + 1;
                 let cmd_str = display_command(args);
@@ -230,7 +256,14 @@ fn run_parent(
                 return Ok(format!("[{}] {}\n", id, child_pid));
             }
             false => {
-                // Hand terminal control to the foreground child.
+                // Snapshot the shell's current terminal settings in case a
+                // child process crashes, leaving the terminal in some other
+                // state (e.g., cooked vs. raw mode, or perhaps a different
+                // flavor of raw to that of my shell).
+                let mut shell_termios: libc::termios = std::mem::zeroed();
+                libc::tcgetattr(libc::STDIN_FILENO, &mut shell_termios);
+
+                // Hand terminal control to the foreground child's group.
                 // It will now be be the recipient of any SIGINT or SIGTSTP.
                 libc::tcsetpgrp(libc::STDIN_FILENO, child_pid);
                 CURRENT_CHILD_PID.store(child_pid, Ordering::SeqCst);
@@ -243,9 +276,17 @@ fn run_parent(
                     println!();
                 }
 
-                // Reclaim the terminal for the shell.
+                // Reclaim the terminal for the shell. At this point, since the
+                // child is in the foreground, we're in the background. So, we
+                // receive a SIGTTOU when we try to take back control, but
+                // that's ok. In `repl::repl`, we set the action to
+                // "ignore", so the SIGTTOU doesn't stop us.
                 libc::tcsetpgrp(libc::STDIN_FILENO, libc::getpgrp());
                 CURRENT_CHILD_PID.store(0, Ordering::SeqCst);
+
+                // Force terminal back to the shell's settings. `TCSADRAIN`
+                // ensures all output has been transmitted before the change.
+                libc::tcsetattr(libc::STDIN_FILENO, libc::TCSADRAIN, &shell_termios);
 
                 // The child was stopped: keep it in the jobs table.
                 if libc::WIFSTOPPED(status) {
