@@ -61,7 +61,7 @@ fn get_c_strings(is_worker: bool, args: &[String]) -> Result<Vec<CString>, Strin
 fn get_exec_args(is_worker: bool, args: &[String]) -> Vec<String> {
     if is_worker {
         let self_path = env::current_exe()
-            .unwrap_or_else(|_| std::path::PathBuf::from("./0_shell"))
+            .unwrap_or_else(|_| std::path::PathBuf::from("./0-shell"))
             .to_string_lossy()
             .into_owned();
         let mut v = vec![self_path, String::from("--internal-worker")];

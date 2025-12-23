@@ -8,13 +8,13 @@ fn main() {
         if args[1] == "--internal-worker" {
             commands::run_command_as_worker(&args);
         } else {
-            error::red_println("Usage: ./0_shell");
+            error::red_println("Usage: ./0-shell");
             return;
         }
     } else if args.len() > 1 {
         // TODO: If I implement scripting, replace this error with e.g.
         // `run_script(&args[1]);`
-        error::red_println("Usage: ./0_shell");
+        error::red_println("Usage: ./0-shell");
         return;
     } else {
         repl::repl();

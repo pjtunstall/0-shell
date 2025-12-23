@@ -132,7 +132,7 @@ See [todo.md](todo.md) for possible further developments and topics to explore.
 
 <a id="f2" href="#ref-f2">2</a>: A traditional Unix shell, such as Bash, treats certain commands as built-in utilities: `cd`, `exit`, `pwd`, `echo` (the first two of necessity built-in). Other commands launch external binaries: `ls`, `cat`, `cp`, `rm`, `mv`, `mkdir`. To check whether a command is a builtin for a given shell, you can enter `type <command>`.[↩](#ref-f2)
 
-<a id="f3" href="#ref-f3">3</a>: On installation, I gather that Busybox makes, for example, `/bin/ls` a symbolic link pointing to `/bin/0_shell`, allowing it act in place of a default shell. I haven't gone this far.[↩](#ref-f3)
+<a id="f3" href="#ref-f3">3</a>: On installation, I gather that Busybox makes, for example, `/bin/ls` a symbolic link pointing to `/bin/busybox`, allowing it to act in place of a default shell. I haven't gone this far.[↩](#ref-f3)
 
 <a id="f4" href="#ref-f4">4</a>: "then run `python &"`. I assume they didn't want us write our own Python.[↩](#ref-f4)
 
