@@ -12,16 +12,6 @@ struct PreparedCommand {
     c_strings: Vec<CString>,
 }
 
-impl PreparedCommand {
-    fn new(is_worker: bool, args: &[String]) -> Self {
-        let c_strings = get_c_strings(is_worker, args);
-        let mut ptrs: Vec<*const i8> = c_strings.iter().map(|s| s.as_ptr()).collect();
-        ptrs.push(ptr::null());
-
-        Self { c_strings, ptrs }
-    }
-}
-
 pub fn spawn_job(
     args: &[String],
     jobs: &mut Vec<Job>,
@@ -32,7 +22,7 @@ pub fn spawn_job(
 ) -> Result<String, String> {
     // Build argv (command-line arguments) up front so that the child doesn't
     // have to allocate after the fork.
-    let cmd = PreparedCommand::new(is_worker, args);
+    let cmd = prepare_command(is_worker, args)?;
     let pid = unsafe { libc::fork() };
 
     match pid {
@@ -52,17 +42,19 @@ pub fn spawn_job(
     }
 }
 
-fn get_c_strings(is_worker: bool, args: &[String]) -> Vec<CString> {
-    let exec_args = get_exec_args(is_worker, args);
+fn prepare_command(is_worker: bool, args: &[String]) -> Result<PreparedCommand, String> {
+    let c_strings = get_c_strings(is_worker, args)?;
+    let mut ptrs: Vec<*const i8> = c_strings.iter().map(|s| s.as_ptr()).collect();
+    ptrs.push(ptr::null());
 
+    Ok(PreparedCommand { ptrs, c_strings })
+}
+
+fn get_c_strings(is_worker: bool, args: &[String]) -> Result<Vec<CString>, String> {
+    let exec_args = get_exec_args(is_worker, args);
     exec_args
         .into_iter()
-        .map(|s| {
-            CString::new(s).unwrap_or_else(|_| {
-                eprintln!("0-shell: argument contains interior NUL byte");
-                std::process::exit(1);
-            })
-        })
+        .map(|s| CString::new(s).map_err(|_| String::from("Argument contains interior NUL byte")))
         .collect()
 }
 
