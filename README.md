@@ -89,7 +89,7 @@ cargo run
 
 ### Name
 
-I've named the internal package zero-shell because Rust's package/build manager Cargo disallows package names starting with numerals. Howevere, ensured that the binary itself is called `0-shell`.
+I've named the internal package zero-shell because Rust's package/build manager Cargo disallows package names starting with numerals. However, I've specified that the binary itself will be called `0-shell`.
 
 - Library: `zero_shell`
 - Binary output: `target/debug/0-shell`
