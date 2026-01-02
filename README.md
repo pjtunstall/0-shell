@@ -68,7 +68,7 @@ I've also done the optional extra project [job-control](https://github.com/01-ed
 
 While the instructions tell us that our program should respect the same principles as 0-shell, one of the job-control audit [questions](https://github.com/01-edu/public/blob/master/subjects/0-shell/job-control/audit.md) implies that it should now launch external binaries, at least for commands not included in the core project.<sup id="ref-f4">[4](#f4)</sup>
 
-To accomplish this, I've kept my custom versions of the listed externals, and, for other externals, I fork the process and let the child exec itself with the given command as an argument.
+To accomplish this, I've kept my custom versions of the externals that we're required to re-implement (ls, etc.), and, for other commands, launch actual external binaries.
 
 I've also implemented the features not mentioned in the instructions but implied by the example, namely:
 
