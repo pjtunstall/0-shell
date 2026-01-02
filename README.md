@@ -104,7 +104,7 @@ See `integration.rs` for an integration test that covers the last section of the
 
 ### Deviations
 
-There are many trivial deviations from Zsh (my default shell at the time when I made my orignal version of the core project), even among the few items that I've implemented: bold text, different prompts, use of red for error messages, ... Lack of `!` for history expansion is discussed above. In Zsh, if you try to `cat` to a directory and a file, the operation fails completely and doesn't concatenated to the file. In my shell, it does what it can and reports any failures. That's more consistent with how Zsh behaves with `rm`, say.
+There are many trivial deviations from Zsh (my default shell at the time when I made my orignal version of the core project), even among the few items that I've implemented: bold text, different prompts, use of red for error messages, ... In Zsh, if you try to `cat` to a directory and a file, the operation fails completely and doesn't concatenated to the file. In my shell, it does what it can and reports any failures. That's more consistent with how Zsh behaves with `rm`, say.
 
 I've not been meticulous in mimicking the wording, word order, or capitalization of error messages. In some cases, I've aimed for greater consistency than I found in Zsh. Thus, Zsh and Bash both have `cat: tests: Is a directory` when one of the sources is a directory, while I have `cat: Is a directory: tests`. But I also capitalize when one of the targets is a directory--`0-shell: Is a directory: tests`--unlike Zsh: `zsh: is a directory: tests`. In this case, Bash follows yet another pattern: `bash: line 1: tests: Is a directory`.
 
